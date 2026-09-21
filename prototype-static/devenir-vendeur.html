@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devenir vendeur — Chez Nous</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
+</script>
+<style>
+*{scroll-behavior:smooth}
+body{background:#FFFFFF;color:#131A17}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#D4D4D4;border-radius:99px}
+.chat-launcher{position:fixed;bottom:96px;right:20px;z-index:65;width:56px;height:56px;border-radius:9999px;background:#146B4F;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px -8px rgba(0,0,0,.35);cursor:pointer;border:none;transition:transform .2s}
+.chat-launcher:hover{transform:scale(1.06)}
+.chat-panel{position:fixed;bottom:160px;right:20px;z-index:65;width:360px;max-width:92vw;height:500px;max-height:70vh;background:#fff;border-radius:20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(12px) scale(.98);transition:all .25s cubic-bezier(.16,1,.3,1)}
+.chat-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+.chat-msg-bot{background:#F2F2F2;color:#131A17;border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;max-width:82%;line-height:1.5}
+.chat-msg-user{background:#131A17;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;max-width:82%;margin-left:auto;line-height:1.5}
+.chat-chip{border:1px solid #E4E4E4;border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chat-chip:hover{background:#F2F2F2}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<header class="bg-ink text-white">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-4 flex items-center justify-between gap-4">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
+      <div class="leading-none">
+        <div class="font-display font-bold text-lg">chez nous</div>
+        <div class="text-[9px] opacity-60 tracking-wider">DIASPORA AFRICAINE • CANADA</div>
+      </div>
+    </a>
+    <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+      <a href="index.html#marketplace" class="hover:opacity-80">Marketplace</a>
+      <a href="comment-ca-marche.html" class="hover:opacity-80">Comment ça marche</a>
+      <a href="contact.html" class="hover:opacity-80">Contact</a>
+    </nav>
+    <a href="index.html" class="text-sm font-semibold bg-white/10 px-4 py-2 rounded-full hover:bg-white/15">Retour au site</a>
+  </div>
+</header>
+
+<main class="max-w-[1000px] mx-auto px-4 md:px-6 py-12">
+  <span class="bg-forest text-white text-xs font-bold tracking-widest px-3 py-1 rounded-full">DEVENIR VENDEUR</span>
+  <h1 class="font-display font-bold text-3xl md:text-4xl mt-4">Vendez à la diaspora africaine partout au Canada</h1>
+  <p class="text-[15px] opacity-70 mt-3 max-w-[640px]">Rejoignez plus de 640 vendeurs indépendants et proposez vos produits ou services à une communauté qui vous connaît déjà. Système d'abonnement simple, sans engagement.</p>
+
+  <div class="grid md:grid-cols-3 gap-4 mt-8">
+    <div class="bg-white border border-line rounded-2xl p-6 flex flex-col">
+      <div class="text-xs font-bold tracking-widest text-forest">BASIQUE</div>
+      <div class="text-3xl font-display font-bold mt-2">Gratuit</div>
+      <div class="text-xs opacity-70 mt-1">Commission 15% par vente</div>
+      <ul class="text-sm opacity-80 mt-4 space-y-2 flex-1">
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Jusqu'à 10 annonces actives</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Profil vérifié</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Messagerie intégrée</li>
+      </ul>
+      <button onclick="activateFreePlan()" class="w-full mt-5 bg-sand rounded-full py-2.5 font-semibold hover:bg-line">Choisir</button>
+    </div>
+    <div class="bg-ink text-white rounded-2xl p-6 relative flex flex-col">
+      <div class="absolute -top-3 left-6 bg-forest text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest">POPULAIRE</div>
+      <div class="text-xs font-bold tracking-widest text-green-400">PRO</div>
+      <div class="text-3xl font-display font-bold mt-2">129$<span class="text-sm font-normal opacity-70">/an</span></div>
+      <div class="text-xs opacity-70 mt-1">Commission 10% par vente</div>
+      <ul class="text-sm opacity-90 mt-4 space-y-2 flex-1">
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400 shrink-0"></i> Annonces illimitées</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400 shrink-0"></i> Mise en avant dans les recherches</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400 shrink-0"></i> Statistiques de vente</li>
+      </ul>
+      <button onclick="openStripeModal('sub-pro')" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 font-semibold hover:brightness-110">Choisir</button>
+    </div>
+    <div class="bg-white border border-line rounded-2xl p-6 flex flex-col">
+      <div class="text-xs font-bold tracking-widest text-forest">PREMIUM</div>
+      <div class="text-3xl font-display font-bold mt-2">299$<span class="text-sm font-normal opacity-70">/an</span></div>
+      <div class="text-xs opacity-70 mt-1">Commission 6% par vente</div>
+      <ul class="text-sm opacity-80 mt-4 space-y-2 flex-1">
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Tout Pro inclus</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Bannière publicitaire en page d'accueil</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-forest shrink-0"></i> Support prioritaire</li>
+      </ul>
+      <button onclick="openStripeModal('sub-premium')" class="w-full mt-5 bg-sand rounded-full py-2.5 font-semibold hover:bg-line">Choisir</button>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-8 mt-12">
+    <div>
+      <h2 class="font-display font-bold text-xl">Candidature vendeur</h2>
+      <p class="text-sm opacity-60 mt-2">Décrivez votre activité, notre équipe valide chaque profil manuellement sous 48 heures.</p>
+      <form id="applyForm" onsubmit="return submitApply(event)" class="bg-white border border-line rounded-2xl p-6 space-y-4 mt-4">
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">NOM DE LA BOUTIQUE</label>
+          <input required id="applyShop" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="Ex: Épicerie Le Baobab">
+        </div>
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">VILLE</label>
+          <input required id="applyCity" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="Ex: Montréal">
+        </div>
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">CATÉGORIE</label>
+          <select class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none bg-white">
+            <option>Épicerie africaine</option>
+            <option>Mode & tissus</option>
+            <option>Beauté & cheveux afro</option>
+            <option>Artisanat & décoration</option>
+            <option>Cuisine maison & traiteur</option>
+            <option>Services communautaires</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">DÉCRIVEZ VOTRE ACTIVITÉ</label>
+          <textarea required id="applyDesc" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none h-24" placeholder="Produits ou services proposés..."></textarea>
+        </div>
+        <p class="text-[11px] opacity-50">En soumettant, vous acceptez notre <a href="charte-communaute.html" class="text-forest underline">charte de la communauté</a>.</p>
+        <button type="submit" class="w-full bg-forest hover:brightness-95 text-white rounded-full py-3 font-bold">Envoyer ma candidature</button>
+        <div id="applyError" class="hidden bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center">Votre message contient des termes non autorisés par notre charte de la communauté. Merci de le reformuler.</div>
+        <div id="applySuccess" class="hidden bg-forest/10 text-forest text-sm rounded-xl p-3 text-center">Candidature reçue ! Vous recevrez un courriel de confirmation sous 48 heures.</div>
+      </form>
+    </div>
+    <div>
+      <h2 class="font-display font-bold text-xl">Pourquoi vendre sur Chez Nous</h2>
+      <ul class="mt-4 space-y-3 text-sm opacity-80">
+        <li class="flex gap-3"><i data-lucide="users" class="w-5 h-5 text-forest shrink-0"></i> Une audience déjà engagée : la diaspora africaine du Canada</li>
+        <li class="flex gap-3"><i data-lucide="credit-card" class="w-5 h-5 text-forest shrink-0"></i> Paiements sécurisés et reçus automatiques via Stripe</li>
+        <li class="flex gap-3"><i data-lucide="message-circle" class="w-5 h-5 text-forest shrink-0"></i> Messagerie intégrée avec vos acheteurs</li>
+        <li class="flex gap-3"><i data-lucide="bar-chart-3" class="w-5 h-5 text-forest shrink-0"></i> Statistiques de vente (formules Pro et Premium)</li>
+        <li class="flex gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-forest shrink-0"></i> Conformité LPRPDE, données hébergées au Canada</li>
+      </ul>
+      <div class="bg-sand rounded-2xl p-5 mt-6 text-sm opacity-70">Des questions sur les formules ou la facturation ? Consultez notre <a href="faq.html" class="text-forest underline">FAQ</a> ou <a href="contact.html" class="text-forest underline">contactez-nous</a>.</div>
+    </div>
+  </div>
+</main>
+
+<footer id="footer" class="bg-white border-t border-line mt-10">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+    <div class="grid md:grid-cols-4 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Explorer</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html#marketplace" class="hover:underline">Marketplace</a></li>
+          <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
+          <li><a href="contact.html" class="hover:underline">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Légal</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
+          <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
+          <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
+          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+        </ul>
+      </div>
+      <div class="bg-sand rounded-2xl p-4">
+        <div class="font-semibold flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Paiements sécurisés</div>
+        <p class="text-xs opacity-60 mt-2">Abonnements & commissions via Stripe. Chiffrement, reçus automatiques.</p>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<div id="stripeModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-ink/50" onclick="closeStripe()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[440px] bg-white rounded-2xl overflow-hidden">
+    <div class="bg-ink text-white p-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-ink font-bold">S</div>
+        <div>
+          <div class="font-semibold text-sm">Paiement sécurisé par Stripe</div>
+          <div class="text-xs opacity-60">Chiffrement 256-bit • Reçu automatique</div>
+        </div>
+      </div>
+      <button onclick="closeStripe()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div id="stripeDetail" class="bg-sand rounded-2xl p-4 flex justify-between items-center"></div>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">NUMÉRO DE CARTE</label>
+        <div class="mt-1 flex items-center gap-2 border border-line rounded-xl px-3 py-3 bg-white">
+          <i data-lucide="credit-card" class="w-4 h-4 opacity-40"></i>
+          <input placeholder="4242 4242 4242 4242" class="flex-1 outline-none text-sm" value="4242 4242 4242 4242">
+          <span class="text-xs font-bold">VISA</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">EXPIRATION</label>
+          <input value="09 / 29" class="mt-1 w-full border border-line rounded-xl px-3 py-3 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-bold tracking-widest opacity-60">CVC</label>
+          <input value="123" class="mt-1 w-full border border-line rounded-xl px-3 py-3 text-sm">
+        </div>
+      </div>
+      <button onclick="confirmStripe()" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold flex items-center justify-center gap-2">
+        <i data-lucide="lock" class="w-4 h-4"></i> <span id="stripePayLabel">Payer</span>
+      </button>
+      <p class="text-center text-xs opacity-50">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE).</p>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<div id="cookieBanner" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
+  <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
+    <p class="text-xs md:text-sm opacity-80 flex-1">Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre consentement, des cookies de mesure d'audience et de publicité. <a href="cookies.html" class="underline">En savoir plus</a>.</p>
+    <div class="flex gap-2 shrink-0">
+      <button onclick="setCookieConsent(false)" class="text-xs md:text-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/10">Refuser</button>
+      <button onclick="setCookieConsent(true)" class="text-xs md:text-sm px-4 py-2 rounded-full bg-forest text-white font-semibold">Accepter</button>
+    </div>
+  </div>
+</div>
+
+<button id="chatLauncher" onclick="toggleChat()" class="chat-launcher" title="Discuter avec Malik">
+  <i data-lucide="message-circle" class="w-6 h-6"></i>
+</button>
+
+<div id="chatPanel" class="chat-panel">
+  <div class="bg-ink text-white p-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-2">
+      <img src="assets/assistant-avatar.svg" class="w-8 h-8 rounded-full object-cover">
+      <div>
+        <div class="font-semibold text-sm leading-none">Malik</div>
+        <div class="text-[10px] opacity-60 mt-0.5">Assistant Chez Nous</div>
+      </div>
+    </div>
+    <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+  <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+  <div id="chatChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
+  <div class="p-3 border-t border-line flex gap-2 shrink-0">
+    <input id="chatInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
+    <button onclick="sendChat()" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+const PROHIBITED_TERMS = ['merde','putain','connard','conasse','salope','pute','encul','batard','négre','nègre','sale noir','sale arabe','arnaque garantie','escroquerie'];
+function containsProhibited(text){
+  const t = text.toLowerCase();
+  return PROHIBITED_TERMS.some(w => t.includes(w));
+}
+
+const plans = { 'sub-pro': {label:'Formule Pro — 129$/an', price:129}, 'sub-premium': {label:'Formule Premium — 299$/an', price:299} };
+let stripeMode = null;
+function activateFreePlan(){
+  showToast('Formule Basique activée gratuitement. Profil en validation (48h).','success');
+}
+function openStripeModal(mode){
+  stripeMode = mode;
+  const plan = plans[mode];
+  document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">${plan.label}</div><div class="text-xs opacity-60">Reçu automatique par courriel</div></div><div class="font-bold">${plan.price.toFixed(2)} $</div>`;
+  document.getElementById('stripePayLabel').textContent = `Payer ${plan.price.toFixed(2)} $`;
+  document.getElementById('stripeModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+function closeStripe(){ document.getElementById('stripeModal').classList.add('hidden'); }
+function confirmStripe(){
+  closeStripe();
+  const plan = plans[stripeMode];
+  showToast(`Abonnement ${plan.label} activé ! Reçu Stripe envoyé par courriel. Profil en validation (48h).`,'success');
+}
+
+function submitApply(e){
+  e.preventDefault();
+  const desc = document.getElementById('applyDesc').value;
+  const shop = document.getElementById('applyShop').value;
+  document.getElementById('applyError').classList.add('hidden');
+  document.getElementById('applySuccess').classList.add('hidden');
+  if(containsProhibited(desc) || containsProhibited(shop)){
+    document.getElementById('applyError').classList.remove('hidden');
+    return false;
+  }
+  document.getElementById('applySuccess').classList.remove('hidden');
+  document.getElementById('applyForm').reset();
+  return false;
+}
+
+function showToast(msg,type='success'){
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 ${type==='success'?'bg-ink text-white':type==='info'?'bg-white border border-line text-ink':'bg-red-600 text-white'}`;
+  el.innerHTML = `<span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="${type==='success'?'check':type==='info'?'mail':'alert-circle'}" class="w-4 h-4"></i></span><span>${msg}</span>`;
+  c.appendChild(el);
+  lucide.createIcons({nodes:[el]});
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+function setCookieConsent(accepted){
+  try{ localStorage.setItem('cheznous_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
+  document.getElementById('cookieBanner').classList.add('hidden');
+}
+(function(){
+  let consent = null;
+  try{ consent = localStorage.getItem('cheznous_cookie_consent'); }catch(e){}
+  if(!consent) document.getElementById('cookieBanner').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>

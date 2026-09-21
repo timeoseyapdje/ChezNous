@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Se connecter — Chez Nous</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
+</script>
+<style>
+*{scroll-behavior:smooth}
+body{background:#131A17;color:#131A17}
+.auth-bg{position:fixed;inset:0;z-index:0}
+.auth-bg img{width:100%;height:100%;object-fit:cover}
+.auth-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,17,15,.75),rgba(12,17,15,.92))}
+.tab-active{background:#146B4F;color:#fff}
+.tab-inactive{background:transparent;color:rgba(255,255,255,.6)}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div class="auth-bg">
+  <img src="https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=1600&auto=format&fit=crop" alt="">
+</div>
+
+<header class="relative z-10 max-w-[1280px] mx-auto px-4 md:px-6 py-5">
+  <a href="index.html" class="inline-flex items-center gap-2">
+    <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
+    <span class="font-display font-bold text-lg text-white">chez nous</span>
+  </a>
+</header>
+
+<main class="relative z-10 max-w-[420px] mx-auto px-4 md:px-6 py-6 md:py-10">
+  <div class="bg-ink/80 border border-white/10 rounded-2xl p-6 md:p-8 text-white">
+    <div class="flex bg-white/5 rounded-full p-1 mb-6">
+      <button id="tabLogin" onclick="setAuthTab('login')" class="flex-1 text-sm font-semibold rounded-full py-2 tab-active">Se connecter</button>
+      <button id="tabSignup" onclick="setAuthTab('signup')" class="flex-1 text-sm font-semibold rounded-full py-2 tab-inactive">Créer un compte</button>
+    </div>
+
+    <form id="loginForm" onsubmit="return submitAuth(event,'login')" class="space-y-4">
+      <h1 class="font-display font-bold text-2xl">Content de vous revoir</h1>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <input required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
+      </div>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
+        <input required type="password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="••••••••">
+      </div>
+      <button type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Se connecter</button>
+      <div class="flex items-center justify-between text-xs opacity-60">
+        <label class="flex items-center gap-2"><input type="checkbox" checked> Rester connecté</label>
+        <a href="#" class="hover:underline">Mot de passe oublié ?</a>
+      </div>
+    </form>
+
+    <form id="signupForm" onsubmit="return submitAuth(event,'signup')" class="space-y-4 hidden">
+      <h1 class="font-display font-bold text-2xl">Créer votre compte</h1>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">NOM COMPLET</label>
+        <input required class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Votre nom">
+      </div>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <input required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
+      </div>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
+        <input required type="password" minlength="8" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
+      </div>
+      <p class="text-[11px] opacity-50">En créant un compte, vous acceptez nos <a href="cgu-cgv.html" class="text-white underline">conditions générales</a>, notre <a href="confidentialite.html" class="text-white underline">politique de confidentialité</a> et notre <a href="charte-communaute.html" class="text-white underline">charte de la communauté</a>.</p>
+      <button type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Créer mon compte</button>
+    </form>
+
+    <div id="authSuccess" class="hidden mt-4 bg-forest/15 border border-forest/40 text-white text-sm rounded-xl p-3 text-center">Connexion réussie. Redirection vers l'accueil...</div>
+
+    <div class="flex items-center gap-3 my-6">
+      <div class="h-px bg-white/10 flex-1"></div>
+      <span class="text-xs opacity-50">ou continuer avec</span>
+      <div class="h-px bg-white/10 flex-1"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="showToast()" class="flex items-center justify-center gap-2 bg-white/5 border border-white/15 rounded-full py-2.5 text-sm font-semibold hover:bg-white/10"><i data-lucide="mail" class="w-4 h-4"></i> Google</button>
+      <button onclick="showToast()" class="flex items-center justify-center gap-2 bg-white/5 border border-white/15 rounded-full py-2.5 text-sm font-semibold hover:bg-white/10"><i data-lucide="facebook" class="w-4 h-4"></i> Facebook</button>
+    </div>
+  </div>
+
+  <p class="text-center text-xs opacity-50 mt-6">Cette page est une démonstration : aucune donnée n'est transmise à un serveur.</p>
+</main>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<script>
+lucide.createIcons();
+function setAuthTab(tab){
+  const isLogin = tab==='login';
+  document.getElementById('tabLogin').className = 'flex-1 text-sm font-semibold rounded-full py-2 ' + (isLogin?'tab-active':'tab-inactive');
+  document.getElementById('tabSignup').className = 'flex-1 text-sm font-semibold rounded-full py-2 ' + (!isLogin?'tab-active':'tab-inactive');
+  document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+  document.getElementById('signupForm').classList.toggle('hidden', isLogin);
+}
+function submitAuth(e, mode){
+  e.preventDefault();
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('signupForm').classList.add('hidden');
+  document.getElementById('authSuccess').classList.remove('hidden');
+  try{ localStorage.setItem('cheznous_logged_in','1'); }catch(err){}
+  setTimeout(()=>{ window.location.href = 'index.html'; }, 1200);
+  return false;
+}
+function showToast(){
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'px-4 py-3 rounded-2xl shadow-xl text-sm font-medium bg-white text-ink';
+  el.textContent = 'Connexion via un fournisseur externe — démonstration uniquement.';
+  c.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3000);
+}
+</script>
+</body>
+</html>
