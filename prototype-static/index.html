@@ -6,6 +6,7 @@
 <title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>
 tailwind.config={
@@ -36,27 +37,14 @@ body{background:#FFFFFF;color:#131A17}
 .card-hover:hover{transform:translateY(-4px);box-shadow:0 20px 36px -18px rgba(19,26,23,.18)}
 .no-scrollbar::-webkit-scrollbar{display:none}
 .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
-.chat-launcher{position:fixed;bottom:96px;right:20px;z-index:65;width:56px;height:56px;border-radius:9999px;background:#146B4F;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px -8px rgba(0,0,0,.35);cursor:pointer;border:none;transition:transform .2s}
-.chat-launcher:hover{transform:scale(1.06)}
-.chat-panel{position:fixed;bottom:160px;right:20px;z-index:65;width:360px;max-width:92vw;height:500px;max-height:70vh;background:#fff;border-radius:20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(12px) scale(.98);transition:all .25s cubic-bezier(.16,1,.3,1)}
-.chat-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
-.chat-msg-bot{background:#F2F2F2;color:#131A17;border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;max-width:82%;line-height:1.5}
-.chat-msg-user{background:#131A17;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;max-width:82%;margin-left:auto;line-height:1.5}
-.chat-chip{border:1px solid #E4E4E4;border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.chat-chip:hover{background:#F2F2F2}
 .tour-spot{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(19,26,23,.72);transition:all .35s cubic-bezier(.16,1,.3,1);z-index:78;pointer-events:none}
 .tour-card{position:fixed;z-index:79;width:300px;max-width:88vw;background:#fff;border-radius:16px;padding:18px;box-shadow:0 24px 50px -16px rgba(0,0,0,.4)}
+#tourGuide{position:fixed;width:56px;height:56px;z-index:80;pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.4));border-radius:9999px;overflow:hidden;border:4px solid #fff;background:#146B4F;transition:left .55s cubic-bezier(.16,1,.3,1),top .55s cubic-bezier(.16,1,.3,1),opacity .3s ease}
+#tourGuide img{width:100%;height:100%;display:block;object-fit:cover;object-position:50% 12%}
+.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}
 </style>
 </head>
 <body class="font-sans antialiased">
-
-<div class="bg-ink text-white text-xs py-1.5 px-4 flex items-center justify-between">
-  <span class="hidden md:inline opacity-75" data-i18n="topbar">Marketplace de la diaspora africaine • Paiement sécurisé • Conforme LPRPDE</span>
-  <div class="flex items-center gap-3">
-    <span class="opacity-70 hidden sm:inline" data-i18n="topbarSupport">Assistance 7j/7</span>
-    <a href="#" class="underline decoration-white/30 underline-offset-4 hover:decoration-white">aide@cheznous.ca</a>
-  </div>
-</div>
 
 <header class="bg-ink text-white">
   <div class="max-w-[1400px] mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
@@ -68,35 +56,41 @@ body{background:#FFFFFF;color:#131A17}
       </div>
     </div>
 
-    <button class="hidden lg:flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-white/10 shrink-0">
-      <i data-lucide="map-pin" class="w-4 h-4"></i>
-      <div class="text-left leading-tight">
-        <div class="text-[10px]" data-i18n="deliverTo">Livrer à</div>
-        <div class="font-semibold" id="deliverCityLabel">Toronto</div>
-      </div>
-    </button>
+    <div class="relative shrink-0">
+      <button id="deliverBtn" onclick="toggleDeliverMenu()" class="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-white/10">
+        <i data-lucide="map-pin" class="w-4 h-4"></i>
+        <div class="text-left leading-tight">
+          <div class="text-[10px]" data-i18n="deliverTo">Livrer à</div>
+          <div class="font-semibold" id="deliverCityLabel">Toronto</div>
+        </div>
+      </button>
+      <div id="deliverMenu" class="dropdown-panel hidden"></div>
+    </div>
 
     <div class="flex-1 min-w-[220px] flex bg-white rounded-md overflow-hidden">
-      <select id="heroCategory" onchange="filterMarket()" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
+      <select id="heroCategory" onchange="goToMarketplace()" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
         <option value="" data-i18n="allCategories">Toutes catégories</option>
       </select>
-      <input id="heroSearch" oninput="filterMarket()" placeholder="Rechercher un produit, un plat, un service..." class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
-      <button onclick="scrollToId('marketplace')" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
+      <input id="heroSearch" onkeydown="if(event.key==='Enter')goToMarketplace()" placeholder="Rechercher un produit, un plat, un service..." class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
+      <button onclick="goToMarketplace()" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
         <i data-lucide="search" class="w-4 h-4"></i>
       </button>
     </div>
 
-    <div class="flex items-center gap-4 text-xs shrink-0 ml-auto">
-      <button onclick="setLang(lang==='fr'?'en':'fr')" class="flex items-center gap-1 hover:opacity-80">
-        <i data-lucide="globe" class="w-4 h-4"></i> <span id="langLabel">FR</span>
-      </button>
-      <button id="accountBtn" onclick="openAuth()" class="text-left leading-tight hover:opacity-80 hidden sm:block">
+    <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs shrink-0 ml-auto">
+      <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
+      <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
+      <button id="accountBtn" onclick="openAuth()" class="text-left leading-tight hover:opacity-80">
         <div class="text-[10px]" data-i18n="greeting">Bonjour, Noémie</div>
         <div class="font-semibold" data-i18n="accountOrders">Comptes & Commandes</div>
       </button>
-      <button onclick="toggleNotifications()" class="relative hover:opacity-80">
-        <i data-lucide="bell" class="w-5 h-5"></i>
-      </button>
+      <div class="relative">
+        <button id="notifBtn" onclick="toggleNotifMenu()" class="relative hover:opacity-80">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span id="notifBadge" class="absolute -top-1 -right-1 bg-coral text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+        <div id="notifMenu" class="dropdown-panel hidden"></div>
+      </div>
       <button id="cartLauncher" onclick="openCart()" class="relative flex items-center hover:opacity-80">
         <i data-lucide="shopping-cart" class="w-6 h-6"></i>
         <span id="cartCount" class="absolute -top-2 -right-2 bg-forest text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
@@ -110,8 +104,11 @@ body{background:#FFFFFF;color:#131A17}
         <i data-lucide="menu" class="w-4 h-4"></i> <span data-i18n="menu">Menu</span>
       </button>
       <button onclick="scrollToId('home')" class="hidden lg:inline shrink-0 hover:opacity-80 font-medium" data-i18n="navHome">Accueil</button>
-      <button onclick="setCategoryFilter('')" class="shrink-0 hover:opacity-80 font-medium" data-i18n="navMarket">Marketplace</button>
-      <div id="navCategoryLinks" class="hidden lg:flex items-center gap-5"></div>
+      <a href="marketplace.html" class="shrink-0 hover:opacity-80 font-medium" data-i18n="navMarket">Marketplace</a>
+      <a href="mes-commandes.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">Mes commandes</a>
+      <a href="messagerie.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">Messagerie</a>
+      <a href="tableau-de-bord.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">Tableau de bord</a>
+      <div id="navCategoryLinks" class="hidden xl:flex items-center gap-5"></div>
       <div class="hidden md:flex items-center gap-2 ml-auto shrink-0">
         <span class="text-[10px] font-semibold opacity-60" data-i18n="roleLabel">RÔLE</span>
         <select id="roleSelect" onchange="changeRole(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
@@ -120,114 +117,33 @@ body{background:#FFFFFF;color:#131A17}
           <option value="admin" class="text-ink">Administrateur</option>
         </select>
       </div>
-      <button onclick="scrollToId('sellerCTA')" class="shrink-0 font-semibold hover:opacity-80" data-i18n="navSell">Vendre sur Chez Nous</button>
+      <a href="devenir-vendeur.html" class="shrink-0 font-semibold hover:opacity-80" data-i18n="navSell">Vendre sur Chez Nous</a>
     </div>
   </div>
 </header>
 
 <div id="mobileMenu" class="hidden lg:hidden bg-white border-b border-line px-4 py-3 space-y-1 text-sm">
   <button onclick="scrollToId('home');toggleMobileMenu()" class="w-full text-left py-2 font-medium">Accueil</button>
-  <button onclick="scrollToId('marketplace');toggleMobileMenu()" class="w-full text-left py-2 font-medium">Marketplace</button>
-  <button onclick="scrollToId('categories');toggleMobileMenu()" class="w-full text-left py-2 font-medium">Catégories</button>
-  <button onclick="scrollToId('sellerCTA');toggleMobileMenu()" class="w-full text-left py-2 font-medium">Vendre sur Chez Nous</button>
+  <a href="marketplace.html" class="block w-full text-left py-2 font-medium">Marketplace</a>
+  <a href="mes-commandes.html" class="block w-full text-left py-2 font-medium">Mes commandes</a>
+  <a href="messagerie.html" class="block w-full text-left py-2 font-medium">Messagerie</a>
+  <a href="tableau-de-bord.html" class="block w-full text-left py-2 font-medium">Tableau de bord</a>
+  <a href="devenir-vendeur.html" class="block w-full text-left py-2 font-medium">Vendre sur Chez Nous</a>
 </div>
 
 <section id="home" class="view-section">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 pt-8">
-    <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-6">
-      <div class="bg-white rounded-2xl p-6 md:p-10 border border-line">
-        <h1 class="font-display font-black text-[32px] md:text-[46px] leading-[1.05]">
-          La marketplace<br><span class="text-forest">de la diaspora africaine,</span><br>livrée partout au Canada.
-        </h1>
-        <p class="text-[15px] leading-relaxed opacity-70 mt-4 max-w-[520px]" data-i18n="heroDesc">
-          Épicerie africaine, tissus wax, cheveux afro, artisanat, cuisine maison et services communautaires : des vendeurs indépendants de la diaspora, vérifiés, partout au pays.
-        </p>
-
-        <div class="flex flex-wrap gap-2 mt-6">
-          <span class="text-xs font-semibold opacity-50" data-i18n="popular">Populaires :</span>
-          <button onclick="quickFilter('tresses')" class="text-xs bg-sand hover:bg-white border border-line px-3 py-1 rounded-full">Tresses & locks</button>
-          <button onclick="quickFilter('wax')" class="text-xs bg-sand hover:bg-white border border-line px-3 py-1 rounded-full">Pagnes wax</button>
-          <button onclick="quickFilter('mafé')" class="text-xs bg-sand hover:bg-white border border-line px-3 py-1 rounded-full">Cuisine maison</button>
-          <button onclick="quickFilter('karité')" class="text-xs bg-sand hover:bg-white border border-line px-3 py-1 rounded-full">Beurre de karité</button>
-        </div>
-
-        <div class="flex items-center gap-6 mt-6 pt-6 border-t border-line">
-          <div class="flex -space-x-2">
-            <img src="https://i.pravatar.cc/100?img=32" class="w-8 h-8 rounded-full border-2 border-white">
-            <img src="https://i.pravatar.cc/100?img=14" class="w-8 h-8 rounded-full border-2 border-white">
-            <img src="https://i.pravatar.cc/100?img=51" class="w-8 h-8 rounded-full border-2 border-white">
-            <img src="https://i.pravatar.cc/100?img=25" class="w-8 h-8 rounded-full border-2 border-white">
-          </div>
-          <div class="text-xs">
-            <div class="flex items-center gap-1 font-bold"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> 4.8/5 <span class="opacity-60 font-normal">avis vérifiés</span></div>
-            <div class="opacity-60" data-i18n="heroTrust">Acheteurs satisfaits d'un océan à l'autre</div>
-          </div>
-          <div class="hidden md:flex items-center gap-2 ml-auto">
-            <i data-lucide="credit-card" class="w-4 h-4 opacity-50"></i>
-            <span class="text-[10px] font-bold tracking-widest opacity-40">STRIPE • VISA • INTERAC</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-rows-2 gap-6">
-        <div class="rounded-2xl overflow-hidden relative bg-ink text-white p-6 flex flex-col justify-between min-h-[220px]">
-          <img src="https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-45">
-          <div class="absolute inset-0 bg-ink/55"></div>
-          <div class="relative flex justify-between items-start">
-            <span class="bg-white text-ink text-[11px] font-bold tracking-widest px-3 py-1 rounded-full">ÉPICERIE & ARTISANAT</span>
-            <span class="bg-white/15 rounded-full w-8 h-8 flex items-center justify-center"><i data-lucide="shopping-basket" class="w-4 h-4"></i></span>
-          </div>
-          <div class="relative">
-            <h3 class="font-display font-bold text-[22px] leading-none">Produits<br>de la diaspora</h3>
-            <p class="text-sm opacity-80 mt-2">Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage</p>
-            <button onclick="setCategoryFilter('')" class="mt-4 bg-white text-ink rounded-full px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">Explorer <i data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
-          </div>
-        </div>
-        <div class="rounded-2xl overflow-hidden relative bg-forest text-white p-6 flex flex-col justify-between min-h-[220px]">
-          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-35">
-          <div class="absolute inset-0 bg-forestDark/55"></div>
-          <div class="relative flex justify-between">
-            <span class="bg-white text-forestDark text-[11px] font-bold tracking-widest px-3 py-1 rounded-full">CUISINE & SERVICES</span>
-            <span class="bg-white/20 rounded-full w-8 h-8 flex items-center justify-center"><i data-lucide="utensils" class="w-4 h-4"></i></span>
-          </div>
-          <div class="relative">
-            <h3 class="font-display font-bold text-[22px] leading-none">Cuisine maison<br>et services</h3>
-            <p class="text-sm opacity-90 mt-2">Traiteurs, coiffure, transfert d'argent, événementiel</p>
-            <button onclick="setMarketTab('service')" class="mt-4 bg-ink text-white rounded-full px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">Réserver <i data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
-          </div>
-        </div>
-      </div>
+    <div class="relative min-h-[260px] sm:min-h-[300px]">
+      <div id="heroCarousel" class="relative min-h-[260px] sm:min-h-[300px] rounded-2xl overflow-hidden"></div>
+      <div id="heroCarouselDots" class="flex justify-center gap-1.5 mt-3"></div>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-4 mt-6">
-      <div class="bg-white rounded-2xl border border-line p-5 flex gap-4 items-start">
-        <div class="w-10 h-10 rounded-full bg-forest/10 flex items-center justify-center shrink-0"><i data-lucide="search" class="w-5 h-5 text-forest"></i></div>
-        <div>
-          <div class="font-semibold text-sm" data-i18n="step1Title">1. Parcourez & comparez</div>
-          <div class="text-xs opacity-60 mt-1" data-i18n="step1Desc">Filtrez par ville, catégorie ou origine culturelle.</div>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl border border-line p-5 flex gap-4 items-start">
-        <div class="w-10 h-10 rounded-full bg-forest/10 flex items-center justify-center shrink-0"><i data-lucide="lock" class="w-5 h-5 text-forest"></i></div>
-        <div>
-          <div class="font-semibold text-sm" data-i18n="step2Title">2. Payez en toute sécurité</div>
-          <div class="text-xs opacity-60 mt-1" data-i18n="step2Desc">Stripe, reçu automatique, remboursement encadré sous 5 jours.</div>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl border border-line p-5 flex gap-4 items-start">
-        <div class="w-10 h-10 rounded-full bg-coral/10 flex items-center justify-center shrink-0"><i data-lucide="star" class="w-5 h-5 text-coral"></i></div>
-        <div>
-          <div class="font-semibold text-sm" data-i18n="step3Title">3. Avis vérifiés</div>
-          <div class="text-xs opacity-60 mt-1" data-i18n="step3Desc">Seuls les acheteurs ayant réellement payé peuvent laisser un avis.</div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
-<div class="max-w-[1280px] mx-auto px-4 md:px-6 mt-6">
-  <div class="w-full border border-dashed border-line rounded-xl bg-sand/70 flex items-center justify-center text-xs font-semibold opacity-50 h-[90px]" data-ad-slot="leaderboard-home">
-    Emplacement publicitaire — 728x90
+<div id="bannerSlot1" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-6">
+  <div class="w-full rounded-xl overflow-hidden min-h-[90px] flex items-center justify-center bg-sand/50">
+    <span class="text-xs font-semibold opacity-40">Emplacement publicitaire — Google AdSense (à activer une fois le compte approuvé)</span>
   </div>
 </div>
 
@@ -239,131 +155,102 @@ body{background:#FFFFFF;color:#131A17}
   <div id="categoryGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-4"></div>
 </section>
 
-<section id="marketplace" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-8 pb-10">
-  <div class="bg-white rounded-2xl border border-line p-4 md:p-5">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <div id="marketTabs" class="flex bg-sand rounded-full p-1 shrink-0">
-          <button onclick="setMarketTab('all')" id="tabAll" class="marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white">Tout</button>
-          <button onclick="setMarketTab('produit')" id="tabProduit" class="marketTab px-5 py-2 rounded-full text-sm font-semibold">Produits</button>
-          <button onclick="setMarketTab('service')" id="tabService" class="marketTab px-5 py-2 rounded-full text-sm font-semibold">Services</button>
-        </div>
-        <span id="resultsCount" class="text-xs font-semibold opacity-50 ml-2 shrink-0">12 résultats</span>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <select id="filterCategory" onchange="filterMarket()" class="border border-line rounded-full px-4 py-2 text-sm bg-sand font-medium">
-          <option value="" data-i18n="filterCategory">Toutes catégories</option>
-        </select>
-        <select id="filterCity" onchange="filterMarket()" class="border border-line rounded-full px-4 py-2 text-sm bg-white font-medium">
-          <option value="" data-i18n="filterCityAll">Toutes villes</option>
-          <option>Toronto</option>
-          <option>Montréal</option>
-          <option>Vancouver</option>
-          <option>Calgary</option>
-          <option>Ottawa</option>
-          <option>Québec</option>
-          <option>Winnipeg</option>
-          <option>Edmonton</option>
-        </select>
-        <button onclick="resetFilters()" class="text-xs underline opacity-60 ml-2" data-i18n="reset">Réinitialiser</button>
-      </div>
+<section id="featured" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-10 pb-10">
+  <div class="flex items-end justify-between">
+    <div>
+      <h2 class="font-display font-bold text-2xl md:text-3xl">Produits en vedette</h2>
+      <p class="text-xs opacity-50 mt-1">Classement basé sur les notes et le volume d'avis clients réels.</p>
     </div>
-
-    <div id="cardsGrid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6"></div>
+    <a href="marketplace.html" class="text-sm font-semibold text-forest hover:underline flex items-center gap-1 shrink-0">Voir toute la boutique <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+  </div>
+  <div class="relative mt-4">
+    <button onclick="scrollCarousel(-1)" class="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+    <div id="featuredGrid" class="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-2"></div>
+    <button onclick="scrollCarousel(1)" class="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
   </div>
 
-  <div class="grid lg:grid-cols-3 gap-6 mt-6">
-    <div class="lg:col-span-2 bg-white rounded-2xl border border-line p-5 md:p-6">
-      <div class="flex items-center justify-between">
-        <h3 class="font-display text-xl font-bold flex items-center gap-2"><i data-lucide="calendar-days" class="w-5 h-5"></i> <span data-i18n="dashTitle">Mes commandes & réservations</span></h3>
-        <span class="text-xs bg-forest text-white px-3 py-1 rounded-full font-semibold">Stripe • Reçus auto</span>
-      </div>
-      <div class="flex gap-2 mt-4">
-        <button onclick="setDashTab('upcoming')" id="dashUpcoming" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white" data-i18n="dashUpcoming">En cours</button>
-        <button onclick="setDashTab('past')" id="dashPast" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand" data-i18n="dashPast">Passées</button>
-        <button onclick="setDashTab('seller')" id="dashSeller" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand hidden" data-i18n="dashSeller">Vue vendeur</button>
-      </div>
-      <div id="dashList" class="mt-4 space-y-3"></div>
-      <div class="mt-4 p-3 bg-sand rounded-2xl flex items-center gap-3 text-xs">
-        <i data-lucide="mail" class="w-4 h-4"></i>
-        <span data-i18n="dashEmailNote">Notifications automatiques : confirmation, annulation, rappel 24h, nouvelle commande.</span>
-        <button onclick="showToast('Courriel de rappel envoyé à noemie@mail.ca','success')" class="ml-auto bg-white border border-line px-3 py-1 rounded-full font-semibold">Tester</button>
-      </div>
-    </div>
-
-    <div class="bg-ink rounded-2xl p-5 md:p-6 text-white flex flex-col">
-      <div class="flex items-center justify-between">
-        <h3 class="font-display text-xl font-bold flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5"></i> Messagerie</h3>
-        <span class="bg-white/15 text-xs px-2 py-1 rounded-full">2 non lus</span>
-      </div>
-      <p class="text-xs opacity-60 mt-1" data-i18n="msgSubtitle">Échange direct acheteur ↔ vendeur pour préciser les détails.</p>
-      <div id="conversations" class="mt-4 space-y-2 flex-1"></div>
-      <div class="mt-4 bg-white rounded-2xl p-2 flex gap-2">
-        <input id="msgInput" placeholder="Écrire un message..." class="flex-1 px-3 py-2 outline-none text-sm text-ink placeholder:text-black/40">
-        <button onclick="sendMessage()" class="bg-coral text-white rounded-full w-10 h-10 flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
-      </div>
-      <div id="chatWindow" class="mt-3 bg-white/10 rounded-2xl p-3 h-[160px] overflow-y-auto space-y-2 text-sm"></div>
-    </div>
+  <div id="bannerSlot2" class="w-full rounded-xl overflow-hidden mt-8 min-h-[100px] flex items-center justify-center bg-sand/50">
+    <span class="text-xs font-semibold opacity-40">Emplacement publicitaire — Google AdSense (à activer une fois le compte approuvé)</span>
   </div>
-
-  <div class="w-full border border-dashed border-line rounded-xl bg-sand/70 flex items-center justify-center text-xs font-semibold opacity-50 h-[100px] mt-6" data-ad-slot="banner-marketplace">
-    Emplacement publicitaire — 970x100
-  </div>
-
-  <div id="adminPanel" class="mt-6 bg-white rounded-2xl border border-line p-5 md:p-6 hidden">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <h3 class="font-display text-xl font-bold flex items-center gap-2"><i data-lucide="shield" class="w-5 h-5"></i> Tableau de bord administrateur</h3>
-      <span class="bg-red-50 text-red-700 border border-red-200 px-3 py-1 rounded-full text-xs font-bold">ACCÈS RESTREINT • 3 rôles distincts</span>
-    </div>
-    <div class="grid md:grid-cols-3 gap-4 mt-6">
-      <div class="bg-sand rounded-2xl p-4">
-        <div class="text-xs font-bold tracking-widest opacity-50">PROFILS À VALIDER</div>
-        <div class="text-2xl font-bold mt-1">4 <span class="text-sm font-normal opacity-60">en attente</span></div>
-        <div class="mt-3 space-y-2" id="adminValidation"></div>
-      </div>
-      <div class="bg-white border border-line rounded-2xl p-4">
-        <div class="text-xs font-bold tracking-widest opacity-50">MODÉRATION AVIS</div>
-        <div class="text-2xl font-bold mt-1">9 <span class="text-sm font-normal opacity-60">à vérifier</span></div>
-        <div class="mt-3 space-y-3" id="adminReviews"></div>
-      </div>
-      <div class="bg-ink text-white rounded-2xl p-4">
-        <div class="text-xs font-bold tracking-widest opacity-60">UTILISATEURS & REVENUS</div>
-        <div class="mt-3 space-y-2 text-sm">
-          <div class="flex justify-between"><span class="opacity-70">Acheteurs</span><span class="font-bold">2 480</span></div>
-          <div class="flex justify-between"><span class="opacity-70">Vendeurs actifs</span><span class="font-bold">640</span></div>
-          <div class="h-px bg-white/10 my-2"></div>
-          <div class="flex justify-between"><span class="opacity-70">Abonnements annuels</span><span class="font-bold text-green-400">82 560$</span></div>
-          <div class="flex justify-between"><span class="opacity-70">Commissions (10%)</span><span class="font-bold text-green-400">+6 240$ / mois</span></div>
-          <button onclick="showToast('Rapport Stripe exporté (CSV)','success')" class="w-full mt-3 bg-white text-ink rounded-full py-2 font-semibold text-sm">Exporter Stripe</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <p class="text-[11px] opacity-40 mt-2 text-center">Publicité — Google AdSense. Remplacez <code>data-ad-client</code> / <code>data-ad-slot</code> par vos identifiants réels une fois votre compte AdSense approuvé.</p>
 </section>
 
-<section id="sellerCTA" class="max-w-[1280px] mx-auto px-4 md:px-6 pb-10">
-  <div class="bg-ink rounded-2xl p-6 md:p-10 text-white flex flex-wrap items-center justify-between gap-6">
-    <div class="max-w-[560px]">
-      <span class="bg-forest text-white text-xs font-bold tracking-widest px-3 py-1 rounded-full">DEVENIR VENDEUR</span>
-      <h2 class="font-display font-bold text-3xl md:text-4xl mt-4 leading-tight">Vendez vos produits ou vos services<br><span class="opacity-75">à la diaspora africaine du Canada.</span></h2>
-      <p class="text-sm opacity-70 mt-3">Formules dès 0$/an, commission dégressive jusqu'à 6%. Conforme LPRPDE, validation manuelle sous 48h.</p>
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<div id="cookieBanner" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
+  <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
+    <p class="text-xs md:text-sm opacity-80 flex-1">Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre consentement, des cookies de mesure d'audience et de publicité. <a href="cookies.html" class="underline">En savoir plus</a>.</p>
+    <div class="flex gap-2 shrink-0">
+      <button onclick="setCookieConsent(false)" class="text-xs md:text-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/10">Refuser</button>
+      <button onclick="setCookieConsent(true)" class="text-xs md:text-sm px-4 py-2 rounded-full bg-forest text-white font-semibold">Accepter</button>
     </div>
-    <a href="devenir-vendeur.html" class="bg-forest hover:brightness-110 text-white px-6 py-3.5 rounded-full font-bold flex items-center gap-2 shrink-0">Voir les formules & s'inscrire <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
   </div>
-</section>
+</div>
+
+<div id="tourPrompt" class="fixed bottom-[164px] right-5 z-[66] bg-white rounded-2xl shadow-2xl p-4 w-[280px] hidden">
+  <div class="font-semibold text-sm">Bienvenue sur Chez Nous</div>
+  <p class="text-xs opacity-70 mt-1">Je suis Malik, votre assistant. Voulez-vous une courte visite guidée du site ?</p>
+  <div class="flex gap-2 mt-3">
+    <button onclick="declineTour()" class="flex-1 text-xs font-semibold border border-line rounded-full py-2 hover:bg-sand">Non merci</button>
+    <button onclick="startTour()" class="flex-1 text-xs font-semibold bg-forest text-white rounded-full py-2 hover:brightness-95">Oui, guide-moi</button>
+  </div>
+</div>
+
+<div id="tourSpot" class="tour-spot hidden"></div>
+<div id="tourCard" class="tour-card hidden">
+  <div class="text-[10px] font-bold tracking-widest text-forest" id="tourStepLabel">ÉTAPE 1/5</div>
+  <div class="font-display font-bold text-lg mt-1" id="tourTitle"></div>
+  <p class="text-sm opacity-70 mt-1" id="tourText"></p>
+  <div class="flex items-center justify-between mt-4">
+    <button onclick="skipTour()" class="text-xs opacity-50 hover:opacity-80">Passer</button>
+    <div class="flex gap-2">
+      <button id="tourPrevBtn" onclick="tourPrev()" class="text-xs font-semibold border border-line rounded-full px-3 py-1.5 hover:bg-sand">Précédent</button>
+      <button id="tourNextBtn" onclick="tourNext()" class="text-xs font-semibold bg-forest text-white rounded-full px-4 py-1.5 hover:brightness-95">Suivant</button>
+    </div>
+  </div>
+</div>
+
+<div id="tourGuide" class="hidden"><img src="assets/malik-classic.jpg"></div>
+
+<div id="authModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-ink/50" onclick="closeAuth()"></div>
+  <div class="absolute top-20 right-4 md:right-10 bg-white rounded-2xl shadow-2xl w-[320px] overflow-hidden">
+    <div class="p-5 border-b border-line flex items-center gap-3">
+      <img src="https://i.pravatar.cc/100?img=48" class="w-12 h-12 rounded-full">
+      <div>
+        <div class="font-semibold">Noémie Tremblay</div>
+        <div class="text-xs opacity-60">noemie@mail.ca • Acheteuse vérifiée</div>
+      </div>
+    </div>
+    <div class="p-3 space-y-1 text-sm">
+      <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Mon profil</button>
+      <a href="mes-commandes.html" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
+      <button onclick="logout()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> Déconnexion</button>
+    </div>
+    <div class="p-3 bg-sand m-3 rounded-xl text-xs">
+      <div class="font-bold">Changer de rôle (démo)</div>
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <button onclick="changeRole('buyer');closeAuth()" class="bg-white border border-line rounded-full py-1.5 font-medium">Acheteur</button>
+        <button onclick="changeRole('admin');closeAuth()" class="bg-ink text-white rounded-full py-1.5 font-medium">Admin</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <footer id="footer" class="bg-white border-t border-line mt-6">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
-    <div class="grid md:grid-cols-4 gap-8 text-sm">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
         <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
-        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada. Toronto • Montréal • Vancouver • Ottawa</p>
+        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
       </div>
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
-          <li><a href="#" onclick="scrollToId('marketplace')" class="hover:underline">Marketplace</a></li>
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="#" onclick="scrollToId('categories')" class="hover:underline">Catégories</a></li>
+          <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
+          <li><a href="messagerie.html" class="hover:underline">Messagerie</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
           <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
           <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
@@ -381,285 +268,82 @@ body{background:#FFFFFF;color:#131A17}
           <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
           <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
           <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
+          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
           <li><span class="text-xs">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</span></li>
         </ul>
       </div>
-      <div class="bg-sand rounded-2xl p-4">
-        <div class="font-semibold flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Paiements sécurisés</div>
-        <p class="text-xs opacity-60 mt-2">Abonnements & commissions via Stripe. Chiffrement, reçus automatiques, remboursements sous 5 jours.</p>
-        <div class="flex items-center gap-2 mt-3">
-          <span class="bg-white border border-line px-3 py-1 rounded-full text-xs font-bold">stripe</span>
-          <span class="bg-white border border-line px-3 py-1 rounded-full text-xs font-bold">VISA</span>
-          <span class="bg-white border border-line px-3 py-1 rounded-full text-xs font-bold">INTERAC</span>
-        </div>
-      </div>
-    </div>
-    <div class="mt-8 pt-6 border-t border-line flex flex-col md:flex-row gap-2 justify-between text-xs opacity-50">
-      <span data-i18n="footerNote">Interface bilingue intégrale • 3 rôles distincts • Données hébergées au Canada</span>
-      <span>FR/EN • CAD $ • v1.0 • cheznous.ca</span>
     </div>
   </div>
 </footer>
 
-<div id="profileModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeProfile()"></div>
-  <div class="absolute inset-0 md:inset-6 bg-white md:rounded-2xl overflow-auto max-w-[980px] md:mx-auto flex flex-col">
-    <div id="profileContent" class="flex-1"></div>
-  </div>
-</div>
-
-<div id="bookingModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeBooking()"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[520px] bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-    <div class="p-6 border-b border-line flex items-center justify-between">
-      <h3 class="font-display text-xl font-bold">Réserver un créneau</h3>
-      <button onclick="closeBooking()" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div class="p-6 overflow-auto space-y-5" id="bookingBody"></div>
-  </div>
-</div>
-
-<div id="cartModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeCart()"></div>
-  <div class="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white flex flex-col">
-    <div class="p-5 border-b border-line flex items-center justify-between">
-      <h3 class="font-display text-xl font-bold">Panier</h3>
-      <button onclick="closeCart()" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div id="cartItems" class="flex-1 overflow-auto p-5 space-y-4"></div>
-    <div class="p-5 border-t border-line space-y-3">
-      <div class="flex justify-between text-sm"><span class="opacity-60">Sous-total</span><span id="cartSubtotal" class="font-semibold">0.00 $</span></div>
-      <button onclick="checkoutCart()" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold">Passer à la caisse</button>
-      <p class="text-center text-[11px] opacity-50">Livraison estimée 3 à 5 jours ouvrables</p>
-    </div>
-  </div>
-</div>
-
-<div id="stripeModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeStripe()"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[440px] bg-white rounded-2xl overflow-hidden">
-    <div class="bg-ink text-white p-6 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-ink font-bold">S</div>
-        <div>
-          <div class="font-semibold text-sm">Paiement sécurisé par Stripe</div>
-          <div class="text-xs opacity-60">Chiffrement 256-bit • Reçu automatique</div>
-        </div>
-      </div>
-      <button onclick="closeStripe()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div class="p-6 space-y-4">
-      <div id="stripeDetail" class="bg-sand rounded-2xl p-4 flex justify-between items-center"></div>
-      <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">NUMÉRO DE CARTE</label>
-        <div class="mt-1 flex items-center gap-2 border border-line rounded-xl px-3 py-3 bg-white">
-          <i data-lucide="credit-card" class="w-4 h-4 opacity-40"></i>
-          <input placeholder="4242 4242 4242 4242" class="flex-1 outline-none text-sm" value="4242 4242 4242 4242">
-          <span class="text-xs font-bold">VISA</span>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-xs font-bold tracking-widest opacity-60">EXPIRATION</label>
-          <input value="09 / 29" class="mt-1 w-full border border-line rounded-xl px-3 py-3 text-sm">
-        </div>
-        <div>
-          <label class="text-xs font-bold tracking-widest opacity-60">CVC</label>
-          <input value="123" class="mt-1 w-full border border-line rounded-xl px-3 py-3 text-sm">
-        </div>
-      </div>
-      <button onclick="confirmStripe()" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold flex items-center justify-center gap-2">
-        <i data-lucide="lock" class="w-4 h-4"></i> <span id="stripePayLabel">Payer 87,00 $</span>
-      </button>
-      <p class="text-center text-xs opacity-50">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE).</p>
-    </div>
-  </div>
-</div>
-
-<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
-
-<div id="cookieBanner" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
-  <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
-    <p class="text-xs md:text-sm opacity-80 flex-1">Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre consentement, des cookies de mesure d'audience et de publicité. <a href="cookies.html" class="underline">En savoir plus</a>.</p>
-    <div class="flex gap-2 shrink-0">
-      <button onclick="setCookieConsent(false)" class="text-xs md:text-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/10">Refuser</button>
-      <button onclick="setCookieConsent(true)" class="text-xs md:text-sm px-4 py-2 rounded-full bg-forest text-white font-semibold">Accepter</button>
-    </div>
-  </div>
-</div>
-
-<div id="tourPrompt" class="fixed bottom-[164px] right-5 z-[66] bg-white rounded-2xl shadow-2xl p-4 w-[280px] hidden">
-  <div class="font-semibold text-sm">Bienvenue sur Chez Nous</div>
-  <p class="text-xs opacity-70 mt-1">Je suis Malik, votre assistante. Voulez-vous une courte visite guidée du site ?</p>
-  <div class="flex gap-2 mt-3">
-    <button onclick="declineTour()" class="flex-1 text-xs font-semibold border border-line rounded-full py-2 hover:bg-sand">Non merci</button>
-    <button onclick="startTour()" class="flex-1 text-xs font-semibold bg-forest text-white rounded-full py-2 hover:brightness-95">Oui, guide-moi</button>
-  </div>
-</div>
-
-<div id="tourSpot" class="tour-spot hidden"></div>
-<div id="tourCard" class="tour-card hidden">
-  <div class="text-[10px] font-bold tracking-widest text-forest" id="tourStepLabel">ÉTAPE 1/7</div>
-  <div class="font-display font-bold text-lg mt-1" id="tourTitle"></div>
-  <p class="text-sm opacity-70 mt-1" id="tourText"></p>
-  <div class="flex items-center justify-between mt-4">
-    <button onclick="skipTour()" class="text-xs opacity-50 hover:opacity-80">Passer</button>
-    <div class="flex gap-2">
-      <button id="tourPrevBtn" onclick="tourPrev()" class="text-xs font-semibold border border-line rounded-full px-3 py-1.5 hover:bg-sand">Précédent</button>
-      <button id="tourNextBtn" onclick="tourNext()" class="text-xs font-semibold bg-forest text-white rounded-full px-4 py-1.5 hover:brightness-95">Suivant</button>
-    </div>
-  </div>
-</div>
-
-<button id="chatLauncher" onclick="toggleChat()" class="chat-launcher" title="Discuter avec Malik">
-  <i data-lucide="message-circle" class="w-6 h-6"></i>
-</button>
-
-<div id="chatPanel" class="chat-panel">
-  <div class="bg-ink text-white p-4 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-2">
-      <img src="assets/assistant-avatar.svg" class="w-8 h-8 rounded-full object-cover">
-      <div>
-        <div class="font-semibold text-sm leading-none">Malik</div>
-        <div class="text-[10px] opacity-60 mt-0.5">Assistante Chez Nous</div>
-      </div>
-    </div>
-    <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-  </div>
-  <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
-  <div id="chatChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
-  <div class="p-3 border-t border-line flex gap-2 shrink-0">
-    <input id="chatInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
-    <button onclick="sendChat()" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
-  </div>
-</div>
-
-<div id="authModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeAuth()"></div>
-  <div class="absolute top-20 right-4 md:right-10 bg-white rounded-2xl shadow-2xl w-[320px] overflow-hidden">
-    <div class="p-5 border-b border-line flex items-center gap-3">
-      <img src="https://i.pravatar.cc/100?img=48" class="w-12 h-12 rounded-full">
-      <div>
-        <div class="font-semibold">Noémie Tremblay</div>
-        <div class="text-xs opacity-60">noemie@mail.ca • Acheteuse vérifiée</div>
-      </div>
-    </div>
-    <div class="p-3 space-y-1 text-sm">
-      <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Mon profil</button>
-      <button onclick="scrollToId('marketplace');closeAuth()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</button>
-      <button onclick="logout()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> Déconnexion</button>
-    </div>
-    <div class="p-3 bg-sand m-3 rounded-xl text-xs">
-      <div class="font-bold">Changer de rôle (démo)</div>
-      <div class="grid grid-cols-2 gap-2 mt-2">
-        <button onclick="changeRole('buyer');closeAuth()" class="bg-white border border-line rounded-full py-1.5 font-medium">Acheteur</button>
-        <button onclick="changeRole('admin');closeAuth()" class="bg-ink text-white rounded-full py-1.5 font-medium">Admin</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
 lucide.createIcons();
+window.lang = getLangPersisted();
+let lang = window.lang;
+let currentRole = getRolePersisted();
 
 const i18n = {
   fr:{
-    topbar:"Marketplace de la diaspora africaine • Paiement sécurisé • Conforme LPRPDE",
-    topbarSupport:"Assistance 7j/7",
     logoSub:"DIASPORA AFRICAINE • CANADA",
     deliverTo:"Livrer à", allCategories:"Toutes catégories", menu:"Menu",
     navHome:"Accueil", navMarket:"Marketplace", navSell:"Vendre sur Chez Nous",
     greeting:"Bonjour, Noémie", accountOrders:"Comptes & Commandes", roleLabel:"RÔLE",
     heroDesc:"Épicerie africaine, tissus wax, cheveux afro, artisanat, cuisine maison et services communautaires : des vendeurs indépendants de la diaspora, vérifiés, partout au pays.",
     popular:"Populaires :",
-    heroTrust:"Acheteurs satisfaits d'un océan à l'autre",
     step1Title:"1. Parcourez & comparez", step1Desc:"Filtrez par ville, catégorie ou origine culturelle.",
     step2Title:"2. Payez en toute sécurité", step2Desc:"Stripe, reçu automatique, remboursement encadré sous 5 jours.",
     step3Title:"3. Avis vérifiés", step3Desc:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis.",
-    catTitle:"Explorer par catégorie", catSub:"6 univers de la diaspora, partout au pays",
-    filterCategory:"Toutes catégories", filterCityAll:"Toutes villes", reset:"Réinitialiser",
-    dashTitle:"Mes commandes & réservations", dashUpcoming:"En cours", dashPast:"Passées", dashSeller:"Vue vendeur",
-    dashEmailNote:"Notifications automatiques : confirmation, annulation, rappel 24h, nouvelle commande.",
-    msgSubtitle:"Échange direct acheteur ↔ vendeur pour préciser les détails.",
-    footerNote:"Interface bilingue intégrale • 3 rôles distincts • Données hébergées au Canada"
+    catTitle:"Explorer par catégorie", catSub:"6 univers de la diaspora, partout au pays"
   },
   en:{
-    topbar:"African diaspora marketplace • Secure payment • PIPEDA compliant",
-    topbarSupport:"Support 7/7",
     logoSub:"AFRICAN DIASPORA • CANADA",
     deliverTo:"Deliver to", allCategories:"All categories", menu:"Menu",
     navHome:"Home", navMarket:"Marketplace", navSell:"Sell on Chez Nous",
     greeting:"Hello, Noémie", accountOrders:"Accounts & Orders", roleLabel:"ROLE",
     heroDesc:"African groceries, wax fabrics, afro hair care, crafts, home cooking and community services: verified independent diaspora sellers, across the country.",
     popular:"Popular:",
-    heroTrust:"Happy buyers from coast to coast",
     step1Title:"1. Browse & compare", step1Desc:"Filter by city, category or cultural origin.",
     step2Title:"2. Pay securely", step2Desc:"Stripe, automatic receipt, refund handled within 5 days.",
     step3Title:"3. Verified reviews", step3Desc:"Only buyers who actually paid can leave a review.",
-    catTitle:"Browse by category", catSub:"6 diaspora categories, sellers across the country",
-    filterCategory:"All categories", filterCityAll:"All cities", reset:"Reset",
-    dashTitle:"My orders & bookings", dashUpcoming:"Active", dashPast:"Past", dashSeller:"Seller view",
-    dashEmailNote:"Automatic notifications: confirmation, cancellation, 24h reminder, new order.",
-    msgSubtitle:"Direct buyer ↔ seller chat to finalize details.",
-    footerNote:"Fully bilingual interface • 3 distinct roles • Data hosted in Canada"
+    catTitle:"Browse by category", catSub:"6 diaspora categories, sellers across the country"
   }
 };
 
-let lang='fr', marketTab='all', dashTab='upcoming', currentRole='buyer', activeChat=0;
-let cart = [];
-
 const categories = [
-  {id:'epicerie', label:'Épicerie africaine', icon:'shopping-basket', count:210},
-  {id:'mode', label:'Mode & tissus', icon:'shirt', count:150},
-  {id:'beaute', label:'Beauté & cheveux afro', icon:'sparkles', count:190},
-  {id:'artisanat', label:'Artisanat & décoration', icon:'palette', count:80},
-  {id:'cuisine', label:'Cuisine maison & traiteur', icon:'utensils', count:230},
-  {id:'services', label:'Services communautaires', icon:'users', count:120}
+  {id:'epicerie', label:'Épicerie africaine', label_en:'African groceries', icon:'shopping-basket'},
+  {id:'mode', label:'Mode & tissus', label_en:'Fashion & fabrics', icon:'shirt'},
+  {id:'beaute', label:'Beauté & cheveux afro', label_en:'Beauty & afro hair', icon:'sparkles'},
+  {id:'artisanat', label:'Artisanat & décoration', label_en:'Crafts & decor', icon:'palette'},
+  {id:'cuisine', label:'Cuisine maison & traiteur', label_en:'Home cooking & catering', icon:'utensils'},
+  {id:'services', label:'Services communautaires', label_en:'Community services', icon:'users'}
 ];
 
-const listings = [
-  {id:1, cat:'epicerie', type:'produit', name:'Panier épicerie ouest-africaine', seller:'Épicerie Le Baobab', city:'Montréal', price:38, rating:4.8, reviews:164, image:'https://i.pravatar.cc/100?img=15', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Attiéké','Gari','Piment scotch bonnet'], desc:'Produits secs et frais importés : attiéké, gari, igname et piment pour vos plats traditionnels.'},
-  {id:2, cat:'epicerie', type:'produit', name:'Coffret épices & riz thiéboudienne', seller:'Marché Teranga', city:'Toronto', price:29, rating:4.7, reviews:98, image:'https://i.pravatar.cc/100?img=52', cover:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', tags:['Halal','Riz brisé','Épices maison'], desc:'Tout le nécessaire pour un thiéboudienne réussi, épices moulues sur place.'},
-  {id:3, cat:'mode', type:'produit', name:'Pagnes wax premium (6 yards)', seller:'Ankara Boutique', city:'Ottawa', price:65, rating:4.9, reviews:87, image:'https://i.pravatar.cc/100?img=23', cover:'https://images.unsplash.com/photo-1734868032501-448d1457dc38?q=80&w=800&auto=format&fit=crop', tags:['Wax hollandais','Couleurs vives'], desc:'Wax véritable importé, idéal pour la confection de tenues traditionnelles ou modernes.'},
-  {id:4, cat:'mode', type:'produit', name:'Boubou brodé sur mesure', seller:'Boubou Élégance', city:'Montréal', price:120, rating:5.0, reviews:52, image:'https://i.pravatar.cc/100?img=44', cover:'https://images.unsplash.com/photo-1687052093309-7a14efa58ecb?q=80&w=800&auto=format&fit=crop', tags:['Sur mesure','Broderie main'], desc:'Confection artisanale de boubous et tenues traditionnelles, prise de mesure à domicile.'},
-  {id:5, cat:'beaute', type:'service', name:'Tresses & locks à domicile', seller:'Natural Roots Hair Studio', city:'Toronto', price:80, rating:4.9, reviews:176, image:'https://i.pravatar.cc/100?img=47', cover:'https://images.unsplash.com/photo-1594254773847-9fce26e950bc?q=80&w=800&auto=format&fit=crop', tags:['Box braids','Locks','Cheveux naturels'], desc:'Spécialiste des cheveux afro : tresses, locks et soins naturels, déplacement à domicile.'},
-  {id:6, cat:'beaute', type:'produit', name:'Beurre de karité brut & huiles naturelles', seller:'Karité & Co', city:'Calgary', price:22, rating:4.8, reviews:143, image:'https://i.pravatar.cc/100?img=36', cover:'https://images.unsplash.com/photo-1702650730093-43cfa3237228?q=80&w=800&auto=format&fit=crop', tags:['100% naturel','Sans additif'], desc:'Beurre de karité brut et huiles capillaires pressées à froid, importés directement.'},
-  {id:7, cat:'artisanat', type:'produit', name:'Masques et sculptures en bois', seller:'Atelier Bogolan', city:'Vancouver', price:95, rating:4.7, reviews:41, image:'https://i.pravatar.cc/100?img=29', cover:'https://images.unsplash.com/photo-1621419203897-20b66b98d495?q=80&w=800&auto=format&fit=crop', tags:['Bois massif','Fait main'], desc:'Pièces artisanales sculptées à la main, inspirées de motifs traditionnels ouest-africains.'},
-  {id:8, cat:'artisanat', type:'produit', name:'Bijoux perlés faits main', seller:"Perles d'Afrique", city:'Edmonton', price:34, rating:4.9, reviews:68, image:'https://i.pravatar.cc/100?img=41', cover:'https://images.unsplash.com/photo-1601387603639-387c75bdcb0d?q=80&w=800&auto=format&fit=crop', tags:['Perles africaines','Pièce unique'], desc:"Colliers et bracelets perlés, création artisanale inspirée des traditions de l'Afrique de l'Ouest."},
-  {id:9, cat:'cuisine', type:'service', name:'Plats maison ouest-africains', seller:'Cuisine de Fatou', city:'Toronto', price:22, rating:5.0, reviews:201, image:'https://i.pravatar.cc/100?img=25', cover:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', tags:['Mafé','Yassa','Halal'], desc:'Mafé, yassa et riz gras cuisinés à la commande, ramassage le week-end.'},
-  {id:10, cat:'cuisine', type:'service', name:'Pondu, fufu & poulet mayo', seller:'Chez Mama Élise', city:'Montréal', price:24, rating:4.9, reviews:187, image:'https://i.pravatar.cc/100?img=9', cover:'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=800&auto=format&fit=crop', tags:['Congolais','Sans arachide'], desc:"Saveurs de Kinshasa cuisinées maison, commande 24h à l'avance, ramassage à Villeray."},
-  {id:11, cat:'services', type:'service', name:"Transfert d'argent vers l'Afrique", seller:'TransferPlus Diaspora', city:'Ottawa', price:5, rating:4.6, reviews:112, image:'https://i.pravatar.cc/100?img=33', cover:'https://images.unsplash.com/photo-1587906697341-bfbde76785c7?q=80&w=800&auto=format&fit=crop', tags:['Frais réduits','Réseau fiable'], desc:"Envoi d'argent rapide et sécurisé vers l'Afrique de l'Ouest et centrale, frais fixes."},
-  {id:12, cat:'services', type:'service', name:'DJ & animation événements', seller:'Ambiance Afrobeat Events', city:'Winnipeg', price:150, rating:4.8, reviews:39, image:'https://i.pravatar.cc/100?img=51', cover:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop', tags:['Mariages','Afrobeat & Coupé-décalé'], desc:'Animation DJ pour mariages, baptêmes et événements communautaires, sonorisation incluse.'}
-];
-
-let orders = [
-  {id:101, seller:'Ankara Boutique', service:'Pagnes wax premium x2', date:'12 sept.', status:'confirmée', price:130, type:'mode'},
-  {id:102, seller:'Épicerie Le Baobab', service:'Panier épicerie', date:'13 sept. • ramassage 17:30', status:'en attente', price:38, type:'epicerie'},
-  {id:103, seller:'Natural Roots Hair Studio', service:'Tresses box braids', date:'02 sept. • 10:30', status:'terminée', price:80, type:'beaute', review:false}
-];
-
-const conversations = [
-  {id:0, name:'Natural Roots Hair Studio', msg:'Parfait, comptez environ 3h pour les tresses.', time:'10:42', unread:1, img:'https://i.pravatar.cc/100?img=47'},
-  {id:1, name:'Épicerie Le Baobab', msg:'Commande confirmée, prête à 17h30.', time:'Hier', unread:1, img:'https://i.pravatar.cc/100?img=15'},
-  {id:2, name:'Cuisine de Fatou', msg:'Merci pour votre commande !', time:'02 sept.', unread:0, img:'https://i.pravatar.cc/100?img=25'}
-];
-
-function starRow(n){
-  return Array.from({length:5}).map((_,i)=>`<i data-lucide="star" class="w-3 h-3 ${i<Math.round(n)?'fill-gold text-gold':'text-line'}"></i>`).join('');
-}
+const featured = getTopListings(4);
 
 function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
 function toggleMobileMenu(){ document.getElementById('mobileMenu').classList.toggle('hidden'); }
 
+function goToMarketplace(){
+  const q = document.getElementById('heroSearch').value;
+  const cat = document.getElementById('heroCategory').value;
+  const params = new URLSearchParams();
+  if(q) params.set('q', q);
+  if(cat) params.set('categorie', cat);
+  window.location.href = 'marketplace.html' + (params.toString() ? '?'+params.toString() : '');
+}
+
 function setLang(l){
   lang = l;
-  document.getElementById('langLabel').textContent = l.toUpperCase();
+  persistLang(l);
+  const sel = document.getElementById('langSelect');
+  if(sel) sel.value = l;
   document.querySelectorAll('[data-i18n]').forEach(el=>{
     const k = el.getAttribute('data-i18n');
     if(i18n[l][k]) el.innerHTML = i18n[l][k];
   });
-  renderMarket();
-  renderDash();
+  renderCategories();
+  renderHeroCarousel();
+  renderFeatured();
   updateAccountButton();
 }
 
@@ -675,460 +359,154 @@ function updateAccountButton(){
     btn.innerHTML = `<div class="font-semibold">${lang==='fr'?'Se connecter':'Sign in'}</div>`;
   }
 }
+function logout(){
+  try{ localStorage.removeItem('cheznous_logged_in'); }catch(e){}
+  updateAccountButton();
+  closeAuth();
+  showToast('Vous avez été déconnecté.','info');
+}
 
 function renderCategories(){
   const grid = document.getElementById('categoryGrid');
   grid.innerHTML = categories.map(c=>`
-    <button onclick="setCategoryFilter('${c.id}')" class="bg-white border border-line rounded-2xl p-4 text-left card-hover hover:border-forest transition group">
+    <a href="marketplace.html?categorie=${c.id}" class="bg-white border border-line rounded-2xl p-4 text-left card-hover hover:border-forest transition group block">
       <div class="w-10 h-10 rounded-xl bg-sand group-hover:bg-forest group-hover:text-white flex items-center justify-center transition"><i data-lucide="${c.icon}" class="w-5 h-5"></i></div>
-      <div class="font-semibold text-sm mt-3">${c.label}</div>
-      <div class="text-xs opacity-50">${c.count} vendeurs</div>
-    </button>
+      <div class="font-semibold text-sm mt-3">${lang==='fr'?c.label:c.label_en}</div>
+      <div class="text-xs opacity-50">${getCategoryVendorCount(c.id)} ${lang==='fr'?'vendeurs':'sellers'}</div>
+    </a>
   `).join('');
-
-  const filterSel = document.getElementById('filterCategory');
   const heroSel = document.getElementById('heroCategory');
-  const opts = `<option value="">${lang==='fr'?'Toutes catégories':'All categories'}</option>` + categories.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
-  filterSel.innerHTML = opts;
-  heroSel.innerHTML = opts;
-
-  document.getElementById('navCategoryLinks').innerHTML = categories.map(c=>`<button onclick="setCategoryFilter('${c.id}')" class="hover:opacity-80 font-medium whitespace-nowrap">${c.label}</button>`).join('');
-
+  heroSel.innerHTML = `<option value="">${lang==='fr'?'Toutes catégories':'All categories'}</option>` + categories.map(c=>`<option value="${c.id}">${lang==='fr'?c.label:c.label_en}</option>`).join('');
+  document.getElementById('navCategoryLinks').innerHTML = categories.map(c=>`<a href="marketplace.html?categorie=${c.id}" class="hover:opacity-80 font-medium whitespace-nowrap">${lang==='fr'?c.label:c.label_en}</a>`).join('');
   lucide.createIcons();
 }
 
-function setCategoryFilter(id){
-  document.getElementById('filterCategory').value = id;
-  document.getElementById('heroCategory').value = id;
-  filterMarket();
-  scrollToId('marketplace');
+const heroSlides = [
+  {type:'intro'},
+  {type:'section', tag:'ÉPICERIE & ARTISANAT', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', overlay:'bg-ink/55', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'CUISINE & SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-forest', overlay:'bg-forestDark/55', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
+].concat(getSponsoredListings().map(p=>({
+  type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${p.id}`, bg:'bg-ink', overlay:'bg-ink/60', img:p.cover, title:p.name, desc:`${p.seller} • ${p.city} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
+})));
+let heroIndex = 0;
+let heroTimer = null;
+function renderHeroCarousel(){
+  const box = document.getElementById('heroCarousel');
+  box.innerHTML = heroSlides.map((s,i)=>{
+    const visible = i===heroIndex ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none';
+    if(s.type==='intro'){
+      const heroTitle = lang==='fr'
+        ? 'La marketplace<br><span class="text-forest">de la diaspora africaine,</span><br>livrée partout au Canada.'
+        : 'The marketplace<br><span class="text-forest">for the African diaspora,</span><br>delivered across Canada.';
+      return `
+      <div class="absolute inset-0 rounded-2xl overflow-hidden bg-white border border-line p-6 md:p-10 flex flex-col justify-center transition-opacity duration-500 ${visible}">
+        <h1 class="font-display font-black text-[26px] sm:text-[32px] md:text-[46px] leading-[1.1]">${heroTitle}</h1>
+        <p class="text-[14px] sm:text-[15px] leading-relaxed opacity-70 mt-4 max-w-[520px]">${i18n[lang].heroDesc}</p>
+      </div>`;
+    }
+    return `
+    <a href="${s.href}" class="absolute inset-0 rounded-2xl overflow-hidden ${s.bg} text-white p-6 md:p-10 flex flex-col justify-between transition-opacity duration-500 ${visible}">
+      <img src="${s.img}" class="absolute inset-0 w-full h-full object-cover opacity-40">
+      <div class="absolute inset-0 ${s.overlay}"></div>
+      <div class="relative flex justify-between items-start">
+        <span class="bg-white text-ink text-[11px] font-bold tracking-widest px-3 py-1 rounded-full">${s.tag}</span>
+        <span class="bg-white/15 rounded-full w-8 h-8 flex items-center justify-center shrink-0"><i data-lucide="${s.icon}" class="w-4 h-4"></i></span>
+      </div>
+      <div class="relative">
+        <h3 class="font-display font-bold text-[22px] md:text-[28px] leading-tight">${s.title}</h3>
+        <p class="text-sm opacity-90 mt-2 max-w-[420px]">${s.desc}</p>
+        <span class="mt-4 ${s.ctaClass} rounded-full px-5 py-2 text-sm font-semibold inline-flex items-center gap-2 w-fit">${s.cta} <i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+      </div>
+    </a>`;
+  }).join('');
+  document.getElementById('heroCarouselDots').innerHTML = heroSlides.map((s,i)=>`
+    <button onclick="goToHeroSlide(${i})" class="w-2 h-2 rounded-full ${i===heroIndex?'bg-forest':'bg-line'}"></button>
+  `).join('');
+  lucide.createIcons();
+}
+function goToHeroSlide(i){
+  heroIndex = i;
+  renderHeroCarousel();
+  restartHeroTimer();
+}
+function restartHeroTimer(){
+  if(heroTimer) clearInterval(heroTimer);
+  heroTimer = setInterval(()=>{
+    heroIndex = (heroIndex+1) % heroSlides.length;
+    renderHeroCarousel();
+  }, 5000);
 }
 
-function renderMarket(list=listings){
-  const grid = document.getElementById('cardsGrid');
-  grid.innerHTML = list.map(p=>`
-    <div class="bg-white rounded-xl border border-line overflow-hidden card-hover group cursor-pointer" onclick="openProfile(${p.id})">
+function scrollCarousel(dir){
+  const box = document.getElementById('featuredGrid');
+  box.scrollBy({left: dir * 280, behavior:'smooth'});
+}
+
+function renderFeatured(){
+  document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
+    <a href="marketplace.html?produit=${p.id}" class="bg-white rounded-xl border border-line overflow-hidden card-hover group block">
       <div class="relative h-[160px] overflow-hidden">
         <img src="${p.cover}" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
-        <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating} <span class="opacity-60 font-normal">(${p.reviews})</span></div>
+        <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</div>
         <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2">
           <img src="${p.image}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
           <div class="text-white">
             <div class="font-semibold text-sm leading-none">${p.seller}</div>
             <div class="text-xs opacity-80">${p.city}</div>
           </div>
-          <span class="ml-auto bg-white/90 text-ink text-xs font-bold px-3 py-1 rounded-full">${p.price}$</span>
+          <span class="ml-auto bg-white/90 text-ink text-xs font-bold px-3 py-1 rounded-full">${fmt(p.price)}</span>
         </div>
       </div>
       <div class="p-4">
         <div class="font-semibold text-[15px] leading-tight">${p.name}</div>
-        <div class="text-xs opacity-60 mt-1 line-clamp-2">${p.desc}</div>
         <div class="flex flex-wrap gap-1.5 mt-3">
           ${p.tags.map(t=>`<span class="text-[11px] bg-sand border border-line px-2 py-1 rounded-full">${t}</span>`).join('')}
         </div>
-        <div class="flex gap-2 mt-4">
-          <button onclick="event.stopPropagation();openProfile(${p.id})" class="flex-1 bg-sand hover:bg-white border border-line rounded-full py-2 text-sm font-semibold">Voir détails</button>
-          ${p.type==='produit'
-            ? `<button onclick="event.stopPropagation();addToCart(${p.id})" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-2 text-sm font-bold">Ajouter au panier</button>`
-            : `<button onclick="event.stopPropagation();openBooking(${p.id})" class="flex-1 bg-coral hover:brightness-95 text-white rounded-full py-2 text-sm font-bold">Réserver</button>`}
-        </div>
+        <div class="mt-4 bg-forest text-white rounded-full py-2 text-sm font-bold text-center">${p.type==='produit'?(lang==='fr'?'Voir le produit':'View product'):(lang==='fr'?'Réserver':'Book now')}</div>
       </div>
-    </div>
-  `).join('');
-  document.getElementById('resultsCount').textContent = list.length + (lang==='fr' ? ' résultats' : ' results');
-  lucide.createIcons();
-}
-
-function filterMarket(){
-  const q = document.getElementById('heroSearch').value.toLowerCase();
-  const cat = document.getElementById('filterCategory').value || document.getElementById('heroCategory').value;
-  const city = document.getElementById('filterCity').value;
-  let filtered = listings.filter(p=>{
-    if(marketTab!=='all' && p.type!==marketTab) return false;
-    if(cat && p.cat!==cat) return false;
-    if(city && p.city!==city) return false;
-    if(q && !(p.name.toLowerCase().includes(q) || p.seller.toLowerCase().includes(q) || p.tags.join(' ').toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))) return false;
-    return true;
-  });
-  renderMarket(filtered);
-}
-function quickFilter(t){ document.getElementById('heroSearch').value=t; filterMarket(); scrollToId('marketplace'); }
-function resetFilters(){
-  document.getElementById('heroSearch').value='';
-  document.getElementById('heroCategory').value='';
-  document.getElementById('filterCategory').value='';
-  document.getElementById('filterCity').value='';
-  marketTab='all'; setMarketTab('all');
-}
-function setMarketTab(t){
-  marketTab=t;
-  document.getElementById('tabAll').className = t==='all' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
-  document.getElementById('tabProduit').className = t==='produit' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
-  document.getElementById('tabService').className = t==='service' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
-  filterMarket();
-  scrollToId('marketplace');
-}
-
-function openProfile(id){
-  const p = listings.find(x=>x.id===id);
-  const modal = document.getElementById('profileModal');
-  modal.classList.remove('hidden');
-  const actionBlock = p.type==='produit' ? `
-    <div class="flex items-center gap-3 mt-4">
-      <div class="flex items-center border border-line rounded-full">
-        <button onclick="profileQty(-1)" class="w-9 h-9 flex items-center justify-center">-</button>
-        <span id="profileQtyValue" class="w-8 text-center text-sm font-semibold">1</span>
-        <button onclick="profileQty(1)" class="w-9 h-9 flex items-center justify-center">+</button>
-      </div>
-      <button onclick="addToCart(${p.id}, profileQtyGet());closeProfile()" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Ajouter au panier — ${p.price}$</button>
-    </div>` : `
-    <div class="mt-4">
-      <div class="font-semibold text-sm mb-2">Choisissez un créneau</div>
-      <div class="grid grid-cols-3 gap-2">
-        <button class="border border-line rounded-full py-2 text-sm font-medium hover:bg-sand">09:00</button>
-        <button class="bg-ink text-white rounded-full py-2 text-sm font-bold">14:00</button>
-        <button class="border border-line rounded-full py-2 text-sm font-medium hover:bg-sand">16:30</button>
-      </div>
-      <button onclick="openBooking(${p.id});closeProfile()" class="w-full mt-4 bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold">Réserver — ${p.price}$</button>
-    </div>`;
-  document.getElementById('profileContent').innerHTML = `
-    <div class="relative h-[240px]">
-      <img src="${p.cover}" class="w-full h-full object-cover">
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
-      <button onclick="closeProfile()" class="absolute top-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-      <div class="absolute bottom-4 left-6 right-6 flex items-end gap-4 text-white">
-        <img src="${p.image}" class="w-20 h-20 rounded-2xl border-4 border-white object-cover">
-        <div class="pb-1">
-          <h2 class="font-display text-2xl font-bold leading-none">${p.seller}</h2>
-          <div class="text-sm opacity-90">${p.name} • ${p.city}</div>
-          <div class="flex items-center gap-2 mt-1 text-xs"><span class="bg-white text-ink px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</span> <span>${p.reviews} avis vérifiés</span></div>
-        </div>
-        <div class="ml-auto hidden md:block text-right">
-          <div class="text-3xl font-bold">${p.price}$</div>
-          <div class="text-xs opacity-70">à partir de</div>
-        </div>
-      </div>
-    </div>
-    <div class="p-6 md:p-8 grid lg:grid-cols-[1.3fr_.7fr] gap-8">
-      <div>
-        <div class="flex gap-2 mb-4 flex-wrap">
-          <span class="bg-forest text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><i data-lucide="shield-check" class="w-3 h-3"></i> Profil vérifié</span>
-          <span class="bg-forest text-white text-xs font-bold px-3 py-1 rounded-full">Répond en ~2h</span>
-        </div>
-        <h3 class="font-semibold">À propos</h3>
-        <p class="text-sm opacity-70 mt-2 leading-relaxed">${p.desc} Paiement sécurisé Stripe, reçus automatiques, livraison ou ramassage selon le vendeur.</p>
-        <h3 class="font-semibold mt-6">Avis vérifiés <span class="bg-sand px-2 py-0.5 rounded-full text-xs">${p.reviews}</span></h3>
-        <div class="space-y-3 mt-3">
-          <div class="border border-line rounded-2xl p-4">
-            <div class="flex items-center gap-2 text-sm"><span class="font-semibold">Sarah M.</span> <span class="flex items-center gap-0.5">${starRow(5)}</span> <span class="text-xs opacity-50">• achat vérifié</span></div>
-            <p class="text-sm opacity-70 mt-1">Exactement ce que je cherchais, ça a un vrai goût de chez nous.</p>
-          </div>
-          <div class="border border-line rounded-2xl p-4">
-            <div class="flex items-center gap-2 text-sm"><span class="font-semibold">Jade K.</span> <span class="flex items-center gap-0.5">${starRow(5)}</span> <span class="text-xs opacity-50">• achat vérifié</span></div>
-            <p class="text-sm opacity-70 mt-1">Vendeur ponctuel et à l'écoute, je recommande.</p>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="border border-line rounded-2xl p-5 sticky top-4">
-          ${actionBlock}
-          <button onclick="activeChat=0;scrollToId('marketplace');closeProfile();showToast('Messagerie ouverte avec ${p.seller}','success')" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</button>
-          <p class="text-center text-[11px] opacity-50 mt-3">Paiement Stripe • Annulation gratuite 24h • Reçu par courriel</p>
-        </div>
-      </div>
-    </div>
-  `;
-  lucide.createIcons();
-}
-function closeProfile(){ document.getElementById('profileModal').classList.add('hidden'); }
-let profileQtyState = 1;
-function profileQty(delta){ profileQtyState = Math.max(1, profileQtyState+delta); document.getElementById('profileQtyValue').textContent = profileQtyState; }
-function profileQtyGet(){ const v = profileQtyState; profileQtyState = 1; return v; }
-
-let bookingItem = null;
-function openBooking(id){
-  bookingItem = listings.find(x=>x.id===id);
-  document.getElementById('bookingBody').innerHTML = `
-    <div class="flex gap-3 items-center bg-sand rounded-2xl p-3">
-      <img src="${bookingItem.image}" class="w-12 h-12 rounded-full object-cover">
-      <div>
-        <div class="font-semibold text-sm">${bookingItem.seller}</div>
-        <div class="text-xs opacity-60">${bookingItem.name} • ${bookingItem.city}</div>
-      </div>
-      <span class="ml-auto font-bold">${bookingItem.price}$</span>
-    </div>
-    <div>
-      <label class="text-xs font-bold tracking-widest opacity-60">CRÉNEAU</label>
-      <div class="grid grid-cols-3 gap-2 mt-2">
-        <button onclick="selectSlot(this)" class="slot border border-line rounded-full py-2 text-sm font-medium">13 sept. 17:30</button>
-        <button onclick="selectSlot(this)" class="slot bg-ink text-white rounded-full py-2 text-sm font-bold border-ink">13 sept. 18:30</button>
-        <button onclick="selectSlot(this)" class="slot border border-line rounded-full py-2 text-sm font-medium">14 sept. 12:00</button>
-      </div>
-    </div>
-    <div>
-      <label class="text-xs font-bold tracking-widest opacity-60">DÉTAILS</label>
-      <textarea placeholder="Ex: préférences, allergies, précisions..." class="w-full mt-2 border border-line rounded-2xl p-3 text-sm h-20 outline-none"></textarea>
-    </div>
-    <div class="flex justify-between text-sm pt-2 border-t border-line">
-      <span class="opacity-60">Prestation</span><span class="font-semibold">${bookingItem.price}.00 $</span>
-    </div>
-    <div class="flex justify-between text-sm">
-      <span class="opacity-60">Frais de service (10%)</span><span class="font-semibold">${(bookingItem.price*0.10).toFixed(2)} $</span>
-    </div>
-    <div class="flex justify-between font-bold text-base">
-      <span>Total</span><span>${(bookingItem.price*1.10).toFixed(2)} $ CAD</span>
-    </div>
-    <button onclick="openStripeModal('booking')" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold flex items-center justify-center gap-2"><i data-lucide="lock" class="w-4 h-4"></i> Confirmer & payer via Stripe</button>
-    <p class="text-center text-xs opacity-50">Statut : en attente → confirmée après paiement • Courriel automatique</p>
-  `;
-  document.getElementById('bookingModal').classList.remove('hidden');
-  lucide.createIcons();
-}
-function selectSlot(el){
-  document.querySelectorAll('.slot').forEach(s=>{ s.className='slot border border-line rounded-full py-2 text-sm font-medium'; });
-  el.className = 'slot bg-ink text-white rounded-full py-2 text-sm font-bold border-ink';
-}
-function closeBooking(){ document.getElementById('bookingModal').classList.add('hidden'); }
-
-function addToCart(id, qty=1){
-  const existing = cart.find(c=>c.id===id);
-  if(existing) existing.qty += qty; else cart.push({id, qty});
-  renderCartBadge();
-  showToast('Ajouté au panier','success');
-}
-function removeFromCart(id){ cart = cart.filter(c=>c.id!==id); renderCart(); renderCartBadge(); }
-function changeQty(id, delta){
-  const it = cart.find(c=>c.id===id);
-  if(!it) return;
-  it.qty = Math.max(1, it.qty+delta);
-  renderCart(); renderCartBadge();
-}
-function cartTotal(){ return cart.reduce((s,c)=>{ const p=listings.find(l=>l.id===c.id); return s+p.price*c.qty; },0); }
-function renderCartBadge(){ document.getElementById('cartCount').textContent = cart.reduce((s,c)=>s+c.qty,0); }
-function renderCart(){
-  const box = document.getElementById('cartItems');
-  if(cart.length===0){
-    box.innerHTML = `<div class="text-center py-10 text-sm opacity-60">Votre panier est vide.</div>`;
-  } else {
-    box.innerHTML = cart.map(c=>{
-      const p = listings.find(l=>l.id===c.id);
-      return `<div class="flex gap-3 items-center border-b border-line pb-4">
-        <img src="${p.cover}" class="w-14 h-14 rounded-xl object-cover">
-        <div class="flex-1">
-          <div class="font-semibold text-sm">${p.name}</div>
-          <div class="text-xs opacity-60">${p.seller}</div>
-          <div class="flex items-center gap-2 mt-1">
-            <button onclick="changeQty(${p.id},-1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">-</button>
-            <span class="text-sm font-medium">${c.qty}</span>
-            <button onclick="changeQty(${p.id},1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">+</button>
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="font-bold text-sm">${(p.price*c.qty).toFixed(2)} $</div>
-          <button onclick="removeFromCart(${p.id})" class="text-xs text-coral mt-1">Retirer</button>
-        </div>
-      </div>`;
-    }).join('');
-  }
-  document.getElementById('cartSubtotal').textContent = cartTotal().toFixed(2)+' $';
-  lucide.createIcons();
-}
-function openCart(){ renderCart(); document.getElementById('cartModal').classList.remove('hidden'); }
-function closeCart(){ document.getElementById('cartModal').classList.add('hidden'); }
-function checkoutCart(){
-  if(cart.length===0) return;
-  closeCart();
-  stripeMode = 'cart';
-  const count = cart.reduce((s,c)=>s+c.qty,0);
-  document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">Panier — ${count} article(s)</div><div class="text-xs opacity-60">Livraison estimée 3 à 5 jours ouvrables</div></div><div class="font-bold">${cartTotal().toFixed(2)} $</div>`;
-  document.getElementById('stripePayLabel').textContent = `Payer ${cartTotal().toFixed(2)} $`;
-  document.getElementById('stripeModal').classList.remove('hidden');
-  lucide.createIcons();
-}
-
-let stripeMode='booking';
-function openStripeModal(mode){
-  stripeMode = mode;
-  if(mode==='booking'){
-    const total = bookingItem ? (bookingItem.price*1.10).toFixed(2) : '87.00';
-    document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">${bookingItem?bookingItem.seller:'Commande'}</div><div class="text-xs opacity-60">Frais inclus • Reçu automatique par courriel</div></div><div class="font-bold">${total} $</div>`;
-    document.getElementById('stripePayLabel').textContent = `Payer ${total} $`;
-  }
-  document.getElementById('stripeModal').classList.remove('hidden');
-  lucide.createIcons();
-}
-function closeStripe(){ document.getElementById('stripeModal').classList.add('hidden'); }
-function confirmStripe(){
-  closeStripe(); closeBooking();
-  if(stripeMode==='cart'){
-    const id = Math.floor(Math.random()*900+100);
-    const count = cart.reduce((s,c)=>s+c.qty,0);
-    orders.unshift({id, seller:'Plusieurs vendeurs', service:`Panier — ${count} article(s)`, date:'Livraison estimée 3 à 5 jours', status:'confirmée', price:cartTotal(), type:'panier'});
-    cart = [];
-    renderCartBadge();
-    renderDash();
-    showToast(`Paiement confirmé ! Reçu Stripe #${id} envoyé par courriel.`,'success');
-  } else {
-    const id = Math.floor(Math.random()*900+100);
-    orders.unshift({id, seller:bookingItem.seller, service:bookingItem.name, date:'13 sept. • 18:30', status:'confirmée', price:bookingItem.price, type:bookingItem.cat});
-    renderDash();
-    showToast(`Paiement confirmé ! ${bookingItem.seller} a été notifié. Reçu Stripe #${id} envoyé.`,'success');
-    setTimeout(()=>showToast('Rappel : votre rendez-vous est prévu demain à 18:30','info'),1800);
-  }
-}
-
-function setDashTab(t){
-  dashTab = t;
-  document.getElementById('dashUpcoming').className = t==='upcoming' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
-  document.getElementById('dashPast').className = t==='past' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
-  const sellerBtn = document.getElementById('dashSeller');
-  if(currentRole==='seller'){
-    sellerBtn.classList.remove('hidden');
-    sellerBtn.className = t==='seller' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
-  } else {
-    sellerBtn.classList.add('hidden');
-  }
-  renderDash();
-}
-function renderDash(){
-  const list = document.getElementById('dashList');
-  let items = [];
-  if(dashTab==='seller'){
-    items = [
-      {seller:'Client : Amira B.', service:'Pagnes wax x2', date:"Aujourd'hui", status:'confirmée', price:130},
-      {seller:'Client : Léa T.', service:'Tresses box braids', date:'Demain 10:30', status:'en attente', price:80}
-    ];
-  } else {
-    items = orders.filter(o=> dashTab==='upcoming' ? o.status!=='terminée' : o.status==='terminée');
-  }
-  if(items.length===0){
-    list.innerHTML = `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune commande dans cette catégorie.</div>`;
-    return;
-  }
-  list.innerHTML = items.map(o=>`
-    <div class="border border-line rounded-2xl p-4 flex flex-wrap items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-sand flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4"></i></div>
-      <div class="flex-1 min-w-[160px]">
-        <div class="font-semibold text-sm">${o.seller} — ${o.service}</div>
-        <div class="text-xs opacity-60">${o.date} • ${o.price}$</div>
-      </div>
-      <span class="text-xs font-bold px-3 py-1 rounded-full ${o.status==='confirmée'?'bg-forest text-white':o.status==='en attente'?'bg-amber-500 text-white':'bg-gray-500 text-white'}">${o.status}</span>
-      <div class="flex gap-2">
-        ${o.status!=='terminée'?`<button onclick="showToast('Message envoyé au vendeur','success')" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></button>`:''}
-        ${o.status==='en attente'?`<button onclick="cancelOrder(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-white border border-line hover:bg-red-50">Annuler</button>`:''}
-        ${o.status==='terminée' && !o.review ?`<button onclick="leaveReview(${o.id})" class="text-xs font-bold px-4 py-1.5 rounded-full bg-forest text-white">Laisser un avis</button>`:`${o.status==='terminée'?`<span class="text-xs text-forest font-semibold flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Avis laissé</span>`:''}`}
-        ${o.status==='confirmée'?`<button onclick="showToast('Reçu Stripe #${o.id} renvoyé par courriel','success')" class="text-xs font-semibold px-3 py-1 rounded-full bg-ink text-white">Reçu</button>`:''}
-      </div>
-    </div>
+    </a>
   `).join('');
   lucide.createIcons();
 }
-function cancelOrder(id){
-  orders = orders.map(o=> o.id===id ? {...o,status:'annulée'} : o);
-  renderDash();
-  showToast('Commande annulée. Courriel de notification envoyé. Remboursement Stripe sous 5 jours.','info');
-}
-function leaveReview(id){
-  orders = orders.map(o=> o.id===id ? {...o,review:true} : o);
-  renderDash();
-  showToast('Merci ! Votre avis a été publié (avis vérifiés uniquement).','success');
-}
 
-function renderConversations(){
-  document.getElementById('conversations').innerHTML = conversations.map(c=>`
-    <button onclick="openChat(${c.id})" class="w-full text-left flex items-center gap-3 p-2 rounded-2xl ${activeChat===c.id?'bg-white text-ink':'bg-white/10 hover:bg-white/15'} transition">
-      <img src="${c.img}" class="w-9 h-9 rounded-full object-cover">
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-sm leading-none">${c.name}</div>
-        <div class="text-xs opacity-70 truncate">${c.msg}</div>
-      </div>
-      <div class="text-right">
-        <div class="text-[11px] opacity-60">${c.time}</div>
-        ${c.unread?`<span class="bg-coral text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center ml-auto mt-1">${c.unread}</span>`:''}
-      </div>
-    </button>
-  `).join('');
-}
-function openChat(id){
-  activeChat = id;
-  renderConversations();
-  const cw = document.getElementById('chatWindow');
-  const threads = {
-    0: `<div class="bg-white text-ink rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%]">Vos tresses sont prévues pour 3h, box braids mi-longues c'est bien ça ?</div><div class="bg-coral rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%] ml-auto text-white">Oui exactement, à demain !</div>`,
-    1: `<div class="bg-white text-ink rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%]">Votre commande est confirmée, prête à 17h30.</div><div class="bg-coral rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%] ml-auto text-white">Merci, j'arrive à cette heure-là.</div>`,
-    2: `<div class="bg-white text-ink rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%]">Merci pour votre commande, n'hésitez pas à laisser un avis vérifié.</div>`
-  };
-  cw.innerHTML = threads[id] || '';
-}
-function sendMessage(){
-  const input = document.getElementById('msgInput');
-  if(!input.value.trim()) return;
-  if(containsProhibited(input.value.toLowerCase())){
-    showToast('Message bloqué : merci de respecter la charte de la communauté.','error');
-    return;
-  }
-  const cw = document.getElementById('chatWindow');
-  cw.innerHTML += `<div class="bg-coral rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%] ml-auto text-white">${input.value}</div>`;
-  cw.scrollTop = cw.scrollHeight;
-  conversations[activeChat].msg = input.value;
-  input.value = '';
-  renderConversations();
-  showToast('Message envoyé • Notification courriel au vendeur','success');
-}
-
-function renderAdmin(){
-  document.getElementById('adminValidation').innerHTML = `
-    <div class="bg-white rounded-xl p-3 flex gap-3 items-center">
-      <img src="https://i.pravatar.cc/100?img=21" class="w-10 h-10 rounded-full">
-      <div class="flex-1"><div class="font-semibold text-sm">Atelier Bogolan</div><div class="text-xs opacity-60">Vancouver • Catalogue 9 pièces</div></div>
-      <button onclick="adminAction(this,'validé')" class="bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
-      <button onclick="adminAction(this,'refusé')" class="bg-white border border-line w-7 h-7 rounded-full flex items-center justify-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-    </div>
-    <div class="bg-white rounded-xl p-3 flex gap-3 items-center">
-      <img src="https://i.pravatar.cc/100?img=33" class="w-10 h-10 rounded-full">
-      <div class="flex-1"><div class="font-semibold text-sm">TransferPlus Diaspora</div><div class="text-xs opacity-60">Ottawa • Licence vérifiée</div></div>
-      <button onclick="adminAction(this,'validé')" class="bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
-      <button onclick="adminAction(this,'refusé')" class="bg-white border border-line w-7 h-7 rounded-full flex items-center justify-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-    </div>
-  `;
-  document.getElementById('adminReviews').innerHTML = `
-    <div class="border border-line rounded-xl p-3">
-      <div class="text-sm font-medium flex items-center gap-2">Service impeccable <span class="flex items-center gap-0.5">${starRow(5)}</span></div>
-      <div class="text-xs opacity-60">Par Noémie • Vérifié • Pour Natural Roots Hair Studio</div>
-      <div class="flex gap-2 mt-2"><button onclick="showToast('Avis approuvé','success')" class="flex-1 bg-forest text-white rounded-full py-1 text-xs font-bold">Approuver</button><button onclick="showToast('Avis signalé','info')" class="flex-1 bg-white border border-line rounded-full py-1 text-xs">Signaler</button></div>
-    </div>
-    <div class="border border-line rounded-xl p-3">
-      <div class="text-sm font-medium flex items-center gap-2">Livraison en retard <span class="flex items-center gap-0.5">${starRow(2)}</span></div>
-      <div class="text-xs opacity-60">Par acheteur anonyme • Vérifié</div>
-      <div class="flex gap-2 mt-2"><button onclick="showToast('Avis modéré selon la charte','success')" class="flex-1 bg-white border border-line rounded-full py-1 text-xs">Modérer</button></div>
-    </div>
-  `;
-  lucide.createIcons();
-}
-function adminAction(btn,state){
-  btn.closest('.bg-white').innerHTML = `<div class="text-sm font-semibold text-green-700">Profil ${state}</div><div class="text-xs opacity-60">Courriel automatique envoyé</div>`;
-  showToast(`Profil vendeur ${state} — courriel envoyé`,'success');
+function onCurrencyChange(){
+  const sel = document.getElementById('currencySelect');
+  if(sel) sel.value = window.currency;
+  renderFeatured();
 }
 
 function changeRole(role){
   currentRole = role;
+  persistRole(role);
   document.getElementById('roleSelect').value = role;
   if(role==='admin'){
-    document.getElementById('adminPanel').classList.remove('hidden');
-    showToast('Mode Administrateur activé — validation, modération, gestion des utilisateurs','info');
+    showToast('Mode Administrateur activé.', 'info');
+    setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 600);
+  } else if(role==='seller'){
+    showToast('Vue vendeur activée — accès à votre tableau de bord.', 'info');
+    setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 600);
   } else {
-    document.getElementById('adminPanel').classList.add('hidden');
-    if(role==='seller'){
-      setDashTab('seller');
-      showToast('Vue vendeur — tableau des commandes reçues','info');
-    } else {
-      setDashTab('upcoming');
-    }
+    showToast('Mode Acheteur activé.', 'info');
   }
-  lucide.createIcons();
 }
+
+function refreshCartBadge(){
+  document.getElementById('cartCount').textContent = cartCount(getCart());
+}
+
+function showToast(msg,type='success'){
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 ${type==='success'?'bg-ink text-white':type==='info'?'bg-white border border-line text-ink':'bg-red-600 text-white'}`;
+  el.innerHTML = `<span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="${type==='success'?'check':type==='info'?'mail':'alert-circle'}" class="w-4 h-4"></i></span><span>${msg}</span>`;
+  c.appendChild(el);
+  lucide.createIcons({nodes:[el]});
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+function openAuth(){ document.getElementById('authModal').classList.remove('hidden'); }
+function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
 
 function setCookieConsent(accepted){
   try{ localStorage.setItem('cheznous_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
@@ -1140,115 +518,23 @@ function initCookieBanner(){
   if(!consent) document.getElementById('cookieBanner').classList.remove('hidden');
 }
 
-function toggleNotifications(){
-  showToast('2 notifications : commande confirmée, nouveau message de Cuisine de Fatou','info');
-}
-function showToast(msg,type='success'){
-  const c = document.getElementById('toasts');
-  const el = document.createElement('div');
-  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 ${type==='success'?'bg-ink text-white':type==='info'?'bg-white border border-line text-ink':'bg-red-600 text-white'}`;
-  el.innerHTML = `<span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="${type==='success'?'check':type==='info'?'mail':'alert-circle'}" class="w-4 h-4"></i></span><span>${msg}</span>`;
-  c.appendChild(el);
-  lucide.createIcons({nodes:[el]});
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
-}
-function openAuth(){ document.getElementById('authModal').classList.remove('hidden'); }
-function logout(){
-  try{ localStorage.removeItem('cheznous_logged_in'); }catch(e){}
-  updateAccountButton();
-  closeAuth();
-  showToast('Vous avez été déconnecté.','info');
-}
-function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
-
-const IS_HOME = !!document.getElementById('marketplace');
-let chatStarted = false;
-
-function toggleChat(){
-  const panel = document.getElementById('chatPanel');
-  panel.classList.toggle('open');
-  if(panel.classList.contains('open') && !chatStarted){
-    chatStarted = true;
-    addBotMessage("Bonjour, je suis Malik, l'assistante Chez Nous. Je peux vous guider ou répondre à vos questions sur les commandes, la vente ou la livraison.");
-    renderChatChips();
-  }
-  lucide.createIcons();
-}
-function addBotMessage(html){
-  const box = document.getElementById('chatMessages');
-  const el = document.createElement('div');
-  el.className = 'chat-msg-bot';
-  el.innerHTML = html;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
-}
-function addUserMessage(text){
-  const box = document.getElementById('chatMessages');
-  const el = document.createElement('div');
-  el.className = 'chat-msg-user';
-  el.textContent = text;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
-}
-function renderChatChips(){
-  const chips = ['Comment commander ?','Devenir vendeur','Livraison & retours', IS_HOME ? 'Visite guidée' : 'Nous contacter'];
-  document.getElementById('chatChips').innerHTML = chips.map(c=>`<button class="chat-chip" onclick="askChip(this.textContent)">${c}</button>`).join('');
-}
-function askChip(text){ handleUserInput(text); }
-function sendChat(){
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if(!text) return;
-  input.value = '';
-  handleUserInput(text);
-}
-function containsProhibited(m){
-  const terms = ['merde','putain','connard','conasse','salope','pute','encul','batard','négre','nègre','sale noir','sale arabe'];
-  return terms.some(w => m.includes(w));
-}
-function handleUserInput(text){
-  addUserMessage(text);
+renderChatWidget();
+const _sharedHandleUserInput = handleUserInput;
+handleUserInput = function(text){
   const m = text.toLowerCase();
-  if(containsProhibited(m)){
-    setTimeout(()=>{ addBotMessage("Merci de rester respectueux, ce message ne peut pas être traité. Consultez notre <a href='charte-communaute.html' class='underline text-forest'>charte de la communauté</a>."); }, 300);
+  if(/visite guid/.test(m) && !containsProhibited(m)){
+    addUserMessage(text);
+    setTimeout(()=>{ addBotMessage("Suivez le guide, je vous montre tout !"); toggleChat(); startTour(); }, 400);
     return;
   }
-  if(/visite guid/.test(m)){
-    if(IS_HOME){
-      setTimeout(()=>{ addBotMessage("Suivez le guide, je vous montre tout !"); toggleChat(); startTour(); }, 400);
-    } else {
-      setTimeout(()=>{ addBotMessage("La visite guidée est disponible sur la page d'accueil. <a href='index.html' class='underline text-forest'>Cliquez ici pour y aller</a>."); }, 400);
-    }
-    return;
-  }
-  setTimeout(()=>{ addBotMessage(getBotAnswer(m)); }, 400);
-}
-function getBotAnswer(m){
-  if(/bonjour|salut|^hello|coucou/.test(m)) return "Bonjour ! Comment puis-je vous aider : commander, devenir vendeur, livraison ou paiement ?";
-  if(/vend(re|eur)|abonnement|commission/.test(m)) return "Pour vendre sur Chez Nous, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.";
-  if(/livrai|exp[ée]di|d[ée]lai|shipping/.test(m)) return "Les délais varient selon le vendeur : 24 à 72h pour la cuisine maison, 3 à 5 jours pour les produits. Voir notre page <a href='livraison.html' class='underline text-forest'>Livraison</a>.";
-  if(/retour|rembours|annul/.test(m)) return "Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.";
-  if(/paiement|stripe|carte|payer/.test(m)) return "Tous les paiements sont sécurisés via Stripe (Visa, Mastercard, Interac). Aucune donnée de carte n'est stockée par Chez Nous.";
-  if(/cat[ée]gorie|produit|service/.test(m)) return "Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.";
-  if(/panier|commander|acheter/.test(m)) return "Ajoutez un produit à votre panier avec le bouton « Ajouter au panier », puis cliquez sur l'icône panier en haut de la page pour finaliser votre achat.";
-  if(/compte|connex|inscri/.test(m)) return "Cliquez sur « Comptes & Commandes » en haut de la page d'accueil pour gérer votre profil et vos commandes.";
-  if(/avis|note|[ée]toile/.test(m)) return "Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.";
-  if(/cookie|confidentialit|donn[ée]e|rgpd|lprpde|vie priv[ée]e/.test(m)) return "Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.";
-  if(/contact|support|aide|humain|t[ée]l[ée]phone/.test(m)) return "Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@cheznous.ca.";
-  if(/merci/.test(m)) return "Avec plaisir ! N'hésitez pas si vous avez d'autres questions.";
-  return "Je ne suis pas certaine de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>.";
-}
-const chatInputEl = document.getElementById('chatInput');
-if(chatInputEl) chatInputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
+  _sharedHandleUserInput(text);
+};
 
 const tourSteps = [
   {sel:'#heroSearch', title:'Recherchez', text:'Trouvez un produit, un plat ou un service partout au Canada, en un instant.'},
   {sel:'#categoryGrid', title:'Explorez les catégories', text:'Épicerie, mode, beauté, artisanat, cuisine, services : six univers de la diaspora.'},
-  {sel:'#marketTabs', title:'Produits ou services', text:"Utilisez ces onglets pour filtrer entre produits à acheter et services à réserver."},
-  {sel:'#cardsGrid > div:first-child', title:'Parcourez les annonces', text:'Chaque carte affiche le vendeur, la note et le prix. Cliquez dessus pour voir les détails.'},
-  {sel:'#cartLauncher', title:'Votre panier', text:'Ajoutez des produits et payez en toute sécurité via Stripe.'},
-  {sel:'#dashList', title:'Vos commandes', text:"Suivez ici l'état de vos commandes et réservations."},
-  {sel:'#sellerCTA', title:'Devenez vendeur', text:'Vous avez un commerce ? Inscrivez-vous en quelques clics et vendez à la diaspora africaine.'},
+  {sel:'#featuredGrid > a:first-child', title:'Produits en vedette', text:'La sélection du moment. Le catalogue complet se trouve dans la boutique.'},
+  {sel:'#cartLauncher', title:'Votre panier', text:'Ajoutez des produits depuis la boutique et payez en toute sécurité via Stripe.'},
   {sel:'#chatLauncher', title:'Une question ?', text:'Cliquez ici à tout moment pour me parler, je suis là pour vous aider.'}
 ];
 let tourIndex = 0;
@@ -1257,6 +543,7 @@ function startTour(){
   tourIndex = 0;
   document.getElementById('tourSpot').classList.remove('hidden');
   document.getElementById('tourCard').classList.remove('hidden');
+  document.getElementById('tourGuide').classList.remove('hidden');
   showTourStep();
 }
 function declineTour(){
@@ -1266,6 +553,7 @@ function declineTour(){
 function endTour(){
   document.getElementById('tourSpot').classList.add('hidden');
   document.getElementById('tourCard').classList.add('hidden');
+  document.getElementById('tourGuide').classList.add('hidden');
   try{ localStorage.setItem('cheznous_tour_seen','1'); }catch(e){}
 }
 function skipTour(){ endTour(); }
@@ -1295,6 +583,13 @@ function showTourStep(){
     let cardLeft = Math.min(Math.max(16, r.left), window.innerWidth - 316);
     card.style.top = cardTop+'px';
     card.style.left = cardLeft+'px';
+    const guide = document.getElementById('tourGuide');
+    let guideLeft = r.right - 30;
+    let guideTop = r.top - 60;
+    guideLeft = Math.min(Math.max(8, guideLeft), window.innerWidth - 84);
+    guideTop = Math.min(Math.max(8, guideTop), window.innerHeight - 84);
+    guide.style.left = guideLeft+'px';
+    guide.style.top = guideTop+'px';
     document.getElementById('tourStepLabel').textContent = `ÉTAPE ${tourIndex+1}/${tourSteps.length}`;
     document.getElementById('tourTitle').textContent = step.title;
     document.getElementById('tourText').textContent = step.text;
@@ -1308,12 +603,16 @@ function initTourPrompt(){
   if(!seen) setTimeout(()=>{ document.getElementById('tourPrompt').classList.remove('hidden'); }, 1200);
 }
 
+document.getElementById('roleSelect').value = currentRole;
+renderCurrencyOptions();
+renderLangOptions();
+refreshNotifBadge();
+document.getElementById('deliverCityLabel').textContent = getDeliverCity();
 renderCategories();
-renderMarket();
-renderDash();
-renderConversations();
-renderAdmin();
-renderCartBadge();
+renderHeroCarousel();
+restartHeroTimer();
+renderFeatured();
+refreshCartBadge();
 initCookieBanner();
 initTourPrompt();
 updateAccountButton();

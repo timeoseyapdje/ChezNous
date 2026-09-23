@@ -6,6 +6,7 @@
 <title>Politique de confidentialité — Chez Nous</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>
 tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
@@ -15,35 +16,11 @@ tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial',
 body{background:#FFFFFF;color:#131A17}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-thumb{background:#D4D4D4;border-radius:99px}
-.chat-launcher{position:fixed;bottom:96px;right:20px;z-index:65;width:56px;height:56px;border-radius:9999px;background:#146B4F;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px -8px rgba(0,0,0,.35);cursor:pointer;border:none;transition:transform .2s}
-.chat-launcher:hover{transform:scale(1.06)}
-.chat-panel{position:fixed;bottom:160px;right:20px;z-index:65;width:360px;max-width:92vw;height:500px;max-height:70vh;background:#fff;border-radius:20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(12px) scale(.98);transition:all .25s cubic-bezier(.16,1,.3,1)}
-.chat-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
-.chat-msg-bot{background:#F2F2F2;color:#131A17;border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;max-width:82%;line-height:1.5}
-.chat-msg-user{background:#131A17;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;max-width:82%;margin-left:auto;line-height:1.5}
-.chat-chip{border:1px solid #E4E4E4;border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.chat-chip:hover{background:#F2F2F2}
 </style>
 </head>
 <body class="font-sans antialiased">
 
-<header class="bg-ink text-white">
-  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-4 flex items-center justify-between gap-4">
-    <a href="index.html" class="flex items-center gap-2">
-      <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
-      <div class="leading-none">
-        <div class="font-display font-bold text-lg">chez nous</div>
-        <div class="text-[9px] opacity-60 tracking-wider">DIASPORA AFRICAINE • CANADA</div>
-      </div>
-    </a>
-    <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-      <a href="index.html#marketplace" class="hover:opacity-80">Marketplace</a>
-      <a href="devenir-vendeur.html" class="hover:opacity-80">Devenir vendeur</a>
-      <a href="contact.html" class="hover:opacity-80">Contact</a>
-    </nav>
-    <a href="index.html" class="text-sm font-semibold bg-white/10 px-4 py-2 rounded-full hover:bg-white/15">Retour au site</a>
-  </div>
-</header>
+<div id="siteHeaderMount"></div>
 
 <main class="max-w-[820px] mx-auto px-4 md:px-6 py-12">
   <h1 class="font-display font-bold text-3xl md:text-4xl">Politique de confidentialité</h1>
@@ -94,7 +71,7 @@ body{background:#FFFFFF;color:#131A17}
 
 <footer id="footer" class="bg-white border-t border-line mt-6">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
-    <div class="grid md:grid-cols-4 gap-8 text-sm">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
         <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
         <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
@@ -122,10 +99,6 @@ body{background:#FFFFFF;color:#131A17}
           <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
         </ul>
       </div>
-      <div class="bg-sand rounded-2xl p-4">
-        <div class="font-semibold flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Paiements sécurisés</div>
-        <p class="text-xs opacity-60 mt-2">Abonnements & commissions via Stripe. Chiffrement, reçus automatiques.</p>
-      </div>
     </div>
     <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
   </div>
@@ -141,109 +114,11 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </div>
 
-<button id="chatLauncher" onclick="toggleChat()" class="chat-launcher" title="Discuter avec Malik">
-  <i data-lucide="message-circle" class="w-6 h-6"></i>
-</button>
-
-<div id="chatPanel" class="chat-panel">
-  <div class="bg-ink text-white p-4 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-2">
-      <img src="assets/assistant-avatar.svg" class="w-8 h-8 rounded-full object-cover">
-      <div>
-        <div class="font-semibold text-sm leading-none">Malik</div>
-        <div class="text-[10px] opacity-60 mt-0.5">Assistante Chez Nous</div>
-      </div>
-    </div>
-    <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
-  </div>
-  <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
-  <div id="chatChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
-  <div class="p-3 border-t border-line flex gap-2 shrink-0">
-    <input id="chatInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
-    <button onclick="sendChat()" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
-  </div>
-</div>
-
 <script>
 
-const IS_HOME = !!document.getElementById('marketplace');
-let chatStarted = false;
-function toggleChat(){
-  const panel = document.getElementById('chatPanel');
-  panel.classList.toggle('open');
-  if(panel.classList.contains('open') && !chatStarted){
-    chatStarted = true;
-    addBotMessage("Bonjour, je suis Malik, l'assistante Chez Nous. Je peux vous guider ou répondre à vos questions sur les commandes, la vente ou la livraison.");
-    renderChatChips();
-  }
-  lucide.createIcons();
-}
-function addBotMessage(html){
-  const box = document.getElementById('chatMessages');
-  const el = document.createElement('div');
-  el.className = 'chat-msg-bot';
-  el.innerHTML = html;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
-}
-function addUserMessage(text){
-  const box = document.getElementById('chatMessages');
-  const el = document.createElement('div');
-  el.className = 'chat-msg-user';
-  el.textContent = text;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
-}
-function renderChatChips(){
-  const chips = ['Comment commander ?','Devenir vendeur','Livraison & retours', IS_HOME ? 'Visite guidée' : 'Nous contacter'];
-  document.getElementById('chatChips').innerHTML = chips.map(c=>`<button class="chat-chip" onclick="askChip(this.textContent)">${c}</button>`).join('');
-}
-function askChip(text){ handleUserInput(text); }
-function sendChat(){
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if(!text) return;
-  input.value = '';
-  handleUserInput(text);
-}
-function handleUserInput(text){
-  addUserMessage(text);
-  const m = text.toLowerCase();
-  if(containsProhibitedChat(m)){
-    setTimeout(()=>{ addBotMessage("Merci de rester respectueux, ce message ne peut pas être traité. Consultez notre <a href='charte-communaute.html' class='underline text-forest'>charte de la communauté</a>."); }, 300);
-    return;
-  }
-  if(/visite guid/.test(m)){
-    if(IS_HOME){
-      setTimeout(()=>{ addBotMessage("Suivez le guide, je vous montre tout !"); toggleChat(); startTour(); }, 400);
-    } else {
-      setTimeout(()=>{ addBotMessage("La visite guidée est disponible sur la page d'accueil. <a href='index.html' class='underline text-forest'>Cliquez ici pour y aller</a>."); }, 400);
-    }
-    return;
-  }
-  setTimeout(()=>{ addBotMessage(getBotAnswer(m)); }, 400);
-}
-function containsProhibitedChat(m){
-  const terms = ['merde','putain','connard','conasse','salope','pute','encul','batard','négre','nègre','sale noir','sale arabe'];
-  return terms.some(w => m.includes(w));
-}
-function getBotAnswer(m){
-  if(/bonjour|salut|^hello|coucou/.test(m)) return "Bonjour ! Comment puis-je vous aider : commander, devenir vendeur, livraison ou paiement ?";
-  if(/vend(re|eur)|abonnement|commission/.test(m)) return "Pour vendre sur Chez Nous, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.";
-  if(/livrai|exp[ée]di|d[ée]lai|shipping/.test(m)) return "Les délais varient selon le vendeur : 24 à 72h pour la cuisine maison, 3 à 5 jours pour les produits. Voir notre page <a href='livraison.html' class='underline text-forest'>Livraison</a>.";
-  if(/retour|rembours|annul/.test(m)) return "Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.";
-  if(/paiement|stripe|carte|payer/.test(m)) return "Tous les paiements sont sécurisés via Stripe (Visa, Mastercard, Interac). Aucune donnée de carte n'est stockée par Chez Nous.";
-  if(/cat[ée]gorie|produit|service/.test(m)) return "Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.";
-  if(/panier|commander|acheter/.test(m)) return "Ajoutez un produit à votre panier avec le bouton « Ajouter au panier », puis cliquez sur l'icône panier en haut de la page pour finaliser votre achat.";
-  if(/compte|connex|inscri/.test(m)) return "Cliquez sur « Se connecter » en haut de la page d'accueil pour gérer votre profil et vos commandes.";
-  if(/avis|note|[ée]toile/.test(m)) return "Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.";
-  if(/cookie|confidentialit|donn[ée]e|rgpd|lprpde|vie priv[ée]e/.test(m)) return "Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.";
-  if(/contact|support|aide|humain|t[ée]l[ée]phone/.test(m)) return "Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@cheznous.ca.";
-  if(/merci/.test(m)) return "Avec plaisir ! N'hésitez pas si vous avez d'autres questions.";
-  return "Je ne suis pas certaine de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>.";
-}
-const chatInputEl = document.getElementById('chatInput');
-if(chatInputEl) chatInputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
+document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('');
+initSiteHeader('');
+renderChatWidget();
 
 lucide.createIcons();
 function setCookieConsent(accepted){

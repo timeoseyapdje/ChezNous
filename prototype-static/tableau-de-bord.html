@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — Chez Nous</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="assets/shared.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
+</script>
+<style>
+*{scroll-behavior:smooth}
+body{background:#FFFFFF;color:#131A17}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#D4D4D4;border-radius:99px}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div id="siteHeaderMount"></div>
+
+<main class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+
+  <div id="buyerView" class="hidden">
+    <div class="bg-white border border-line rounded-2xl p-10 text-center max-w-[520px] mx-auto">
+      <i data-lucide="store" class="w-10 h-10 text-forest mx-auto"></i>
+      <h1 class="font-display font-bold text-2xl mt-4">Le tableau de bord est réservé aux vendeurs et administrateurs</h1>
+      <p class="text-sm opacity-60 mt-2">Vous êtes actuellement en mode Acheteur. Créez votre boutique pour accéder au catalogue, aux statistiques de vente et à vos abonnements.</p>
+      <a href="devenir-vendeur.html" class="inline-block mt-5 bg-forest text-white rounded-full px-6 py-3 font-bold hover:brightness-110">Devenir vendeur</a>
+    </div>
+  </div>
+
+  <div id="sellerView" class="hidden">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="font-display font-bold text-2xl md:text-3xl flex items-center gap-2"><i data-lucide="store" class="w-6 h-6"></i> Tableau de bord vendeur</h1>
+        <p class="text-sm opacity-60 mt-1">Gérez votre catalogue, votre abonnement et suivez vos ventes.</p>
+      </div>
+      <button onclick="changeRoleGlobal('buyer')" class="text-xs font-semibold border border-line rounded-full px-4 py-2 hover:bg-sand">Repasser en mode Acheteur</button>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-4 mt-6">
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">REVENU (30 JOURS)</div>
+        <div class="text-2xl font-bold mt-1" id="sellerRevenue">0.00 $</div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">COMMANDES ACTIVES</div>
+        <div class="text-2xl font-bold mt-1" id="sellerActiveOrders">0</div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">NOTE MOYENNE</div>
+        <div class="text-2xl font-bold mt-1 flex items-center gap-1" id="sellerRating">—</div>
+      </div>
+      <div class="bg-ink text-white rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">FORMULE ACTUELLE</div>
+        <div class="text-lg font-bold mt-1" id="sellerPlanLabel">Basique</div>
+        <a href="devenir-vendeur.html" class="text-xs underline opacity-80">Changer de formule</a>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-[1.4fr_1fr] gap-6 mt-6">
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5"></i> Mon catalogue</h2>
+          <button onclick="toggleAddItemForm()" class="bg-forest text-white text-xs font-bold px-4 py-2 rounded-full hover:brightness-110 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une annonce</button>
+        </div>
+        <div id="addItemForm" class="hidden mt-4 bg-sand rounded-2xl p-4 space-y-3">
+          <div class="grid md:grid-cols-2 gap-3">
+            <input id="itemName" placeholder="Nom du produit ou service" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+            <input id="itemPrice" type="number" min="0" placeholder="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <select id="itemCat" class="border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white"></select>
+            <select id="itemType" class="border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white">
+              <option value="produit">Produit</option>
+              <option value="service">Service</option>
+            </select>
+          </div>
+          <input id="itemCover" placeholder="URL de la photo (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          <div class="flex gap-2">
+            <button onclick="addSellerItem()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier l'annonce</button>
+            <button onclick="toggleAddItemForm()" class="text-sm font-semibold px-4 py-2 rounded-full border border-line">Annuler</button>
+          </div>
+        </div>
+        <div id="sellerCatalogList" class="mt-4 space-y-3"></div>
+      </div>
+
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="package" class="w-5 h-5"></i> Commandes à traiter</h2>
+        <div id="sellerOrdersList" class="mt-4 space-y-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminView" class="hidden">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="font-display font-bold text-2xl md:text-3xl flex items-center gap-2"><i data-lucide="shield" class="w-6 h-6"></i> Tableau de bord administrateur</h1>
+        <p class="text-sm opacity-60 mt-1">Supervision de la marketplace : vendeurs, modération et revenus.</p>
+      </div>
+      <button onclick="changeRoleGlobal('buyer')" class="text-xs font-semibold border border-line rounded-full px-4 py-2 hover:bg-sand">Quitter le mode Administrateur</button>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-4 mt-6">
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">GMV TOTAL</div>
+        <div class="text-2xl font-bold mt-1" id="adminGMV">0.00 $</div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">VENDEURS ACTIFS</div>
+        <div class="text-2xl font-bold mt-1" id="adminSellerCount">0</div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">COMMISSIONS COLLECTÉES</div>
+        <div class="text-2xl font-bold mt-1" id="adminCommission">0.00 $</div>
+      </div>
+      <div class="bg-ink text-white rounded-2xl p-4">
+        <div class="text-xs font-bold tracking-widest opacity-50">VALIDATION VENDEURS</div>
+        <div class="text-lg font-bold mt-1">Automatique</div>
+        <div class="text-xs opacity-70 mt-1">Audit manuel possible ci-dessous</div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 mt-6">
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="user-check" class="w-5 h-5"></i> Journal de validation vendeurs</h2>
+        <div id="adminValidationLog" class="mt-4 space-y-3"></div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="flag" class="w-5 h-5"></i> File de modération</h2>
+        <div id="adminModerationQueue" class="mt-4 space-y-3"></div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="scale" class="w-5 h-5"></i> Litiges paiement séquestre</h2>
+      <p class="text-xs opacity-60 mt-1">Le paiement reste bloqué tant que le litige n'est pas tranché. Examinez les preuves des deux parties avant de statuer.</p>
+      <div id="adminDisputesList" class="mt-4 space-y-3"></div>
+    </div>
+
+    <div class="bg-ink text-white rounded-2xl p-5 md:p-6 mt-6">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-5 h-5"></i>
+        <h2 class="font-display font-bold text-lg">Outils de contrôle propulsés par Nkap Control</h2>
+      </div>
+      <p class="text-xs opacity-70 mt-2 leading-relaxed">Vérification automatisée des vendeurs, plafonds de transaction, détection d'anomalies et paiement séquestre sont opérés avec les outils de <b>Nkap Control</b>, en complément de Stripe Radar et Supabase pour l'infrastructure de paiement. Modération de contenu assistée par l'API Claude (Anthropic).</p>
+      <div class="text-[11px] opacity-50 mt-3">Services fournis par des tiers indépendants de Chez Nous Commerce Inc.</div>
+    </div>
+  </div>
+</main>
+
+<footer id="footer" class="bg-white border-t border-line mt-10">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Explorer</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
+          <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="contact.html" class="hover:underline">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Légal</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<script>
+document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('dashboard');
+initSiteHeader('dashboard');
+renderChatWidget();
+
+function showToast(msg,type='success'){
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 ${type==='success'?'bg-ink text-white':type==='info'?'bg-white border border-line text-ink':'bg-red-600 text-white'}`;
+  el.innerHTML = `<span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="${type==='success'?'check':type==='info'?'mail':'alert-circle'}" class="w-4 h-4"></i></span><span>${msg}</span>`;
+  c.appendChild(el);
+  lucide.createIcons({nodes:[el]});
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+const role = getRolePersisted();
+
+function getSellerProfile(){
+  try{
+    const raw = localStorage.getItem('cheznous_seller_profile');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const p = {shopName:'Natural Roots Hair Studio', plan:'basique'};
+  localStorage.setItem('cheznous_seller_profile', JSON.stringify(p));
+  return p;
+}
+function getSellerCatalog(){
+  try{
+    const raw = localStorage.getItem('cheznous_seller_catalog');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const shop = getSellerProfile().shopName;
+  const seeded = CATALOG.filter(p=>p.seller===shop).map(p=>({...p}));
+  localStorage.setItem('cheznous_seller_catalog', JSON.stringify(seeded));
+  return seeded;
+}
+function setSellerCatalog(list){
+  localStorage.setItem('cheznous_seller_catalog', JSON.stringify(list));
+}
+
+function renderSellerView(){
+  document.getElementById('sellerView').classList.remove('hidden');
+  const profile = getSellerProfile();
+  const planLabels = {basique:'Basique — gratuite',pro:'Pro — 129$/an',premium:'Premium — 299$/an'};
+  document.getElementById('sellerPlanLabel').textContent = planLabels[profile.plan] || 'Basique';
+
+  const orders = getOrders();
+  const active = orders.filter(o=>o.status!=='terminée' && o.status!=='annulée');
+  const revenue = orders.filter(o=>o.status==='confirmée' || o.status==='terminée').reduce((s,o)=>s+o.price,0);
+  document.getElementById('sellerRevenue').textContent = fmt(revenue);
+  document.getElementById('sellerActiveOrders').textContent = active.length;
+
+  const catalog = getSellerCatalog();
+  const avgRating = catalog.length ? (catalog.reduce((s,p)=>s+p.rating,0)/catalog.length).toFixed(1) : '—';
+  document.getElementById('sellerRating').innerHTML = catalog.length ? `<i data-lucide="star" class="w-5 h-5 fill-gold text-gold"></i> ${avgRating}` : '—';
+
+  const catSel = document.getElementById('itemCat');
+  catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+
+  document.getElementById('sellerCatalogList').innerHTML = catalog.length ? catalog.map((p,i)=>`
+    <div class="flex items-center gap-3 border border-line rounded-xl p-3">
+      <img src="${p.cover || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=200&auto=format&fit=crop'}" class="w-14 h-14 rounded-lg object-cover shrink-0">
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm truncate">${p.name}</div>
+        <div class="text-xs opacity-60">${fmt(p.price)} • ${p.type==='produit'?'Produit':'Service'} • <i data-lucide="star" class="w-3 h-3 inline fill-gold text-gold"></i> ${p.rating} (${p.reviews})</div>
+      </div>
+      <button onclick="removeSellerItem(${i})" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>
+  `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune annonce publiée. Ajoutez votre premier produit ou service.</div>`;
+
+  document.getElementById('sellerOrdersList').innerHTML = active.length ? active.map(o=>`
+    <div class="border border-line rounded-xl p-3">
+      <div class="font-semibold text-sm">${o.service}</div>
+      <div class="text-xs opacity-60 mt-1">${o.date} • ${fmt(o.price)}</div>
+      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${o.status}</span>
+      ${o.escrowStatus==='retenu' ? `
+      <div class="mt-2 flex gap-2">
+        <input id="codeInput${o.id}" placeholder="Code du client" class="flex-1 border border-line rounded-lg px-2 py-1.5 text-xs outline-none font-mono uppercase">
+        <button onclick="tryReleaseEscrow(${o.id})" class="text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-lg">Valider & recevoir</button>
+      </div>` : o.escrowStatus==='litige' ? `<div class="mt-2 text-xs font-semibold text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Litige ouvert — en cours d'arbitrage</div>` : ''}
+    </div>
+  `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune commande en attente.</div>`;
+
+  lucide.createIcons();
+}
+function tryReleaseEscrow(orderId){
+  const input = document.getElementById('codeInput'+orderId);
+  const ok = releaseEscrow(orderId, input.value);
+  if(ok){
+    showToast('Code validé, le paiement vous a été transféré.','success');
+    renderSellerView();
+  } else {
+    showToast('Code incorrect. Vérifiez avec le client.','error');
+  }
+}
+function toggleAddItemForm(){ document.getElementById('addItemForm').classList.toggle('hidden'); }
+function addSellerItem(){
+  const name = document.getElementById('itemName').value.trim();
+  const price = parseFloat(document.getElementById('itemPrice').value);
+  if(!name || !price || price<=0){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
+  if(containsProhibited(name)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
+  const catalog = getSellerCatalog();
+  const profile = getSellerProfile();
+  catalog.push({
+    id: Date.now(),
+    cat: document.getElementById('itemCat').value,
+    type: document.getElementById('itemType').value,
+    name, price,
+    seller: profile.shopName,
+    city: getDeliverCity(),
+    rating: 5.0, reviews: 0,
+    image: 'https://i.pravatar.cc/100?img=48',
+    cover: document.getElementById('itemCover').value.trim() || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop',
+    tags: [], desc: ''
+  });
+  setSellerCatalog(catalog);
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemPrice').value = '';
+  document.getElementById('itemCover').value = '';
+  toggleAddItemForm();
+  renderSellerView();
+  showToast('Annonce publiée sur votre boutique.','success');
+}
+function removeSellerItem(i){
+  const catalog = getSellerCatalog();
+  catalog.splice(i,1);
+  setSellerCatalog(catalog);
+  renderSellerView();
+  showToast('Annonce supprimée.','info');
+}
+
+function getValidationLog(){
+  try{
+    const raw = localStorage.getItem('cheznous_validation_log');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const sellers = [...new Set(CATALOG.map(p=>p.seller))];
+  const seeded = sellers.map((s,i)=>({name:s, date:`${12-i} sept.`, status:'approuvé'}));
+  localStorage.setItem('cheznous_validation_log', JSON.stringify(seeded));
+  return seeded;
+}
+function setValidationLog(log){ localStorage.setItem('cheznous_validation_log', JSON.stringify(log)); }
+function suspendSeller(i){
+  const log = getValidationLog();
+  log[i].status = log[i].status==='suspendu' ? 'approuvé' : 'suspendu';
+  setValidationLog(log);
+  renderAdminView();
+  showToast('Statut du vendeur mis à jour.','info');
+}
+
+function getModerationQueue(){
+  try{
+    const raw = localStorage.getItem('cheznous_moderation_queue');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const seeded = [
+    {id:1, type:'Avis client', excerpt:'"Service correct mais un peu cher..."', status:'en attente'},
+    {id:2, type:'Message privé', excerpt:'Signalement automatique : langage à vérifier', status:'en attente'},
+    {id:3, type:'Description produit', excerpt:'Mise à jour du descriptif « Boubou brodé »', status:'en attente'}
+  ];
+  localStorage.setItem('cheznous_moderation_queue', JSON.stringify(seeded));
+  return seeded;
+}
+function setModerationQueue(q){ localStorage.setItem('cheznous_moderation_queue', JSON.stringify(q)); }
+function resolveModeration(id, decision){
+  let q = getModerationQueue();
+  q = q.map(x=> x.id===id ? {...x, status:decision} : x);
+  setModerationQueue(q);
+  renderAdminView();
+  showToast(decision==='approuvé' ? 'Contenu approuvé.' : 'Contenu retiré.', decision==='approuvé' ? 'success' : 'info');
+}
+
+function resolveDispute(disputeId, winner){
+  const sellerProofEl = document.getElementById('sellerProof'+disputeId);
+  const sellerProof = sellerProofEl ? sellerProofEl.value : '';
+  let disputes = getDisputes();
+  const dispute = disputes.find(d=>d.id===disputeId);
+  if(!dispute) return;
+  disputes = disputes.map(d=> d.id===disputeId ? {...d, status:'résolu', sellerProof, decision:winner} : d);
+  setDisputes(disputes);
+  const orders = getOrders().map(o=>{
+    if(o.id!==dispute.orderId) return o;
+    return winner==='acheteur'
+      ? {...o, status:'annulée', escrowStatus:'remboursé'}
+      : {...o, status:'terminée', escrowStatus:'libéré'};
+  });
+  setOrders(orders);
+  renderAdminView();
+  showToast(winner==='acheteur' ? 'Litige tranché en faveur de l\'acheteur : remboursement émis.' : 'Litige tranché en faveur du vendeur : paiement libéré.', 'success');
+}
+
+function renderAdminView(){
+  document.getElementById('adminView').classList.remove('hidden');
+  const orders = getOrders();
+  const gmv = orders.reduce((s,o)=>s+o.price,0);
+  document.getElementById('adminGMV').textContent = fmt(gmv);
+  document.getElementById('adminSellerCount').textContent = new Set(CATALOG.map(p=>p.seller)).size;
+  document.getElementById('adminCommission').textContent = fmt(gmv*0.12);
+
+  const log = getValidationLog();
+  document.getElementById('adminValidationLog').innerHTML = log.map((s,i)=>`
+    <div class="flex items-center justify-between border border-line rounded-xl p-3">
+      <div>
+        <div class="font-semibold text-sm">${s.name}</div>
+        <div class="text-xs opacity-60">${s.date}</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${s.status==='suspendu'?'bg-red-600 text-white':'bg-forest text-white'}">${s.status}</span>
+        <button onclick="suspendSeller(${i})" class="text-xs underline opacity-70">${s.status==='suspendu'?'Réactiver':'Suspendre'}</button>
+      </div>
+    </div>
+  `).join('');
+
+  const queue = getModerationQueue().filter(q=>q.status==='en attente');
+  document.getElementById('adminModerationQueue').innerHTML = queue.length ? queue.map(q=>`
+    <div class="border border-line rounded-xl p-3">
+      <div class="text-[11px] font-bold tracking-widest opacity-50">${q.type.toUpperCase()}</div>
+      <div class="text-sm mt-1">${q.excerpt}</div>
+      <div class="flex gap-2 mt-2">
+        <button onclick="resolveModeration(${q.id},'approuvé')" class="text-xs font-semibold bg-forest text-white px-3 py-1 rounded-full">Approuver</button>
+        <button onclick="resolveModeration(${q.id},'retiré')" class="text-xs font-semibold bg-red-600 text-white px-3 py-1 rounded-full">Retirer</button>
+      </div>
+    </div>
+  `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucun contenu en attente de modération.</div>`;
+
+  const disputes = getDisputes().filter(d=>d.status==='ouvert');
+  document.getElementById('adminDisputesList').innerHTML = disputes.length ? disputes.map(d=>{
+    const order = orders.find(o=>o.id===d.orderId);
+    return `
+    <div class="border border-line rounded-xl p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="font-semibold text-sm">Commande #${d.orderId}${order?` — ${order.seller}`:''}</div>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">Ouvert le ${d.date}</span>
+      </div>
+      <div class="mt-2 text-xs bg-sand rounded-lg p-2"><span class="font-semibold">Preuve acheteur :</span> ${d.buyerProof}</div>
+      <div class="mt-2">
+        <input id="sellerProof${d.id}" placeholder="Preuve / réponse du vendeur (saisie par l'admin après contact)" class="w-full border border-line rounded-lg px-2 py-1.5 text-xs outline-none">
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button onclick="resolveDispute(${d.id}, 'acheteur')" class="text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-full">Trancher pour l'acheteur (remboursement)</button>
+        <button onclick="resolveDispute(${d.id}, 'vendeur')" class="text-xs font-bold bg-ink text-white px-3 py-1.5 rounded-full">Trancher pour le vendeur (paiement libéré)</button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucun litige en cours.</div>`;
+
+  lucide.createIcons();
+}
+
+if(role==='seller') renderSellerView();
+else if(role==='admin') renderAdminView();
+else document.getElementById('buyerView').classList.remove('hidden');
+</script>
+</body>
+</html>

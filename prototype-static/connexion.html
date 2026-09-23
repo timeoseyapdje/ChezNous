@@ -6,6 +6,7 @@
 <title>Se connecter — Chez Nous</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>
 tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
@@ -71,6 +72,19 @@ body{background:#131A17;color:#131A17}
         <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
         <input required type="password" minlength="8" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
       </div>
+      <div class="space-y-2 pt-1">
+        <label class="flex items-start gap-2 text-xs opacity-80">
+          <input id="consentEmail" type="checkbox" checked class="mt-0.5">
+          Recevoir mes confirmations de commande et notifications par courriel
+        </label>
+        <label class="flex items-start gap-2 text-xs opacity-80">
+          <input id="consentSms" type="checkbox" onchange="document.getElementById('phoneField').classList.toggle('hidden', !this.checked)" class="mt-0.5">
+          Recevoir mes confirmations de commande et notifications par SMS
+        </label>
+        <div id="phoneField" class="hidden">
+          <input id="signupPhone" type="tel" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Numéro de téléphone mobile">
+        </div>
+      </div>
       <p class="text-[11px] opacity-50">En créant un compte, vous acceptez nos <a href="cgu-cgv.html" class="text-white underline">conditions générales</a>, notre <a href="confidentialite.html" class="text-white underline">politique de confidentialité</a> et notre <a href="charte-communaute.html" class="text-white underline">charte de la communauté</a>.</p>
       <button type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Créer mon compte</button>
     </form>
@@ -83,18 +97,25 @@ body{background:#131A17;color:#131A17}
       <div class="h-px bg-white/10 flex-1"></div>
     </div>
     <div class="grid grid-cols-2 gap-3">
-      <button onclick="showToast()" class="flex items-center justify-center gap-2 bg-white/5 border border-white/15 rounded-full py-2.5 text-sm font-semibold hover:bg-white/10"><i data-lucide="mail" class="w-4 h-4"></i> Google</button>
-      <button onclick="showToast()" class="flex items-center justify-center gap-2 bg-white/5 border border-white/15 rounded-full py-2.5 text-sm font-semibold hover:bg-white/10"><i data-lucide="facebook" class="w-4 h-4"></i> Facebook</button>
+      <button onclick="oauthSignIn('google')" class="flex items-center justify-center gap-2 bg-white text-ink rounded-full py-2.5 text-sm font-semibold hover:bg-white/90">
+        <svg class="w-4 h-4" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-2.1 14.1-5.5l-6.5-5.5C29.5 34.9 26.9 36 24 36c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.9l6.5 5.5C39.9 37.2 44 31.5 44 24c0-1.2-.1-2.4-.4-3.5z"/></svg>
+        Google
+      </button>
+      <button onclick="oauthSignIn('facebook')" class="flex items-center justify-center gap-2 bg-[#1877F2] text-white rounded-full py-2.5 text-sm font-semibold hover:brightness-110">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.24 10.44 22v-7.03H7.9v-2.91h2.54V9.85c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06z"/></svg>
+        Facebook
+      </button>
     </div>
   </div>
 
-  <p class="text-center text-xs opacity-50 mt-6">Cette page est une démonstration : aucune donnée n'est transmise à un serveur.</p>
+  <p class="text-center text-xs opacity-50 mt-6">Connexion Google/Facebook : nécessite la mise en production du backend Supabase avec vos identifiants OAuth réels (voir README du projet Next.js). En attendant, utilisez le formulaire courriel/mot de passe ci-dessus.</p>
 </main>
 
 <div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
 <script>
 lucide.createIcons();
+renderChatWidget();
 function setAuthTab(tab){
   const isLogin = tab==='login';
   document.getElementById('tabLogin').className = 'flex-1 text-sm font-semibold rounded-full py-2 ' + (isLogin?'tab-active':'tab-inactive');
@@ -104,6 +125,16 @@ function setAuthTab(tab){
 }
 function submitAuth(e, mode){
   e.preventDefault();
+  if(mode==='signup'){
+    const emailConsent = document.getElementById('consentEmail').checked;
+    const smsConsent = document.getElementById('consentSms').checked;
+    const phone = document.getElementById('signupPhone').value.trim();
+    try{
+      localStorage.setItem('cheznous_notif_email_consent', emailConsent ? '1' : '0');
+      localStorage.setItem('cheznous_notif_sms_consent', smsConsent ? '1' : '0');
+      if(phone) localStorage.setItem('cheznous_phone', phone);
+    }catch(err){}
+  }
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('signupForm').classList.add('hidden');
   document.getElementById('authSuccess').classList.remove('hidden');
@@ -111,13 +142,16 @@ function submitAuth(e, mode){
   setTimeout(()=>{ window.location.href = 'index.html'; }, 1200);
   return false;
 }
-function showToast(){
+function oauthSignIn(provider){
+  showToast(`Connexion ${provider==='google'?'Google':'Facebook'} : nécessite des identifiants OAuth réels côté backend (Supabase Auth). Pas encore configuré sur cette démo.`, 'info');
+}
+function showToast(msg, type='info'){
   const c = document.getElementById('toasts');
   const el = document.createElement('div');
-  el.className = 'px-4 py-3 rounded-2xl shadow-xl text-sm font-medium bg-white text-ink';
-  el.textContent = 'Connexion via un fournisseur externe — démonstration uniquement.';
+  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium max-w-[320px] ${type==='info'?'bg-white text-ink':'bg-forest text-white'}`;
+  el.textContent = msg || 'Connexion via un fournisseur externe — démonstration uniquement.';
   c.appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3000);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },4000);
 }
 </script>
 </body>

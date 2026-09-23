@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes commandes — Chez Nous</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="assets/shared.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{display:['"Libre Franklin"','Arial','sans-serif'],sans:['"Libre Franklin"','Arial','sans-serif']},colors:{cream:'#FFFFFF',ink:'#131A17',forest:'#146B4F',forestDark:'#0C4A37',azure:'#2E5CE6',coral:'#D94F2B',sand:'#F2F2F2',line:'#E4E4E4',gold:'#F2B94E'}}}}
+</script>
+<style>
+*{scroll-behavior:smooth}
+body{background:#FFFFFF;color:#131A17}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#D4D4D4;border-radius:99px}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div id="siteHeaderMount"></div>
+
+<main class="max-w-[900px] mx-auto px-4 md:px-6 py-10">
+  <h1 class="font-display font-bold text-2xl md:text-3xl flex items-center gap-2"><i data-lucide="calendar-days" class="w-6 h-6"></i> Mes commandes & réservations</h1>
+  <p class="text-sm opacity-60 mt-1">Suivez vos commandes, vos réservations et vos reçus Stripe.</p>
+
+  <div class="flex gap-2 mt-6">
+    <button onclick="setDashTab('upcoming')" id="dashUpcoming" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white">En cours</button>
+    <button onclick="setDashTab('past')" id="dashPast" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand">Passées</button>
+    <button onclick="setDashTab('seller')" id="dashSeller" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand hidden">Vue vendeur</button>
+  </div>
+  <div id="dashList" class="mt-4 space-y-3"></div>
+  <div class="mt-4 p-3 bg-sand rounded-2xl flex items-center gap-3 text-xs">
+    <i data-lucide="mail" class="w-4 h-4"></i>
+    <span>Notifications automatiques : confirmation, annulation, rappel 24h, nouvelle commande.</span>
+    <button onclick="showToast('Courriel de rappel envoyé à noemie@mail.ca','success')" class="ml-auto bg-white border border-line px-3 py-1 rounded-full font-semibold">Tester</button>
+  </div>
+</main>
+
+<footer id="footer" class="bg-white border-t border-line mt-10">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Explorer</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
+          <li><a href="messagerie.html" class="hover:underline">Messagerie</a></li>
+          <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="contact.html" class="hover:underline">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Légal</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
+          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<script>
+document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('commandes');
+initSiteHeader('commandes');
+renderChatWidget();
+lucide.createIcons();
+let currentRole = getRolePersisted();
+let dashTab = 'upcoming';
+let orders = getOrders();
+
+function starRow(n){ return Array.from({length:5}).map((_,i)=>`<i data-lucide="star" class="w-3 h-3 ${i<Math.round(n)?'fill-gold text-gold':'text-line'}"></i>`).join(''); }
+
+function setDashTab(t){
+  dashTab = t;
+  document.getElementById('dashUpcoming').className = t==='upcoming' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
+  document.getElementById('dashPast').className = t==='past' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
+  const sellerBtn = document.getElementById('dashSeller');
+  if(currentRole==='seller'){
+    sellerBtn.classList.remove('hidden');
+    sellerBtn.className = t==='seller' ? 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-ink text-white' : 'dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand';
+  } else {
+    sellerBtn.classList.add('hidden');
+  }
+  renderDash();
+}
+function renderDash(){
+  let items = [];
+  if(dashTab==='seller'){
+    items = [
+      {seller:"Client : Amira B.", service:'Pagnes wax x2', date:"Aujourd'hui", status:'confirmée', price:130},
+      {seller:'Client : Léa T.', service:'Tresses box braids', date:'Demain 10:30', status:'en attente', price:80}
+    ];
+  } else {
+    items = orders.filter(o=> dashTab==='upcoming' ? o.status!=='terminée' : o.status==='terminée');
+  }
+  const list = document.getElementById('dashList');
+  if(items.length===0){
+    list.innerHTML = `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune commande dans cette catégorie.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(o=>`
+    <div class="border border-line rounded-2xl p-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="w-10 h-10 rounded-full bg-sand flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-[160px]">
+          <div class="font-semibold text-sm">${o.seller} — ${o.service}</div>
+          <div class="text-xs opacity-60">${o.date} • ${o.price}$</div>
+        </div>
+        <span class="text-xs font-bold px-3 py-1 rounded-full ${o.status==='confirmée'?'bg-forest text-white':o.status==='en attente'?'bg-amber-500 text-white':'bg-gray-500 text-white'}">${o.status}</span>
+        <div class="flex gap-2">
+          ${o.status!=='terminée'?`<a href="messagerie.html" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></a>`:''}
+          ${o.status==='en attente'?`<button onclick="cancelOrder(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-white border border-line hover:bg-red-50">Annuler</button>`:''}
+          ${o.status==='terminée' && !o.review ?`<button onclick="leaveReview(${o.id})" class="text-xs font-bold px-4 py-1.5 rounded-full bg-gold">Laisser un avis</button>`:`${o.status==='terminée'?`<span class="text-xs text-forest font-semibold flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Avis laissé</span>`:''}`}
+          ${o.status==='confirmée'?`<button onclick="showToast('Reçu Stripe #${o.id} renvoyé par courriel','success')" class="text-xs font-semibold px-3 py-1 rounded-full bg-ink text-white">Reçu</button>`:''}
+        </div>
+      </div>
+      ${o.escrowStatus==='retenu' ? `
+      <div class="mt-3 bg-sand rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="text-xs">
+          <div class="font-semibold flex items-center gap-1"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Paiement conservé en sécurité</div>
+          <div class="opacity-60 mt-0.5">Donnez ce code au vendeur uniquement à la réception : <span class="font-mono font-bold text-forest">${o.releaseCode}</span></div>
+        </div>
+        <button onclick="reportDispute(${o.id})" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-line hover:bg-red-50">Signaler un litige</button>
+      </div>` : o.escrowStatus==='litige' ? `
+      <div class="mt-3 bg-red-50 text-red-700 rounded-xl p-3 text-xs font-semibold flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Litige en cours d'examen par notre équipe.</div>
+      ` : ''}
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+function reportDispute(id){
+  const proof = prompt("Décrivez le problème rencontré (preuve, photo à mentionner, détails) :");
+  if(proof === null) return;
+  if(containsProhibited(proof)){ showToast('Merci de reformuler sans langage inapproprié.','error'); return; }
+  openDispute(id, proof);
+  orders = getOrders();
+  renderDash();
+  showToast('Litige transmis à notre équipe. Le paiement reste bloqué jusqu\'à décision.','info');
+}
+function cancelOrder(id){
+  orders = orders.map(o=> o.id===id ? {...o,status:'annulée'} : o);
+  setOrders(orders);
+  renderDash();
+  showToast('Commande annulée. Courriel de notification envoyé. Remboursement Stripe sous 5 jours.','info');
+}
+function leaveReview(id){
+  orders = orders.map(o=> o.id===id ? {...o,review:true} : o);
+  setOrders(orders);
+  renderDash();
+  showToast('Merci ! Votre avis a été publié (avis vérifiés uniquement).','success');
+}
+function showToast(msg,type='success'){
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `px-4 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 ${type==='success'?'bg-ink text-white':type==='info'?'bg-white border border-line text-ink':'bg-red-600 text-white'}`;
+  el.innerHTML = `<span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="${type==='success'?'check':type==='info'?'mail':'alert-circle'}" class="w-4 h-4"></i></span><span>${msg}</span>`;
+  c.appendChild(el);
+  lucide.createIcons({nodes:[el]});
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+setDashTab(currentRole==='seller' ? 'seller' : 'upcoming');
+</script>
+</body>
+</html>
