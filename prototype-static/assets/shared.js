@@ -281,7 +281,7 @@ function renderCartGeneric(){
       if(!p) return '';
       return `
       <div class="flex gap-3 items-center">
-        <img src="${p.cover}" class="w-16 h-16 rounded-lg object-cover shrink-0">
+        <img src="${p.cover}" loading="lazy" class="w-16 h-16 rounded-lg object-cover shrink-0">
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-sm truncate">${p.name}</div>
           <div class="text-xs opacity-60">${fmt(p.price)} x ${c.qty}</div>

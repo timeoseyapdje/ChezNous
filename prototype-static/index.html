@@ -4,30 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="assets/tailwind.css">
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script>
-tailwind.config={
-  theme:{
-    extend:{
-      fontFamily:{ display:['"Libre Franklin"','Arial','sans-serif'], sans:['"Libre Franklin"','Arial','sans-serif'] },
-      colors:{
-        cream:'#FFFFFF',
-        ink:'#131A17',
-        forest:'#146B4F',
-        forestDark:'#0C4A37',
-        azure:'#2E5CE6',
-        coral:'#D94F2B',
-        sand:'#F2F2F2',
-        line:'#E4E4E4',
-        gold:'#F2B94E'
-      }
-    }
-  }
-}
-</script>
 <style>
 *{scroll-behavior:smooth}
 body{background:#FFFFFF;color:#131A17}
@@ -446,7 +426,7 @@ function renderFeatured(){
   document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
     <a href="marketplace.html?produit=${p.id}" class="bg-white rounded-xl border border-line overflow-hidden card-hover group block">
       <div class="relative h-[160px] overflow-hidden">
-        <img src="${p.cover}" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <img src="${p.cover}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
         <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</div>
