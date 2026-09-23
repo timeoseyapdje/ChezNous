@@ -424,7 +424,7 @@ function scrollCarousel(dir){
 
 function renderFeatured(){
   document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
-    <a href="marketplace.html?produit=${p.id}" class="bg-white rounded-xl border border-line overflow-hidden card-hover group block">
+    <a href="marketplace.html?produit=${p.id}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block">
       <div class="relative h-[160px] overflow-hidden">
         <img src="${p.cover}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
