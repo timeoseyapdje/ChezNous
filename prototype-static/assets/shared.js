@@ -376,7 +376,7 @@ function renderSiteHeader(active){
         ${navLink('marketplace.html','Marketplace','marketplace')}
         ${navLink('mes-commandes.html','Mes commandes','commandes')}
         ${navLink('messagerie.html','Messagerie','messagerie')}
-        <div id="navDashboardLink"></div>
+        <div id="navDashboardLink" style="display:contents"></div>
         ${navLink('contact.html','Contact','contact')}
         <div class="hidden md:flex items-center gap-2 ml-auto shrink-0">
           <span class="text-[10px] font-semibold opacity-60">RÔLE</span>
