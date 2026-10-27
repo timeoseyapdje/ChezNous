@@ -415,7 +415,7 @@ function openProfile(id){
       <div>
         <div class="border border-line rounded-2xl p-5 sticky top-4">
           ${actionBlock}
-          <a href="messagerie.html" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</a>
+          <a href="messagerie.html?avec=${encodeURIComponent(p.seller)}" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</a>
           <p class="text-center text-[11px] opacity-50 mt-3">Paiement Stripe • Annulation gratuite 24h • Reçu par courriel</p>
         </div>
       </div>

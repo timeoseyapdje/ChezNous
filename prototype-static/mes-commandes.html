@@ -116,7 +116,7 @@ function renderDash(){
         </div>
         <span class="text-xs font-bold px-3 py-1 rounded-full ${o.status==='confirmée'?'bg-forest text-white':o.status==='en attente'?'bg-amber-500 text-white':'bg-gray-500 text-white'}">${o.status}</span>
         <div class="flex gap-2">
-          ${o.status!=='terminée'?`<a href="messagerie.html" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></a>`:''}
+          ${o.status!=='terminée'?`<a href="messagerie.html?avec=${encodeURIComponent(o.seller)}" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></a>`:''}
           ${o.status==='en attente'?`<button onclick="cancelOrder(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-white border border-line hover:bg-red-50">Annuler</button>`:''}
           ${o.status==='terminée' && !o.review ?`<button onclick="leaveReview(${o.id})" class="text-xs font-bold px-4 py-1.5 rounded-full bg-gold">Laisser un avis</button>`:`${o.status==='terminée'?`<span class="text-xs text-forest font-semibold flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Avis laissé</span>`:''}`}
           ${o.status==='confirmée'?`<button onclick="showToast('Reçu Stripe #${o.id} renvoyé par courriel','success')" class="text-xs font-semibold px-3 py-1 rounded-full bg-ink text-white">Reçu</button>`:''}
