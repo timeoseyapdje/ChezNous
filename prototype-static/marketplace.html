@@ -6,8 +6,8 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js"></script>
-<script src="assets/shared.js"></script>
+<script src="assets/i18n-en.js?v=20261029b"></script>
+<script src="assets/shared.js?v=20261029b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -51,7 +51,7 @@ body{background:#FFFFFF;color:#131A17}
       </button>
     </div>
 
-    <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs shrink-0 ml-auto">
+    <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
       <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
       <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
       <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
@@ -262,7 +262,8 @@ const categories = [
   {id:'services', label:'Services communautaires', icon:'users'}
 ];
 
-const listings = CATALOG;
+const listings = getAllListings();
+const esc = escapeHtmlGlobal;
 
 function starRow(n){
   return Array.from({length:5}).map((_,i)=>`<i data-lucide="star" class="w-3 h-3 ${i<Math.round(n)?'fill-gold text-gold':'text-line'}"></i>`).join('');
@@ -293,27 +294,39 @@ function setCategoryFilter(id){
 }
 
 function renderMarket(list=listings){
+  if(list.length===0){
+    document.getElementById('cardsGrid').innerHTML = `
+      <div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1">
+        <i data-lucide="search-x" class="w-8 h-8 mx-auto opacity-40"></i>
+        <div class="font-semibold mt-3">Aucun résultat</div>
+        <p class="text-sm opacity-60 mt-1">Essayez un autre mot-clé, une autre catégorie ou une autre ville.</p>
+        <button onclick="resetFilters()" class="mt-4 bg-ink text-white rounded-full px-5 py-2 text-sm font-semibold">Réinitialiser les filtres</button>
+      </div>`;
+    document.getElementById('resultsCount').textContent = '0 résultat';
+    lucide.createIcons();
+    return;
+  }
   document.getElementById('cardsGrid').innerHTML = list.map(p=>`
     <div class="bg-white rounded-xl border border-line overflow-hidden card-hover group cursor-pointer" onclick="openProfile(${p.id})">
       <div class="relative h-[160px] overflow-hidden">
-        <img src="${p.cover}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <img src="${esc(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
         <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating} <span class="opacity-60 font-normal">(${p.reviews})</span></div>
         <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2">
-          <img src="${p.image}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
+          <img src="${esc(p.image)}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
           <div class="text-white">
-            <div class="font-semibold text-sm leading-none">${p.seller}</div>
-            <div class="text-xs opacity-80">${p.city}</div>
+            <div class="font-semibold text-sm leading-none">${esc(p.seller)}</div>
+            <div class="text-xs opacity-80">${esc(p.city)}</div>
           </div>
           <span class="ml-auto bg-white/90 text-ink text-xs font-bold px-3 py-1 rounded-full">${fmt(p.price)}</span>
         </div>
       </div>
       <div class="p-4">
-        <div class="font-semibold text-[15px] leading-tight">${p.name}</div>
-        <div class="text-xs opacity-60 mt-1 line-clamp-2">${p.desc}</div>
+        <div class="font-semibold text-[15px] leading-tight">${esc(p.name)}</div>
+        <div class="text-xs opacity-60 mt-1 line-clamp-2">${esc(p.desc)}</div>
         <div class="flex flex-wrap gap-1.5 mt-3">
-          ${p.tags.map(t=>`<span class="text-[11px] bg-sand border border-line px-2 py-1 rounded-full">${t}</span>`).join('')}
+          ${p.tags.map(t=>`<span class="text-[11px] bg-sand border border-line px-2 py-1 rounded-full">${esc(t)}</span>`).join('')}
         </div>
         <div class="flex gap-2 mt-4">
           <button onclick="event.stopPropagation();openProfile(${p.id})" class="flex-1 bg-sand hover:bg-white border border-line rounded-full py-2 text-sm font-semibold">Voir détails</button>
@@ -324,19 +337,19 @@ function renderMarket(list=listings){
       </div>
     </div>
   `).join('');
-  document.getElementById('resultsCount').textContent = list.length + ' résultats';
+  document.getElementById('resultsCount').textContent = list.length + (list.length>1 ? ' résultats' : ' résultat');
   lucide.createIcons();
 }
 
 function filterMarket(){
-  const q = document.getElementById('heroSearch').value.toLowerCase();
+  const q = normalizeText(document.getElementById('heroSearch').value.trim());
   const cat = document.getElementById('filterCategory').value;
   const city = document.getElementById('filterCity').value;
   const filtered = listings.filter(p=>{
     if(marketTab!=='all' && p.type!==marketTab) return false;
     if(cat && p.cat!==cat) return false;
     if(city && p.city!==city) return false;
-    if(q && !(p.name.toLowerCase().includes(q) || p.seller.toLowerCase().includes(q) || p.tags.join(' ').toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))) return false;
+    if(q && !normalizeText([p.name, p.seller, p.tags.join(' '), p.desc, p.city].join(' ')).includes(q)) return false;
     return true;
   });
   renderMarket(filtered);
@@ -370,22 +383,20 @@ function openProfile(id){
     <div class="mt-4">
       <div class="font-semibold text-sm mb-2">Choisissez un créneau</div>
       <div class="grid grid-cols-3 gap-2">
-        <button class="border border-line rounded-full py-2 text-sm font-medium hover:bg-sand">09:00</button>
-        <button class="bg-ink text-white rounded-full py-2 text-sm font-bold">14:00</button>
-        <button class="border border-line rounded-full py-2 text-sm font-medium hover:bg-sand">16:30</button>
+        ${SLOT_TIMES.map(t=>`<button onclick="selectProfileSlot(this,'${t}')" class="${slotClass(t===profileSlotTime)} profile-slot">${t}</button>`).join('')}
       </div>
       <button onclick="openBooking(${p.id});closeProfile()" class="w-full mt-4 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Réserver — ${fmt(p.price)}</button>
     </div>`;
   document.getElementById('profileContent').innerHTML = `
     <div class="relative h-[240px]">
-      <img src="${p.cover}" class="w-full h-full object-cover">
+      <img src="${esc(p.cover)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
       <button onclick="closeProfile()" class="absolute top-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
       <div class="absolute bottom-4 left-6 right-6 flex items-end gap-4 text-white">
-        <img src="${p.image}" class="w-20 h-20 rounded-2xl border-4 border-white object-cover">
+        <img src="${esc(p.image)}" class="w-20 h-20 rounded-2xl border-4 border-white object-cover">
         <div class="pb-1">
-          <h2 class="font-display text-2xl font-bold leading-none">${p.seller}</h2>
-          <div class="text-sm opacity-90">${p.name} • ${p.city}</div>
+          <h2 class="font-display text-2xl font-bold leading-none">${esc(p.seller)}</h2>
+          <div class="text-sm opacity-90">${esc(p.name)} • ${esc(p.city)}</div>
           <div class="flex items-center gap-2 mt-1 text-xs"><span class="bg-white text-ink px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</span> <span>${p.reviews} avis vérifiés</span></div>
         </div>
         <div class="ml-auto hidden md:block text-right">
@@ -401,7 +412,7 @@ function openProfile(id){
           <span class="bg-gold/20 text-[#7A5A00] text-xs font-bold px-3 py-1 rounded-full">Répond en ~2h</span>
         </div>
         <h3 class="font-semibold">À propos</h3>
-        <p class="text-sm opacity-70 mt-2 leading-relaxed">${p.desc} Paiement sécurisé Stripe, reçus automatiques, livraison ou ramassage selon le vendeur.</p>
+        <p class="text-sm opacity-70 mt-2 leading-relaxed">${esc(p.desc)} Paiement sécurisé Stripe, reçus automatiques, livraison ou ramassage selon le vendeur.</p>
         <h3 class="font-semibold mt-6">Avis vérifiés <span class="bg-sand px-2 py-0.5 rounded-full text-xs">${p.reviews}</span></h3>
         <div class="space-y-3 mt-3">
           <div class="border border-line rounded-2xl p-4">
@@ -425,34 +436,54 @@ function openProfile(id){
   `;
   lucide.createIcons();
 }
+const SLOT_TIMES = ['09:00','14:00','16:30'];
+let profileSlotTime = '14:00';
+function slotClass(active){
+  return active ? 'bg-ink text-white rounded-full py-2 text-sm font-bold' : 'border border-line rounded-full py-2 text-sm font-medium hover:bg-sand';
+}
+function selectProfileSlot(el, time){
+  profileSlotTime = time;
+  document.querySelectorAll('.profile-slot').forEach(b=>{ b.className = slotClass(b===el) + ' profile-slot'; });
+}
 function closeProfile(){ document.getElementById('profileModal').classList.add('hidden'); }
 let profileQtyState = 1;
 function profileQty(delta){ profileQtyState = Math.max(1, profileQtyState+delta); document.getElementById('profileQtyValue').textContent = profileQtyState; }
 function profileQtyGet(){ const v = profileQtyState; profileQtyState = 1; return v; }
 
 let bookingItem = null;
+let bookingSlot = '';
+// Créneaux des deux prochains jours ; celui choisi sur la fiche est présélectionné.
+function upcomingSlots(){
+  const slots = [];
+  for(let d=1; d<=2; d++){
+    const day = new Date(Date.now() + d*86400000).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+    SLOT_TIMES.forEach(t=>slots.push(`${day} ${t}`));
+  }
+  return slots;
+}
 function openBooking(id){
+  if(!isLoggedIn()){ requireLogin(`marketplace.html?produit=${id}`); return; }
   bookingItem = listings.find(x=>x.id===id);
+  const slots = upcomingSlots();
+  bookingSlot = slots.find(s=>s.endsWith(profileSlotTime)) || slots[0];
   document.getElementById('bookingBody').innerHTML = `
     <div class="flex gap-3 items-center bg-sand rounded-2xl p-3">
-      <img src="${bookingItem.image}" class="w-12 h-12 rounded-full object-cover">
+      <img src="${esc(bookingItem.image)}" class="w-12 h-12 rounded-full object-cover">
       <div>
-        <div class="font-semibold text-sm">${bookingItem.seller}</div>
-        <div class="text-xs opacity-60">${bookingItem.name} • ${bookingItem.city}</div>
+        <div class="font-semibold text-sm">${esc(bookingItem.seller)}</div>
+        <div class="text-xs opacity-60">${esc(bookingItem.name)} • ${esc(bookingItem.city)}</div>
       </div>
       <span class="ml-auto font-bold">${fmt(bookingItem.price)}</span>
     </div>
     <div>
       <label class="text-xs font-bold tracking-widest opacity-60">CRÉNEAU</label>
       <div class="grid grid-cols-3 gap-2 mt-2">
-        <button onclick="selectSlot(this)" class="slot border border-line rounded-full py-2 text-sm font-medium">13 sept. 17:30</button>
-        <button onclick="selectSlot(this)" class="slot bg-ink text-white rounded-full py-2 text-sm font-bold border-ink">13 sept. 18:30</button>
-        <button onclick="selectSlot(this)" class="slot border border-line rounded-full py-2 text-sm font-medium">14 sept. 12:00</button>
+        ${slots.map(s=>`<button onclick="selectSlot(this)" data-slot="${s}" class="slot ${slotClass(s===bookingSlot)}">${s}</button>`).join('')}
       </div>
     </div>
     <div>
       <label class="text-xs font-bold tracking-widest opacity-60">DÉTAILS</label>
-      <textarea placeholder="Ex: préférences, allergies, précisions..." class="w-full mt-2 border border-line rounded-2xl p-3 text-sm h-20 outline-none"></textarea>
+      <textarea id="bookingDetails" maxlength="500" placeholder="Ex: préférences, allergies, précisions..." class="w-full mt-2 border border-line rounded-2xl p-3 text-sm h-20 outline-none"></textarea>
     </div>
     <div class="flex justify-between text-sm pt-2 border-t border-line">
       <span class="opacity-60">Prestation</span><span class="font-semibold">${fmt(bookingItem.price)}</span>
@@ -470,8 +501,12 @@ function openBooking(id){
   lucide.createIcons();
 }
 function selectSlot(el){
-  document.querySelectorAll('.slot').forEach(s=>{ s.className='slot border border-line rounded-full py-2 text-sm font-medium'; });
-  el.className = 'slot bg-ink text-white rounded-full py-2 text-sm font-bold border-ink';
+  bookingSlot = el.dataset.slot;
+  document.querySelectorAll('.slot').forEach(s=>{ s.className = 'slot ' + slotClass(s===el); });
+}
+function requireLogin(retour){
+  showToast('Connectez-vous pour finaliser votre achat.','info');
+  setTimeout(()=>{ window.location.href = 'connexion.html?retour=' + encodeURIComponent(retour); }, 700);
 }
 function closeBooking(){ document.getElementById('bookingModal').classList.add('hidden'); }
 
@@ -501,10 +536,10 @@ function renderCart(){
       const p = listings.find(l=>l.id===c.id);
       if(!p) return '';
       return `<div class="flex gap-3 items-center border-b border-line pb-4">
-        <img src="${p.cover}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
+        <img src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
         <div class="flex-1">
-          <div class="font-semibold text-sm">${p.name}</div>
-          <div class="text-xs opacity-60">${p.seller}</div>
+          <div class="font-semibold text-sm">${esc(p.name)}</div>
+          <div class="text-xs opacity-60">${esc(p.seller)}</div>
           <div class="flex items-center gap-2 mt-1">
             <button onclick="changeQty(${p.id},-1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">-</button>
             <span class="text-sm font-medium">${c.qty}</span>
@@ -526,6 +561,7 @@ function closeCart(){ document.getElementById('cartModal').classList.add('hidden
 function checkoutCart(){
   if(cart.length===0) return;
   closeCart();
+  if(!isLoggedIn()){ requireLogin('marketplace.html?checkout=1'); return; }
   stripeMode = 'cart';
   const count = cartCount(cart);
   document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">Panier — ${count} article(s)</div><div class="text-xs opacity-60">Livraison estimée 3 à 5 jours ouvrables</div></div><div class="font-bold">${fmt(cartTotal())}</div>`;
@@ -559,10 +595,14 @@ function renderPaymentMethods(){
 }
 function selectPaymentMethod(id){ selectedPaymentMethod = id; renderPaymentMethods(); }
 function openStripeModal(mode){
+  if(!isLoggedIn()){ requireLogin(mode==='cart' ? 'marketplace.html?checkout=1' : `marketplace.html?produit=${bookingItem ? bookingItem.id : ''}`); return; }
+  if(mode==='booking' && !bookingItem) return;
   stripeMode = mode;
   if(mode==='booking'){
-    const total = bookingItem ? bookingItem.price*1.10 : 87;
-    document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">${bookingItem?bookingItem.seller:'Commande'}</div><div class="text-xs opacity-60">Frais inclus • Reçu automatique par courriel</div></div><div class="font-bold">${fmt(total)}</div>`;
+    bookingDetails = (document.getElementById('bookingDetails')?.value || '').trim();
+    if(bookingDetails && containsProhibited(bookingDetails)){ showToast('Merci de reformuler vos précisions sans langage inapproprié.','error'); return; }
+    const total = bookingItem.price*1.10;
+    document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">${esc(bookingItem.seller)}</div><div class="text-xs opacity-60">${esc(bookingSlot)} • Frais inclus • Reçu automatique par courriel</div></div><div class="font-bold">${fmt(total)}</div>`;
     document.getElementById('stripePayLabel').textContent = `Payer ${fmt(total)}`;
   }
   renderPaymentMethods();
@@ -570,25 +610,47 @@ function openStripeModal(mode){
   lucide.createIcons();
 }
 function closeStripe(){ document.getElementById('stripeModal').classList.add('hidden'); }
+let bookingDetails = '';
+function nextOrderId(orders){
+  return orders.reduce((m,o)=>Math.max(m, Number(o.id)||0), 100) + 1;
+}
+function todayLabel(){
+  return new Date().toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+}
+// Paiement simulé : la démo n'appelle pas Stripe, mais la commande garde ce qui a été choisi et payé.
 function confirmStripe(){
+  if(!isLoggedIn()){ closeStripe(); requireLogin('marketplace.html'); return; }
   closeStripe(); closeBooking();
   const orders = getOrders();
+  const method = PAYMENT_METHODS.find(m=>m.id===selectedPaymentMethod);
+  const paidAt = new Date().toISOString();
   if(stripeMode==='cart'){
-    const id = Math.floor(Math.random()*900+100);
-    const count = cartCount(cart);
-    const code = generateReleaseCode();
-    orders.unshift({id, seller:'Plusieurs vendeurs', service:`Panier — ${count} article(s)`, date:'Livraison estimée 3 à 5 jours', status:'confirmée', price:cartTotal(), type:'panier', escrowStatus:'retenu', releaseCode:code});
-    setOrders(orders);
+    // Une commande par vendeur, avec ses lignes, pour que chacun reçoive son propre code de livraison.
+    const bySeller = {};
+    cart.forEach(c=>{
+      const p = listings.find(l=>l.id===c.id);
+      if(!p) return;
+      (bySeller[p.seller] = bySeller[p.seller] || []).push({id:p.id, name:p.name, qty:c.qty, unitPrice:p.price, cat:p.cat});
+    });
+    let nextId = nextOrderId(orders);
+    const created = Object.entries(bySeller).map(([seller, items])=>{
+      const price = items.reduce((s,i)=>s+i.unitPrice*i.qty,0);
+      return {id:nextId++, seller, service:items.map(i=>`${i.name} x${i.qty}`).join(', '), items, date:`${todayLabel()} • livraison 3 à 5 jours`, status:'confirmée', price, fees:0, total:price, paymentMethod:method.label, paidAt, type:items[0].cat, escrowStatus:'retenu', releaseCode:generateReleaseCode()};
+    });
+    setOrders([...created, ...orders]);
     cart = [];
     setCart(cart);
     refreshCartBadge();
-    showToast(`Paiement confirmé ! Votre argent est conservé en sécurité jusqu'à réception. Code à remettre au vendeur : <b>${code}</b>. <a href='mes-commandes.html' class='underline'>Voir mes commandes</a>`,'success');
+    refreshNotifBadge();
+    showToast(`Paiement confirmé (${esc(method.label)}) ! ${created.length>1 ? created.length+' commandes créées, une par vendeur' : 'Commande créée'}. Votre argent est conservé en sécurité jusqu'à réception. <a href='mes-commandes.html' class='underline'>Voir mes commandes et les codes</a>`,'success');
   } else {
-    const id = Math.floor(Math.random()*900+100);
+    const price = bookingItem.price;
+    const fees = Math.round(price*0.10*100)/100;
     const code = generateReleaseCode();
-    orders.unshift({id, seller:bookingItem.seller, service:bookingItem.name, date:'13 sept. • 18:30', status:'confirmée', price:bookingItem.price, type:bookingItem.cat, escrowStatus:'retenu', releaseCode:code});
+    orders.unshift({id:nextOrderId(orders), seller:bookingItem.seller, service:bookingItem.name, items:[{id:bookingItem.id, name:bookingItem.name, qty:1, unitPrice:price, cat:bookingItem.cat}], date:bookingSlot, details:bookingDetails, status:'confirmée', price, fees, total:price+fees, paymentMethod:method.label, paidAt, type:bookingItem.cat, escrowStatus:'retenu', releaseCode:code});
     setOrders(orders);
-    showToast(`Paiement confirmé ! ${bookingItem.seller} a été notifié. Code à remettre à la réception : <b>${code}</b>.`,'success');
+    refreshNotifBadge();
+    showToast(`Paiement confirmé ! ${esc(bookingItem.seller)} a été notifié pour le ${esc(bookingSlot)}. Code à remettre à la réception : <b>${code}</b>.`,'success');
   }
 }
 
@@ -645,6 +707,7 @@ function applyUrlParams(){
   if(params.get('q')) document.getElementById('heroSearch').value = params.get('q');
   if(params.get('categorie')) document.getElementById('filterCategory').value = params.get('categorie');
   if(params.get('tab')) marketTab = params.get('tab');
+  if(hasChosenDeliverCity() && !params.get('q')) document.getElementById('filterCity').value = getDeliverCity();
   filterMarket();
   if(params.get('produit')) openProfile(Number(params.get('produit')));
   if(params.get('checkout')) checkoutCart();

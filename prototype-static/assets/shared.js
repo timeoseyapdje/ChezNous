@@ -10,12 +10,15 @@ function isLoggedIn(){
     location.replace('connexion.html?retour=' + encodeURIComponent(page + location.search));
     return;
   }
+  const style = document.createElement('style');
+  // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
+  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal'];
+  style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
   if(!isLoggedIn()){
     const nav = PRIVATE_PAGES.map(p=>`header a[href^="${p}"], #mobileMenu a[href^="${p}"], footer a[href^="${p}"]`).join(',');
-    const style = document.createElement('style');
-    style.textContent = `${nav}, header div:has(> #roleSelect){display:none !important}`;
-    document.head.appendChild(style);
+    style.textContent += `${nav}, header div:has(> #roleSelect){display:none !important}`;
   }
+  document.head.appendChild(style);
 })();
 
 const CATALOG = [
@@ -127,6 +130,7 @@ function persistLang(l){
 // est traduit via I18N_EN, y compris le contenu injecté après coup (observer).
 const I18N_ATTRS = ['placeholder','title','aria-label','alt'];
 const I18N_PATTERNS = [
+  [/^1 résultat$/, '1 result'],
   [/^(\d+) résultats?$/, '$1 results'],
   [/^(\d+) avis vérifiés$/, '$1 verified reviews'],
   [/^(\d+) avis$/, '$1 reviews'],
@@ -277,10 +281,47 @@ function releaseEscrow(orderId, codeEntered){
   return true;
 }
 
+function normalizeText(str){
+  return String(str).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+const PROHIBITED_WORDS = ['merde','putain','connard','connasse','conasse','salope','pute','batard','negre','negresse'];
+const PROHIBITED_PREFIXES = ['encul'];
+const PROHIBITED_PHRASES = ['sale noir','sale arabe'];
+// Comparaison mot par mot : « dispute » ou « computer » ne contiennent pas un mot interdit,
+// mais des lettres isolées sont recollées pour attraper « m e r d e ».
 function containsProhibited(text){
-  const terms = ['merde','putain','connard','conasse','salope','pute','encul','batard','négre','nègre','sale noir','sale arabe'];
-  const t = text.toLowerCase();
-  return terms.some(w => t.includes(w));
+  const words = normalizeText(text).replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(Boolean);
+  const merged = [];
+  let run = '';
+  for(const w of words){
+    if(w.length===1){ run += w; continue; }
+    if(run){ merged.push(run); run = ''; }
+    merged.push(w);
+  }
+  if(run) merged.push(run);
+  const isBad = w => [w, w.replace(/s$/,'')].some(v => PROHIBITED_WORDS.includes(v) || PROHIBITED_PREFIXES.some(p=>v.startsWith(p)));
+  const sentence = ' ' + merged.join(' ') + ' ';
+  return merged.some(isBad) || PROHIBITED_PHRASES.some(p=>sentence.includes(' '+p+' '));
+}
+
+function safeUrl(url){
+  return /^(https?:\/\/|assets\/)/i.test(String(url||'')) ? String(url) : '';
+}
+function getSellerListings(){
+  try{ return JSON.parse(localStorage.getItem('cheznous_seller_catalog') || '[]'); }catch(e){ return []; }
+}
+// Les annonces publiées depuis le tableau de bord vendeur s'ajoutent au catalogue de démo.
+function getAllListings(){
+  const ids = new Set(CATALOG.map(p=>p.id));
+  const fromSellers = getSellerListings().filter(p=>p && !ids.has(p.id)).map(p=>({
+    tags:[], desc:'', rating:5, reviews:0, plan:'basique', ...p,
+    cover: safeUrl(p.cover) || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop',
+    image: safeUrl(p.image) || 'https://i.pravatar.cc/100?img=48'
+  }));
+  return [...CATALOG, ...fromSellers];
+}
+function orderTotal(o){
+  return typeof o.total==='number' ? o.total : o.price;
 }
 
 const CITIES = ['Toronto','Montréal','Vancouver','Calgary','Ottawa','Québec','Winnipeg','Edmonton'];
@@ -294,6 +335,11 @@ function setDeliverCity(city){
   if(label) label.textContent = city;
   const menu = document.getElementById('deliverMenu');
   if(menu) menu.classList.add('hidden');
+  const cityFilter = document.getElementById('filterCity');
+  if(cityFilter && typeof filterMarket==='function'){ cityFilter.value = city; filterMarket(); }
+}
+function hasChosenDeliverCity(){
+  try{ return !!localStorage.getItem('cheznous_city'); }catch(e){ return false; }
 }
 function toggleDeliverMenu(){
   const menu = document.getElementById('deliverMenu');
@@ -304,11 +350,27 @@ function toggleDeliverMenu(){
   menu.classList.toggle('hidden');
 }
 
-const NOTIFICATIONS = [
-  { id:'n1', icon:'check-circle', text:'Commande confirmée chez Ankara Boutique', time:'Il y a 2h' },
-  { id:'n2', icon:'message-circle', text:'Nouveau message de Épicerie Le Baobab', time:'Il y a 5h' },
-  { id:'n3', icon:'star', text:'Rappel : laissez un avis pour votre dernière commande', time:'Hier' }
-];
+// Notifications calculées à partir des commandes et des messages non lus de la personne connectée.
+function getNotifications(){
+  if(!isLoggedIn()) return [];
+  const list = [];
+  getOrders().slice(0,5).forEach(o=>{
+    const total = fmt(orderTotal(o));
+    if(o.status==='annulée') list.push({id:`o${o.id}-annulee`, icon:'rotate-ccw', text:`Commande annulée chez ${o.seller} — remboursement de ${total} en cours`, time:o.date});
+    else if(o.escrowStatus==='litige') list.push({id:`o${o.id}-litige`, icon:'alert-triangle', text:`Litige ouvert sur votre commande chez ${o.seller}`, time:o.date});
+    else if(o.status==='terminée' && !o.review) list.push({id:`o${o.id}-avis`, icon:'star', text:`Laissez un avis pour ${o.seller}`, time:o.date});
+    else if(o.status==='confirmée') list.push({id:`o${o.id}-confirmee`, icon:'check-circle', text:`Commande confirmée chez ${o.seller} (${total})`, time:o.date});
+    else if(o.status==='en attente') list.push({id:`o${o.id}-attente`, icon:'clock', text:`Commande en attente chez ${o.seller}`, time:o.date});
+  });
+  try{
+    const convs = JSON.parse(localStorage.getItem('cheznous_messages_v1') || '[]');
+    convs.filter(c=>c.unread).forEach(c=>{
+      const last = c.messages[c.messages.length-1];
+      list.push({id:`m${c.id}-${c.messages.length}`, icon:'message-circle', text:`Nouveau message de ${c.name}`, time:last ? last.time : '', href:`messagerie.html?avec=${encodeURIComponent(c.name)}`});
+    });
+  }catch(e){}
+  return list;
+}
 function getReadNotifs(){
   try{ return JSON.parse(localStorage.getItem('cheznous_read_notifs') || '[]'); }catch(e){ return []; }
 }
@@ -317,7 +379,7 @@ function setReadNotifs(ids){
 }
 function unreadNotifCount(){
   const read = getReadNotifs();
-  return NOTIFICATIONS.filter(n=>!read.includes(n.id)).length;
+  return getNotifications().filter(n=>!read.includes(n.id)).length;
 }
 function refreshNotifBadge(){
   const badge = document.getElementById('notifBadge');
@@ -332,17 +394,18 @@ function toggleNotifMenu(){
   const opening = menu.classList.contains('hidden');
   if(opening){
     const read = getReadNotifs();
-    menu.innerHTML = NOTIFICATIONS.length ? NOTIFICATIONS.map(n=>`
-      <div class="flex gap-3 px-3 py-2.5 rounded-lg hover:bg-sand ${read.includes(n.id)?'opacity-50':''}">
+    const notifs = getNotifications();
+    menu.innerHTML = notifs.length ? notifs.map(n=>`
+      <a href="${n.href || 'mes-commandes.html'}" class="flex gap-3 px-3 py-2.5 rounded-lg hover:bg-sand ${read.includes(n.id)?'opacity-50':''}">
         <i data-lucide="${n.icon}" class="w-4 h-4 text-forest shrink-0 mt-0.5"></i>
         <div>
-          <div class="text-sm text-ink">${n.text}</div>
-          <div class="text-[11px] opacity-50 text-ink">${n.time}</div>
+          <div class="text-sm text-ink">${escapeHtmlGlobal(n.text)}</div>
+          <div class="text-[11px] opacity-50 text-ink">${escapeHtmlGlobal(n.time)}</div>
         </div>
-      </div>
+      </a>
     `).join('') : `<div class="px-3 py-4 text-sm text-ink opacity-60 text-center">Aucune notification</div>`;
     if(typeof lucide !== 'undefined') lucide.createIcons();
-    setReadNotifs(NOTIFICATIONS.map(n=>n.id));
+    setReadNotifs(notifs.map(n=>n.id));
     refreshNotifBadge();
   }
   menu.classList.toggle('hidden');
@@ -392,20 +455,22 @@ function renderCartGeneric(){
   if(cart.length===0){
     box.innerHTML = `<div class="text-center py-10 opacity-50 text-sm">Votre panier est vide.</div>`;
   } else {
+    const listings = getAllListings();
     box.innerHTML = cart.map(c=>{
-      const p = CATALOG.find(x=>x.id===c.id);
+      const p = listings.find(x=>x.id===c.id);
       if(!p) return '';
       return `
       <div class="flex gap-3 items-center">
-        <img src="${p.cover}" loading="lazy" class="w-16 h-16 rounded-lg object-cover shrink-0">
+        <img src="${escapeHtmlGlobal(p.cover)}" loading="lazy" class="w-16 h-16 rounded-lg object-cover shrink-0">
         <div class="flex-1 min-w-0">
-          <div class="font-semibold text-sm truncate">${p.name}</div>
+          <div class="font-semibold text-sm truncate">${escapeHtmlGlobal(p.name)}</div>
           <div class="text-xs opacity-60">${fmt(p.price)} x ${c.qty}</div>
         </div>
       </div>`;
     }).join('');
   }
-  const subtotal = cart.reduce((s,c)=>{ const p = CATALOG.find(x=>x.id===c.id); return s + (p?p.price*c.qty:0); }, 0);
+  const all = getAllListings();
+  const subtotal = cart.reduce((s,c)=>{ const p = all.find(x=>x.id===c.id); return s + (p?p.price*c.qty:0); }, 0);
   const sub = document.getElementById('cartSubtotal');
   if(sub) sub.textContent = fmt(subtotal);
   if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -469,7 +534,7 @@ function renderSiteHeader(active){
           <i data-lucide="search" class="w-4 h-4"></i>
         </button>
       </div>
-      <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs shrink-0 ml-auto">
+      <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
         <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
         <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
         <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
@@ -667,20 +732,57 @@ function handleUserInput(text){
   }
   setTimeout(()=>{ addBotMessage(getBotAnswer(m)); }, 400);
 }
+const BOT_INTENTS = [
+  {key:'hello', re:/bonjour|salut|^hello|^hi\b|^hey\b|coucou/},
+  {key:'sell', re:/vend(re|eur)|abonnement|commission|\bsell|seller|vendor|subscription|\bplan/},
+  {key:'delivery', re:/livrai|exp[ée]di|d[ée]lai|shipping|deliver|\bship/},
+  {key:'returns', re:/retour|rembours|annul|return|refund|cancel/},
+  {key:'payment', re:/paiement|stripe|carte|payer|escrow|litige|payment|\bpay\b|card|dispute/},
+  {key:'categories', re:/cat[ée]gor|produit|service|product/},
+  {key:'order', re:/panier|commander|acheter|\border|\bbuy|\bcart|purchase/},
+  {key:'account', re:/compte|connex|inscri|account|log ?in|sign ?(in|up)|register/},
+  {key:'reviews', re:/avis|note|[ée]toile|review|rating|star/},
+  {key:'privacy', re:/cookie|confidentialit|donn[ée]e|rgpd|lprpde|vie priv[ée]e|privacy|gdpr|\bdata\b/},
+  {key:'contact', re:/contact|support|aide|humain|t[ée]l[ée]phone|\bhelp|human|phone/},
+  {key:'thanks', re:/merci|thank/}
+];
+const BOT_ANSWERS = {
+  fr:{
+    hello:"Bonjour ! Comment puis-je vous aider : commander, devenir vendeur, livraison ou paiement ?",
+    sell:"Pour vendre sur Chez Nous, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.",
+    delivery:"Les délais varient selon le vendeur : 24 à 72h pour la cuisine maison, 3 à 5 jours pour les produits. Voir notre page <a href='livraison.html' class='underline text-forest'>Livraison</a>.",
+    returns:"Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.",
+    payment:"Vos paiements sont retenus de façon sécurisée jusqu'à confirmation de réception avec votre code de livraison. En cas de litige, notre équipe tranche après examen des preuves des deux parties.",
+    categories:"Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.",
+    order:"Parcourez la <a href='marketplace.html' class='underline text-forest'>boutique</a>, ajoutez un produit au panier, puis finalisez votre achat.",
+    account:"Cliquez sur « Se connecter » en haut de la page pour gérer votre profil et vos commandes.",
+    reviews:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.",
+    privacy:"Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.",
+    contact:"Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@cheznous.ca.",
+    thanks:"Avec plaisir ! N'hésitez pas si vous avez d'autres questions.",
+    fallback:"Je ne suis pas certain de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>."
+  },
+  en:{
+    hello:"Hello! How can I help: ordering, becoming a seller, delivery or payment?",
+    sell:"To sell on Chez Nous, pick a plan: Basic (free, 15% commission), Pro ($129/year, 10%) or Premium ($299/year, 6%). Details on the <a href='devenir-vendeur.html' class='underline text-forest'>Become a seller</a> page.",
+    delivery:"Delivery times depend on the seller: 24 to 72h for home cooking, 3 to 5 days for products. See our <a href='livraison.html' class='underline text-forest'>Delivery</a> page.",
+    returns:"A service can be cancelled for free up to 24h before. For products, see our <a href='retours-remboursement.html' class='underline text-forest'>Returns & refunds</a> page.",
+    payment:"Your payment is held securely until you confirm receipt with your delivery code. In case of a dispute, our team decides after reviewing evidence from both sides.",
+    categories:"Six categories are available: African grocery, Fashion & fabrics, Afro beauty & hair, Crafts & decor, Home cooking & catering, and Community services.",
+    order:"Browse the <a href='marketplace.html' class='underline text-forest'>marketplace</a>, add a product to your cart, then check out.",
+    account:"Click « Sign in » at the top of the page to manage your profile and orders.",
+    reviews:"Only buyers who actually paid can leave a review, so reviews stay trustworthy.",
+    privacy:"Your data is protected under PIPEDA, GDPR and CCPA. Details on our <a href='confidentialite.html' class='underline text-forest'>Privacy</a> page.",
+    contact:"You can reach our team through the <a href='contact.html' class='underline text-forest'>Contact</a> page, or by email at aide@cheznous.ca.",
+    thanks:"You're welcome! Let me know if you have other questions.",
+    fallback:"I'm not sure I understand. Try: ordering, becoming a seller, delivery, returns, payment or categories. For a human answer: <a href='contact.html' class='underline text-forest'>contact our team</a>."
+  }
+};
 function getBotAnswer(m){
-  if(/bonjour|salut|^hello|coucou/.test(m)) return "Bonjour ! Comment puis-je vous aider : commander, devenir vendeur, livraison ou paiement ?";
-  if(/vend(re|eur)|abonnement|commission/.test(m)) return "Pour vendre sur Chez Nous, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.";
-  if(/livrai|exp[ée]di|d[ée]lai|shipping/.test(m)) return "Les délais varient selon le vendeur : 24 à 72h pour la cuisine maison, 3 à 5 jours pour les produits. Voir notre page <a href='livraison.html' class='underline text-forest'>Livraison</a>.";
-  if(/retour|rembours|annul/.test(m)) return "Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.";
-  if(/paiement|stripe|carte|payer|escrow|litige/.test(m)) return "Vos paiements sont retenus de façon sécurisée jusqu'à confirmation de réception avec votre code de livraison. En cas de litige, notre équipe tranche après examen des preuves des deux parties.";
-  if(/cat[ée]gorie|produit|service/.test(m)) return "Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.";
-  if(/panier|commander|acheter/.test(m)) return "Parcourez la <a href='marketplace.html' class='underline text-forest'>boutique</a>, ajoutez un produit au panier, puis finalisez votre achat.";
-  if(/compte|connex|inscri/.test(m)) return "Cliquez sur « Se connecter » en haut de la page pour gérer votre profil et vos commandes.";
-  if(/avis|note|[ée]toile/.test(m)) return "Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.";
-  if(/cookie|confidentialit|donn[ée]e|rgpd|lprpde|vie priv[ée]e/.test(m)) return "Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.";
-  if(/contact|support|aide|humain|t[ée]l[ée]phone/.test(m)) return "Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@cheznous.ca.";
-  if(/merci/.test(m)) return "Avec plaisir ! N'hésitez pas si vous avez d'autres questions.";
-  return "Je ne suis pas certain de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>.";
+  const english = getLangPersisted()==='en' || /\b(how|what|where|when|can|do|does|is|the|my|i|you|hello|hi|thanks?)\b/.test(m) && !/\b(je|tu|vous|le|la|les|mon|ma|est|comment)\b/.test(m);
+  const answers = BOT_ANSWERS[english ? 'en' : 'fr'];
+  const intent = BOT_INTENTS.find(i=>i.re.test(m));
+  return answers[intent ? intent.key : 'fallback'];
 }
 
 function getRolePersisted(){
