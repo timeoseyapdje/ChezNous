@@ -6,6 +6,7 @@
 <title>Mes commandes — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
+<script src="assets/i18n-en.js"></script>
 <script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -32,7 +33,7 @@ body{background:#FFFFFF;color:#131A17}
   <div class="mt-4 p-3 bg-sand rounded-2xl flex items-center gap-3 text-xs">
     <i data-lucide="mail" class="w-4 h-4"></i>
     <span>Notifications automatiques : confirmation, annulation, rappel 24h, nouvelle commande.</span>
-    <button onclick="showToast('Courriel de rappel envoyé à noemie@mail.ca','success')" class="ml-auto bg-white border border-line px-3 py-1 rounded-full font-semibold">Tester</button>
+    <button onclick="showToast('Courriel de rappel envoyé à ' + escapeHtmlGlobal((getCurrentUser()||{}).email || 'votre adresse'),'success')" class="ml-auto bg-white border border-line px-3 py-1 rounded-full font-semibold">Tester</button>
   </div>
 </main>
 

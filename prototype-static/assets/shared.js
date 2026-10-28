@@ -1,3 +1,23 @@
+// Pages réservées aux utilisateurs connectés : sans session, on les masque de la navigation
+// et un accès direct renvoie vers la connexion, qui ramène ensuite à la page demandée.
+const PRIVATE_PAGES = ['mes-commandes.html','messagerie.html','tableau-de-bord.html'];
+function isLoggedIn(){
+  try{ return localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){ return false; }
+}
+(function guardPrivatePages(){
+  const page = location.pathname.split('/').pop() || 'index.html';
+  if(PRIVATE_PAGES.includes(page) && !isLoggedIn()){
+    location.replace('connexion.html?retour=' + encodeURIComponent(page + location.search));
+    return;
+  }
+  if(!isLoggedIn()){
+    const nav = PRIVATE_PAGES.map(p=>`header a[href^="${p}"], #mobileMenu a[href^="${p}"], footer a[href^="${p}"]`).join(',');
+    const style = document.createElement('style');
+    style.textContent = `${nav}, header div:has(> #roleSelect){display:none !important}`;
+    document.head.appendChild(style);
+  }
+})();
+
 const CATALOG = [
   {id:1, cat:'epicerie', type:'produit', name:'Panier épicerie ouest-africaine', seller:'Épicerie Le Baobab', city:'Montréal', price:38, rating:4.8, reviews:164, plan:'pro', image:'https://i.pravatar.cc/100?img=15', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Attiéké','Gari','Piment scotch bonnet'], desc:'Produits secs et frais importés : attiéké, gari, igname et piment pour vos plats traditionnels.'},
   {id:2, cat:'epicerie', type:'produit', name:'Coffret épices & riz thiéboudienne', seller:'Marché Teranga', city:'Toronto', price:29, rating:4.7, reviews:98, plan:'basique', image:'https://i.pravatar.cc/100?img=52', cover:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', tags:['Halal','Riz brisé','Épices maison'], desc:'Tout le nécessaire pour un thiéboudienne réussi, épices moulues sur place.'},
@@ -103,6 +123,102 @@ function getLangPersisted(){
 function persistLang(l){
   try{ localStorage.setItem('cheznous_lang', l); }catch(e){}
 }
+// Moteur de traduction commun à toutes les pages : chaque nœud texte et attribut visible
+// est traduit via I18N_EN, y compris le contenu injecté après coup (observer).
+const I18N_ATTRS = ['placeholder','title','aria-label','alt'];
+const I18N_PATTERNS = [
+  [/^(\d+) résultats?$/, '$1 results'],
+  [/^(\d+) avis vérifiés$/, '$1 verified reviews'],
+  [/^(\d+) avis$/, '$1 reviews'],
+  [/^(\d+) vendeurs?$/, '$1 sellers'],
+  [/^(\d+) article\(s\)$/, '$1 item(s)'],
+  [/^Panier — (\d+) article\(s\)$/, 'Cart — $1 item(s)'],
+  [/^Plusieurs vendeurs — Panier — (\d+) article\(s\)$/, 'Several sellers — Cart — $1 item(s)'],
+  [/^Payer (.+)$/, 'Pay $1'],
+  [/^Écrivez votre premier message à (.+)\.$/, 'Write your first message to $1.'],
+  [/^Vous : (.+)$/, 'You: $1'],
+  [/^Bonjour, (.+)$/, 'Hello, $1'],
+  [/^(.+) • (.+) • à partir de (.+)$/, '$1 • $2 • from $3'],
+  [/^(.+) — (.+)$/, '$1 — $2'],
+  [/^(.+) • Acheteuse? vérifiée?$/, '$1 • Verified buyer'],
+];
+const i18nTextOriginals = new WeakMap();
+const i18nAttrOriginals = new WeakMap();
+let i18nObserver = null;
+
+function translateFr(fr){
+  const key = fr.replace(/\s+/g,' ').trim();
+  if(!key) return null;
+  if(typeof I18N_EN !== 'undefined' && I18N_EN[key]) return I18N_EN[key];
+  for(const [re, rep] of I18N_PATTERNS){
+    const m = key.match(re);
+    // Les parties capturées (noms de catégories, etc.) sont elles-mêmes traduites si possible.
+    if(m) return rep.replace(/\$(\d)/g, (_, i)=> translateFr(m[i]) || m[i]);
+  }
+  return null;
+}
+function i18nTranslateTextNode(node, lang){
+  if(!i18nTextOriginals.has(node)) i18nTextOriginals.set(node, node.nodeValue);
+  const original = i18nTextOriginals.get(node);
+  let next = original;
+  if(lang==='en'){
+    const en = translateFr(original);
+    if(en){
+      const lead = original.match(/^\s*/)[0], trail = original.match(/\s*$/)[0];
+      next = lead + en + trail;
+    }
+  }
+  if(node.nodeValue !== next) node.nodeValue = next;
+}
+function i18nTranslateElementAttrs(el, lang){
+  for(const attr of I18N_ATTRS){
+    if(!el.hasAttribute(attr)) continue;
+    let originals = i18nAttrOriginals.get(el);
+    if(!originals){ originals = {}; i18nAttrOriginals.set(el, originals); }
+    if(!(attr in originals)) originals[attr] = el.getAttribute(attr);
+    const value = lang==='en' ? (translateFr(originals[attr]) || originals[attr]) : originals[attr];
+    if(el.getAttribute(attr) !== value) el.setAttribute(attr, value);
+  }
+}
+function i18nTranslateTree(root, lang){
+  if(root.nodeType === 3){ i18nTranslateTextNode(root, lang); return; }
+  if(root.nodeType !== 1) return;
+  if(root.closest && root.closest('script,style,textarea,[translate="no"]')) return;
+  i18nTranslateElementAttrs(root, lang);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+    acceptNode(n){
+      if(n.nodeType===1) return /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.tagName) || n.getAttribute('translate')==='no' ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while((n = walker.nextNode())){
+    if(n.nodeType===3) i18nTranslateTextNode(n, lang);
+    else i18nTranslateElementAttrs(n, lang);
+  }
+}
+function applyI18n(lang){
+  document.documentElement.lang = lang;
+  if(!document.body) return;
+  if(!window.__i18nTitleFr) window.__i18nTitleFr = document.title;
+  document.title = lang==='en' ? (translateFr(window.__i18nTitleFr) || window.__i18nTitleFr) : window.__i18nTitleFr;
+  if(i18nObserver) i18nObserver.disconnect();
+  i18nTranslateTree(document.body, lang);
+  i18nObserver = new MutationObserver(mutations=>{
+    const current = getLangPersisted();
+    for(const m of mutations) m.addedNodes.forEach(node=>i18nTranslateTree(node, current));
+  });
+  i18nObserver.observe(document.body, {childList:true, subtree:true});
+  const sel = document.getElementById('langSelect');
+  if(sel) sel.value = lang;
+}
+// Version par défaut ; l'accueil et la marketplace la redéfinissent pour leurs propres rendus.
+function setLang(l){
+  persistLang(l);
+  applyI18n(l);
+}
+document.addEventListener('DOMContentLoaded', ()=>applyI18n(getLangPersisted()));
+
 function renderLangOptions(){
   const sel = document.getElementById('langSelect');
   if(!sel) return;
@@ -401,6 +517,30 @@ function goToMarketplaceGlobal(){
   window.location.href = 'marketplace.html' + (params.toString() ? '?'+params.toString() : '');
 }
 
+function getCurrentUser(){
+  try{
+    const u = JSON.parse(localStorage.getItem('cheznous_user'));
+    if(u && u.email) return u;
+  }catch(e){}
+  return null;
+}
+function saveCurrentUser(user){
+  try{ localStorage.setItem('cheznous_user', JSON.stringify(user)); }catch(e){}
+}
+// Pour une connexion sans nom saisi : « awa.diallo@mail.ca » devient « Awa Diallo ».
+function nameFromEmail(email){
+  return email.split('@')[0].split(/[._-]+/).filter(Boolean).map(w=>w[0].toUpperCase()+w.slice(1)).join(' ') || email;
+}
+function userFirstName(user){
+  return user ? user.name.split(/\s+/)[0] : '';
+}
+function userInitials(user){
+  return user ? user.name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('') : '';
+}
+function escapeHtmlGlobal(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function updateAccountButtonGlobal(){
   const btn = document.getElementById('accountBtn');
   if(!btn) return;
@@ -408,7 +548,8 @@ function updateAccountButtonGlobal(){
   try{ loggedIn = localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){}
   if(loggedIn){
     btn.onclick = ()=>{ window.location.href='mes-commandes.html'; };
-    btn.innerHTML = `<div class="text-[10px]">Bonjour, Noémie</div><div class="font-semibold">Comptes & Commandes</div>`;
+    const first = userFirstName(getCurrentUser());
+    btn.innerHTML = `<div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div>`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.innerHTML = `<div class="font-semibold">Se connecter</div>`;

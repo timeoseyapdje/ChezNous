@@ -6,6 +6,7 @@
 <title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
+<script src="assets/i18n-en.js"></script>
 <script src="assets/shared.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -61,7 +62,7 @@ body{background:#FFFFFF;color:#131A17}
       <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
       <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
       <button id="accountBtn" onclick="openAuth()" class="text-left leading-tight hover:opacity-80">
-        <div class="text-[10px]" data-i18n="greeting">Bonjour, Noémie</div>
+        <div class="text-[10px]">Bonjour</div>
         <div class="font-semibold" data-i18n="accountOrders">Comptes & Commandes</div>
       </button>
       <div class="relative">
@@ -192,10 +193,10 @@ body{background:#FFFFFF;color:#131A17}
   <div class="absolute inset-0 bg-ink/50" onclick="closeAuth()"></div>
   <div class="absolute top-20 right-4 md:right-10 bg-white rounded-2xl shadow-2xl w-[320px] overflow-hidden">
     <div class="p-5 border-b border-line flex items-center gap-3">
-      <img src="https://i.pravatar.cc/100?img=48" class="w-12 h-12 rounded-full">
-      <div>
-        <div class="font-semibold">Noémie Tremblay</div>
-        <div class="text-xs opacity-60">noemie@mail.ca • Acheteuse vérifiée</div>
+      <span id="profileInitials" class="w-12 h-12 rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0"></span>
+      <div class="min-w-0">
+        <div id="profileName" class="font-semibold truncate"></div>
+        <div id="profileMeta" class="text-xs opacity-60 truncate"></div>
       </div>
     </div>
     <div class="p-3 space-y-1 text-sm">
@@ -263,7 +264,7 @@ const i18n = {
     logoSub:"DIASPORA AFRICAINE • CANADA",
     deliverTo:"Livrer à", allCategories:"Toutes catégories", menu:"Menu",
     navHome:"Accueil", navMarket:"Marketplace", navSell:"Vendre sur Chez Nous",
-    greeting:"Bonjour, Noémie", accountOrders:"Comptes & Commandes", roleLabel:"RÔLE",
+    greeting:"Bonjour", accountOrders:"Comptes & Commandes", roleLabel:"RÔLE",
     heroDesc:"Épicerie africaine, tissus wax, cheveux afro, artisanat, cuisine maison et services communautaires : des vendeurs indépendants de la diaspora, vérifiés, partout au pays.",
     popular:"Populaires :",
     step1Title:"1. Parcourez & comparez", step1Desc:"Filtrez par ville, catégorie ou origine culturelle.",
@@ -275,7 +276,7 @@ const i18n = {
     logoSub:"AFRICAN DIASPORA • CANADA",
     deliverTo:"Deliver to", allCategories:"All categories", menu:"Menu",
     navHome:"Home", navMarket:"Marketplace", navSell:"Sell on Chez Nous",
-    greeting:"Hello, Noémie", accountOrders:"Accounts & Orders", roleLabel:"ROLE",
+    greeting:"Hello", accountOrders:"Accounts & Orders", roleLabel:"ROLE",
     heroDesc:"African groceries, wax fabrics, afro hair care, crafts, home cooking and community services: verified independent diaspora sellers, across the country.",
     popular:"Popular:",
     step1Title:"1. Browse & compare", step1Desc:"Filter by city, category or cultural origin.",
@@ -320,6 +321,7 @@ function setLang(l){
   renderCategories();
   renderHeroCarousel();
   renderFeatured();
+  applyI18n(l);
   updateAccountButton();
 }
 
@@ -329,17 +331,19 @@ function updateAccountButton(){
   try{ loggedIn = localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){}
   if(loggedIn){
     btn.onclick = openAuth;
-    btn.innerHTML = `<div class="text-[10px]">${i18n[lang].greeting}</div><div class="font-semibold">${i18n[lang].accountOrders}</div>`;
+    const first = userFirstName(getCurrentUser());
+    btn.innerHTML = `<div class="text-[10px]">${i18n[lang].greeting}${first ? ', ' + escapeHtmlGlobal(first) : ''}</div><div class="font-semibold">${i18n[lang].accountOrders}</div>`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.innerHTML = `<div class="font-semibold">${lang==='fr'?'Se connecter':'Sign in'}</div>`;
   }
 }
 function logout(){
-  try{ localStorage.removeItem('cheznous_logged_in'); }catch(e){}
+  try{ localStorage.removeItem('cheznous_logged_in'); localStorage.removeItem('cheznous_user'); }catch(e){}
   updateAccountButton();
   closeAuth();
   showToast('Vous avez été déconnecté.','info');
+  setTimeout(()=>location.reload(), 800);
 }
 
 function renderCategories(){
@@ -481,7 +485,14 @@ function showToast(msg,type='success'){
   lucide.createIcons({nodes:[el]});
   setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
 }
-function openAuth(){ document.getElementById('authModal').classList.remove('hidden'); }
+const ROLE_LABELS = { buyer:'Acheteur', seller:'Vendeur', admin:'Administrateur' };
+function openAuth(){
+  const user = getCurrentUser() || { name:'Mon compte', email:'' };
+  document.getElementById('profileInitials').textContent = userInitials(user) || '?';
+  document.getElementById('profileName').textContent = user.name;
+  document.getElementById('profileMeta').textContent = [user.email, ROLE_LABELS[getRolePersisted()]].filter(Boolean).join(' • ');
+  document.getElementById('authModal').classList.remove('hidden');
+}
 function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
 
 function setCookieConsent(accepted){
