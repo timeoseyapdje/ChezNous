@@ -6,7 +6,7 @@
 <title>Devenir vendeur — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029d"></script>
+<script src="assets/i18n-en.js?v=20261029e"></script>
 <script src="assets/catalog.js?v=20261029d"></script>
 <script src="assets/shared.js?v=20261029d"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
@@ -167,7 +167,7 @@ body{background:#FFFFFF;color:#131A17}
       <button onclick="confirmStripe()" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3.5 font-bold flex items-center justify-center gap-2">
         <i data-lucide="lock" class="w-4 h-4"></i> <span id="stripePayLabel">Payer</span>
       </button>
-      <p class="text-center text-[11px] opacity-40">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE). Paiement traité par Stripe (carte, Apple Pay) et PayPal.</p>
+      <p class="text-center text-[11px] opacity-40">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE). Paiement traité par Stripe (carte, Apple Pay, Link).</p>
     </div>
   </div>
 </div>
@@ -192,9 +192,9 @@ lucide.createIcons();
 
 let selectedPaymentMethod = 'card';
 const PAYMENT_METHODS = [
-  {id:'card', label:'Carte bancaire', desc:'Visa, Mastercard, Interac — via Stripe', icon:'credit-card'},
+  {id:'card', label:'Carte bancaire', desc:'Visa, Mastercard, Diners Club — via Stripe', icon:'credit-card'},
   {id:'apple_pay', label:'Apple Pay', desc:'Paiement rapide et sécurisé — via Stripe', logo:'assets/logos/apple-pay.svg'},
-  {id:'paypal', label:'PayPal', desc:'Payer avec votre compte PayPal', logo:'assets/logos/paypal.svg'}
+  {id:'link', label:'Link', desc:'Paiement en un clic avec vos infos enregistrées — via Stripe', logo:'assets/logos/link-mark.svg'}
 ];
 function renderPaymentMethods(){
   document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.map(m=>`
