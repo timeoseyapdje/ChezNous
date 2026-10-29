@@ -1,6 +1,26 @@
-// Source unique des annonces de démo : chargé par les pages et par les fonctions /api,
-// pour que le prix payé soit toujours recalculé côté serveur.
-const CATALOG = [
+// Deux versions du site sur le même code : la démo (boutiques fictives, paiements Stripe en mode test, données
+// dans le navigateur) et le site réel (uniquement des données réelles, stockées dans Supabase).
+// Navigateur : l'adresse décide (« demo. » ou « -demo » dans le nom d'hôte). Sur localhost, ?mode=demo|real.
+// Serveur (fonctions /api) : seule la variable d'environnement CHEZNOUS_MODE=demo active la démo.
+function detectCheznousMode(){
+  if (typeof window === 'undefined') return process.env.CHEZNOUS_MODE === 'demo' ? 'demo' : 'real';
+  const host = location.hostname;
+  if (/^demo\.|-demo[.-]/.test(host)) return 'demo';
+  if (host === 'localhost' || host === '127.0.0.1') {
+    const asked = new URLSearchParams(location.search).get('mode');
+    try {
+      if (asked === 'demo' || asked === 'real') localStorage.setItem('cheznous_dev_mode', asked);
+      const mode = localStorage.getItem('cheznous_dev_mode') || 'demo';
+      document.cookie = 'cheznous_dev_mode=' + mode + '; path=/';
+      return mode;
+    } catch (e) { return 'demo'; }
+  }
+  return 'real';
+}
+const CHEZNOUS_MODE = detectCheznousMode();
+const IS_DEMO = CHEZNOUS_MODE === 'demo';
+
+const DEMO_CATALOG = [
   {id:1, cat:'epicerie', type:'produit', name:'Panier épicerie ouest-africaine', seller:'Épicerie Le Baobab', city:'Montréal', price:38, rating:4.8, reviews:164, plan:'pro', image:'https://i.pravatar.cc/100?img=15', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Attiéké','Gari','Piment scotch bonnet'], desc:'Produits secs et frais importés : attiéké, gari, igname et piment pour vos plats traditionnels.'},
   {id:2, cat:'epicerie', type:'produit', name:'Coffret épices & riz thiéboudienne', seller:'Marché Teranga', city:'Toronto', price:29, rating:4.7, reviews:98, plan:'basique', image:'https://i.pravatar.cc/100?img=52', cover:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', tags:['Halal','Riz brisé','Épices maison'], desc:'Tout le nécessaire pour un thiéboudienne réussi, épices moulues sur place.'},
   {id:3, cat:'mode', type:'produit', name:'Pagnes wax premium (6 yards)', seller:'Ankara Boutique', city:'Ottawa', price:65, rating:4.9, reviews:87, plan:'premium', image:'https://i.pravatar.cc/100?img=23', cover:'https://images.unsplash.com/photo-1734868032501-448d1457dc38?q=80&w=800&auto=format&fit=crop', tags:['Wax hollandais','Couleurs vives'], desc:'Wax véritable importé, idéal pour la confection de tenues traditionnelles ou modernes.'},
@@ -14,4 +34,6 @@ const CATALOG = [
   {id:11, cat:'services', type:'service', name:"Transfert d'argent vers l'Afrique", seller:'TransferPlus Diaspora', city:'Ottawa', price:5, rating:4.6, reviews:112, plan:'basique', image:'https://i.pravatar.cc/100?img=33', cover:'https://images.unsplash.com/photo-1587906697341-bfbde76785c7?q=80&w=800&auto=format&fit=crop', tags:['Frais réduits','Réseau fiable'], desc:"Envoi d'argent rapide et sécurisé vers l'Afrique de l'Ouest et centrale, frais fixes."},
   {id:12, cat:'services', type:'service', name:'DJ & animation événements', seller:'Ambiance Afrobeat Events', city:'Winnipeg', price:150, rating:4.8, reviews:39, plan:'basique', image:'https://i.pravatar.cc/100?img=51', cover:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop', tags:['Mariages','Afrobeat & Coupé-décalé'], desc:'Animation DJ pour mariages, baptêmes et événements communautaires, sonorisation incluse.'}
 ];
+// Le site réel n'affiche que des annonces réelles : aucune boutique de démo n'y apparaît ni n'y est payable.
+const CATALOG = IS_DEMO ? DEMO_CATALOG : [];
 if (typeof module !== 'undefined') module.exports = CATALOG;

@@ -2,7 +2,8 @@
 // protégée par RLS et par un trigger qui interdit à un utilisateur de changer son propre rôle.
 const SUPABASE_URL = 'https://ejsgiahqztydhulwbgly.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqc2dpYWhxenR5ZGh1bHdiZ2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjYzODUsImV4cCI6MjEwNTcwMjM4NX0.Xyg6vdIILJHAPvnE4Iemxy6kE6a_gF_7LAV0SErqom0';
-const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// La démo ne touche jamais Supabase : comptes, commandes et messages y restent dans le navigateur.
+const sb = !IS_DEMO && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 async function fetchServerProfile(){
   if(!sb) throw new Error('Supabase indisponible');
@@ -57,6 +58,7 @@ function authStateSignature(){
 
 // Au chargement, le cache est resynchronisé avec la vraie session ; s'il affichait un état faux, la page se recharge une fois.
 const authReady = (async ()=>{
+  if(IS_DEMO) return { offline:false, profile:null, demo:true };
   const before = authStateSignature();
   let profile;
   try{ profile = await fetchServerProfile(); }

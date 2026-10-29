@@ -689,5 +689,11 @@ const I18N_EN = {
 "Message trop long (2000 caractères maximum).": "Message too long (2000 characters max).",
 "Le message n'a pas pu être envoyé.": "The message could not be sent.",
 "Aucun membre trouvé avec ce courriel.": "No member found with this email.",
-"Ce membre est introuvable.": "This member could not be found."
+"Ce membre est introuvable.": "This member could not be found.",
+"Version démo : boutiques et données fictives. Paiements Stripe en mode test, aucun débit réel (carte 4242 4242 4242 4242).": "Demo version: fictional shops and data. Stripe payments in test mode, no real charge (card 4242 4242 4242 4242).",
+"Version démo : aucun courriel n'est envoyé. Connectez-vous avec n'importe quel mot de passe.": "Demo version: no email is sent. Sign in with any password.",
+"Version démo : aucun courriel n'est envoyé.": "Demo version: no email is sent.",
+"Les premières boutiques arrivent bientôt": "The first shops are coming soon",
+"Chez Nous ouvre ses portes : les annonces apparaîtront ici dès que les premiers vendeurs les publieront.": "Chez Nous is opening: listings will appear here as soon as the first sellers publish them.",
+"Ouvrir ma boutique": "Open my shop"
 };

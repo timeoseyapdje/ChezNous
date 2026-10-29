@@ -33,8 +33,12 @@ module.exports = async (req, res) => {
   const event = JSON.parse(raw);
   try {
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-      const session = await retrieveSession(event.data.object.id);
-      await recordPaidSession(session);
+      // Les paiements de la démo passent par le même compte Stripe : ils n'ont pas d'acheteur réel et ne sont pas enregistrés.
+      const meta = event.data.object.metadata || {};
+      if (meta.app_mode !== 'demo' && meta.buyer_id) {
+        const session = await retrieveSession(event.data.object.id);
+        await recordPaidSession(session);
+      }
     }
     return send(res, 200, { received: true });
   } catch (err) {

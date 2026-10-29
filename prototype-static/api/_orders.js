@@ -15,6 +15,29 @@ async function retrieveSession(id) {
   return stripeRequest('GET', `/checkout/sessions/${id}`, { expand: ['payment_intent.payment_method'] });
 }
 
+function paymentMethodLabel(session) {
+  const pi = session.payment_intent && typeof session.payment_intent === 'object' ? session.payment_intent : null;
+  const pm = pi && pi.payment_method;
+  const methodType = pm ? (pm.card && pm.card.wallet ? pm.card.wallet.type : pm.type) : 'card';
+  return METHOD_LABELS[methodType] || 'Carte bancaire';
+}
+
+// Démo : rien n'est enregistré en base, on renvoie seulement le détail recalculé pour la commande locale.
+function describeDemoSession(session) {
+  const mode = session.metadata.mode === 'booking' ? 'booking' : 'cart';
+  const { lines, subtotal, fees, total } = priceOrder(mode, JSON.parse(session.metadata.items || '[]'));
+  return {
+    paid: true,
+    mode,
+    items: lines.map(l => ({ id: l.listing.id, name: l.listing.name, seller: l.listing.seller, cat: l.listing.cat, qty: l.quantity, unitPrice: l.listing.price })),
+    subtotal, fees, total,
+    slot: session.metadata.slot || '',
+    details: session.metadata.details || '',
+    paymentMethod: paymentMethodLabel(session),
+    paidAt: new Date(session.created * 1000).toISOString(),
+  };
+}
+
 // Crée une commande par vendeur pour une session Stripe payée. Appelée par la page de retour et par le webhook :
 // l'index unique (stripe_session_id, seller_name) garantit qu'une session n'est jamais enregistrée deux fois.
 async function recordPaidSession(session) {
@@ -62,4 +85,4 @@ async function recordPaidSession(session) {
   return supabaseRest('GET', `orders?stripe_session_id=eq.${encodeURIComponent(session.id)}&order=order_number.asc`);
 }
 
-module.exports = { retrieveSession, recordPaidSession };
+module.exports = { retrieveSession, recordPaidSession, describeDemoSession };

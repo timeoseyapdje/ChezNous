@@ -1,5 +1,8 @@
 const CATALOG = require('../assets/catalog.js');
 
+// Projet Vercel de la démo : CHEZNOUS_MODE=demo. Jamais de clé live sur la démo.
+const IS_DEMO = process.env.CHEZNOUS_MODE === 'demo';
+
 const BOOKING_FEE_RATE = 0.10;
 const MAX_QTY = 20;
 
@@ -16,6 +19,7 @@ function toForm(obj, prefix, out = []) {
 async function stripeRequest(method, path, params, extraHeaders = {}) {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw Object.assign(new Error('STRIPE_SECRET_KEY manquante'), { status: 503 });
+  if (IS_DEMO && !key.startsWith('sk_test_')) throw Object.assign(new Error('La démo exige une clé Stripe de test'), { status: 503 });
   const query = params ? toForm(params) : '';
   const res = await fetch(`https://api.stripe.com/v1${path}${method === 'GET' && query ? `?${query}` : ''}`, {
     method,
@@ -69,4 +73,4 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-module.exports = { CATALOG, stripeRequest, priceOrder, siteOrigin, readJson, send };
+module.exports = { CATALOG, IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send };

@@ -16,6 +16,15 @@ function isLoggedIn(){
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
+  if(IS_DEMO) document.addEventListener('DOMContentLoaded', ()=>{
+    if(document.getElementById('demoBanner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'demoBanner';
+    banner.setAttribute('role','note');
+    banner.style.cssText = 'background:#F5B700;color:#131A17;font-size:12px;font-weight:600;text-align:center;padding:6px 16px;line-height:1.4';
+    banner.textContent = 'Version démo : boutiques et données fictives. Paiements Stripe en mode test, aucun débit réel (carte 4242 4242 4242 4242).';
+    document.body.prepend(banner);
+  });
   if(!isLoggedIn()){
     const nav = PRIVATE_PAGES.map(p=>`header a[href^="${p}"], #mobileMenu a[href^="${p}"], footer a[href^="${p}"]`).join(',');
     style.textContent += `${nav}, header div:has(> #roleSelect){display:none !important}`;
@@ -228,13 +237,20 @@ function cartCount(cart){
   return cart.reduce((s,c)=>s+c.qty, 0);
 }
 
-// Cache des commandes de la personne connectée, rempli depuis Supabase par « Mes commandes » et le retour de paiement.
+// Site réel : cache des commandes Supabase (« Mes commandes », retour de paiement). Démo : commandes d'exemple locales.
 function getOrders(){
   try{
     const raw = localStorage.getItem('cheznous_orders');
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  return [];
+  if(!IS_DEMO) return [];
+  const seed = [
+    {id:101, seller:'Ankara Boutique', service:'Pagnes wax premium x2', date:'12 sept.', status:'confirmée', price:130, type:'mode', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
+    {id:102, seller:'Épicerie Le Baobab', service:'Panier épicerie', date:'13 sept. • ramassage 17:30', status:'en attente', price:38, type:'epicerie', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
+    {id:103, seller:'Natural Roots Hair Studio', service:'Tresses box braids', date:'02 sept. • 10:30', status:'terminée', price:80, type:'beaute', review:false, escrowStatus:'libéré', releaseCode:generateReleaseCode()}
+  ];
+  setOrders(seed);
+  return seed;
 }
 function setOrders(orders){
   try{ localStorage.setItem('cheznous_orders', JSON.stringify(orders)); }catch(e){}
@@ -295,6 +311,8 @@ function getSellerListings(){
 }
 // Les annonces publiées depuis le tableau de bord vendeur s'ajoutent au catalogue de démo.
 function getAllListings(){
+  // Site réel : seules les annonces enregistrées en base pourront s'afficher (pas les brouillons locaux d'un navigateur).
+  if(!IS_DEMO) return [...CATALOG];
   const ids = new Set(CATALOG.map(p=>p.id));
   const fromSellers = getSellerListings().filter(p=>p && !ids.has(p.id)).map(p=>({
     tags:[], desc:'', rating:5, reviews:0, plan:'basique', ...p,
@@ -776,7 +794,9 @@ const ROLE_RANK = {buyer:0, seller:1, admin:2};
 function getServerRole(){
   try{ return localStorage.getItem('cheznous_server_role') || 'buyer'; }catch(e){ return 'buyer'; }
 }
+// En démo, les trois vues restent accessibles pour la présentation ; sur le site réel, Supabase décide.
 function isRoleAllowed(role, serverRole = getServerRole()){
+  if(IS_DEMO) return role in ROLE_RANK;
   return role in ROLE_RANK && ROLE_RANK[role] <= (ROLE_RANK[serverRole] ?? 0);
 }
 function getRolePersisted(){

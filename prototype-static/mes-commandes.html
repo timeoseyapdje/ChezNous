@@ -6,11 +6,11 @@
 <title>Mes commandes — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029k"></script>
-<script src="assets/catalog.js?v=20261029d"></script>
-<script src="assets/shared.js?v=20261029h"></script>
+<script src="assets/i18n-en.js?v=20261029l"></script>
+<script src="assets/catalog.js?v=20261029e"></script>
+<script src="assets/shared.js?v=20261029i"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029g"></script>
+<script src="assets/auth.js?v=20261029h"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -193,6 +193,7 @@ function submitDispute(id){
 }
 
 async function sendTestNotification(){
+  if(IS_DEMO){ showToast('Version démo : aucun courriel n\'est envoyé.','info'); return; }
   const btn = document.getElementById('notifyTestBtn');
   btn.disabled = true;
   btn.style.opacity = '0.6';
@@ -240,6 +241,7 @@ function mapDbOrder(row, local){
   return mapped;
 }
 async function loadServerOrders(){
+  if(IS_DEMO) return;
   const { profile } = await authReady;
   if(!profile || !sb) return;
   const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending:false });
@@ -252,6 +254,14 @@ async function loadServerOrders(){
 }
 
 async function cancelOrder(id){
+  if(IS_DEMO){
+    orders = orders.map(o=> o.id===id ? {...o, status:'annulée', escrowStatus:'remboursé', cancelledAt:new Date().toISOString()} : o);
+    setOrders(orders);
+    renderDash();
+    refreshNotifBadge();
+    showToast('Commande annulée. Elle est maintenant dans « Passées » et le remboursement est en cours (sous 5 jours).','info');
+    return;
+  }
   try{
     const res = await fetch('api/cancel-order', {
       method:'POST',
@@ -332,6 +342,34 @@ function showToast(msg,type='success'){
 setDashTab(currentRole==='seller' ? 'seller' : 'upcoming');
 
 // Retour de Stripe Checkout : le serveur relit la session, enregistre la commande dans Supabase, puis on recharge la liste.
+// Démo : le serveur confirme le paiement Stripe (mode test), puis la commande est gardée dans ce navigateur.
+function addDemoOrders(data, sessionId){
+  orders = getOrders();
+  if(orders.some(o=>o.stripeSessionId===sessionId)) return;
+  const base = {status:'confirmée', paymentMethod:data.paymentMethod, paidAt:data.paidAt, stripeSessionId:sessionId, escrowStatus:'retenu'};
+  let nextId = orders.reduce((m,o)=>Math.max(m, Number(o.id)||0), 100) + 1;
+  let created;
+  if(data.mode==='booking'){
+    const it = data.items[0];
+    created = [{...base, id:nextId, seller:it.seller, service:it.name, items:[it], date:data.slot, details:data.details, price:data.subtotal, fees:data.fees, total:data.total, type:it.cat, releaseCode:generateReleaseCode()}];
+  } else {
+    const bySeller = {};
+    data.items.forEach(i=>{ (bySeller[i.seller] = bySeller[i.seller] || []).push(i); });
+    const label = new Date().toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+    created = Object.entries(bySeller).map(([seller, items])=>{
+      const price = items.reduce((s,i)=>s+i.unitPrice*i.qty,0);
+      return {...base, id:nextId++, seller, service:items.map(i=>`${i.name} x${i.qty}`).join(', '), items, date:`${label} • livraison 3 à 5 jours`, price, fees:0, total:price, type:items[0].cat, releaseCode:generateReleaseCode()};
+    });
+    setCart([]);
+    const cartBadge = document.getElementById('cartCount');
+    if(cartBadge) cartBadge.textContent = '0';
+  }
+  orders = [...created, ...orders];
+  setOrders(orders);
+  setDashTab('upcoming');
+  refreshNotifBadge();
+  showToast(`Paiement test confirmé (${esc(data.paymentMethod)}) ! ${created.length>1 ? created.length+' commandes créées, une par vendeur' : 'Commande créée'}. Votre code de réception : <b>${created[0].releaseCode}</b>.`,'success');
+}
 async function handleStripeReturn(){
   const params = new URLSearchParams(window.location.search);
   const sessionId = params.get('session_id');
@@ -343,6 +381,7 @@ async function handleStripeReturn(){
     const res = await fetch('api/checkout-session?session_id=' + encodeURIComponent(sessionId), { headers: await authHeaders() });
     const data = await res.json();
     if(!res.ok) throw new Error();
+    if(IS_DEMO && data.paid){ addDemoOrders(data, sessionId); return true; }
     if(!data.paid && data.pending){ showToast("Prélèvement bancaire en cours de validation (jusqu'à 7 jours ouvrables). Votre commande apparaîtra ici dès sa confirmation.",'info'); await loadServerOrders(); return true; }
     if(!data.paid){ showToast("Paiement non finalisé. Aucune commande n'a été créée.",'error'); return true; }
     if(data.mode==='cart'){

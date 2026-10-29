@@ -6,11 +6,11 @@
 <title>Se connecter — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029k"></script>
-<script src="assets/catalog.js?v=20261029d"></script>
-<script src="assets/shared.js?v=20261029h"></script>
+<script src="assets/i18n-en.js?v=20261029l"></script>
+<script src="assets/catalog.js?v=20261029e"></script>
+<script src="assets/shared.js?v=20261029i"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029g"></script>
+<script src="assets/auth.js?v=20261029h"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -177,8 +177,23 @@ async function finishSignIn(){
   document.getElementById('authSuccess').classList.remove('hidden');
   setTimeout(()=>{ window.location.href = returnTarget(); }, 1200);
 }
+// Démo : n'importe quel courriel ouvre une session fictive, gardée dans ce navigateur uniquement.
+function demoSignIn(mode){
+  const isSignup = mode==='signup';
+  const email = document.getElementById(isSignup ? 'signupEmail' : 'loginEmail').value.trim();
+  const known = getCurrentUser();
+  const name = isSignup ? document.getElementById('signupName').value.trim() : (known && known.email.toLowerCase()===email.toLowerCase() ? known.name : nameFromEmail(email));
+  saveCurrentUser({ name, email });
+  try{ localStorage.setItem('cheznous_logged_in','1'); }catch(err){}
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('signupForm').classList.add('hidden');
+  document.getElementById('authSuccess').classList.remove('hidden');
+  setTimeout(()=>{ window.location.href = returnTarget(); }, 1200);
+  return false;
+}
 async function submitAuth(e, mode){
   e.preventDefault();
+  if(IS_DEMO) return demoSignIn(mode);
   const isSignup = mode==='signup';
   const btn = isSignup ? 'signupSubmit' : 'loginSubmit';
   const errBox = isSignup ? 'signupError' : 'loginError';
@@ -225,6 +240,7 @@ async function submitAuth(e, mode){
 }
 async function submitForgot(e){
   e.preventDefault();
+  if(IS_DEMO){ showFormMessage('forgotMessage', 'Version démo : aucun courriel n\'est envoyé. Connectez-vous avec n\'importe quel mot de passe.'); return false; }
   if(!sb) return false;
   setBusy('forgotSubmit', true);
   try{

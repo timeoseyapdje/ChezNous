@@ -6,11 +6,11 @@
 <title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029k"></script>
-<script src="assets/catalog.js?v=20261029d"></script>
-<script src="assets/shared.js?v=20261029h"></script>
+<script src="assets/i18n-en.js?v=20261029l"></script>
+<script src="assets/catalog.js?v=20261029e"></script>
+<script src="assets/shared.js?v=20261029i"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029g"></script>
+<script src="assets/auth.js?v=20261029h"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -354,7 +354,7 @@ function renderCategories(){
     <a href="marketplace.html?categorie=${c.id}" class="bg-white border border-line rounded-2xl p-4 text-left card-hover hover:border-forest transition group block">
       <div class="w-10 h-10 rounded-xl bg-sand group-hover:bg-forest group-hover:text-white flex items-center justify-center transition"><i data-lucide="${c.icon}" class="w-5 h-5"></i></div>
       <div class="font-semibold text-sm mt-3">${lang==='fr'?c.label:c.label_en}</div>
-      <div class="text-xs opacity-50">${getCategoryVendorCount(c.id)} ${lang==='fr'?'vendeurs':'sellers'}</div>
+      <div class="text-xs opacity-50">${(n=>n ? `${n} ${lang==='fr'?'vendeurs':'sellers'}` : (lang==='fr'?'Premiers vendeurs bienvenus':'First sellers welcome'))(getCategoryVendorCount(c.id))}</div>
     </a>
   `).join('');
   const heroSel = document.getElementById('heroCategory');
@@ -425,6 +425,14 @@ function scrollCarousel(dir){
 }
 
 function renderFeatured(){
+  // Site réel avant les premières annonces : on invite les vendeurs plutôt que d'afficher une rangée vide.
+  if(!featured.length){
+    document.getElementById('featuredGrid').innerHTML = `<div class="w-full bg-sand rounded-xl p-6 text-sm">
+      <div class="font-semibold">${lang==='fr'?'Les premières boutiques arrivent bientôt.':'The first shops are coming soon.'}</div>
+      <div class="opacity-60 mt-1">${lang==='fr'?'Vous vendez des produits ou des services de la diaspora ?':'Do you sell diaspora products or services?'} <a href="devenir-vendeur.html" class="text-forest font-semibold hover:underline">${lang==='fr'?'Ouvrez votre boutique':'Open your shop'}</a></div>
+    </div>`;
+    return;
+  }
   document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
     <a href="marketplace.html?produit=${p.id}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block">
       <div class="relative h-[160px] overflow-hidden">
