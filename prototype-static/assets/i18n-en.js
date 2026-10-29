@@ -677,5 +677,8 @@ const I18N_EN = {
 "Paiement en un clic avec vos infos enregistrées — via Stripe": "One-click payment with your saved details — via Stripe",
 "Prélèvement bancaire en cours de validation (jusqu'à 7 jours ouvrables). Votre commande apparaîtra ici dès sa confirmation.": "Bank debit being validated (up to 7 business days). Your order will appear here once confirmed.",
 "Prélèvement bancaire": "Bank debit",
-"Visa, Mastercard, American Express, UnionPay. Payez en plusieurs fois avec Klarna, Afterpay ou Affirm (dès 50 $). Montants en dollars canadiens.": "Visa, Mastercard, American Express, UnionPay. Pay in installments with Klarna, Afterpay or Affirm (from $50). Amounts in Canadian dollars."
+"Visa, Mastercard, American Express, UnionPay. Payez en plusieurs fois avec Klarna, Afterpay ou Affirm (dès 50 $). Montants en dollars canadiens.": "Visa, Mastercard, American Express, UnionPay. Pay in installments with Klarna, Afterpay or Affirm (from $50). Amounts in Canadian dollars.",
+"L'envoi de courriels n'est pas encore configuré.": "Email sending is not configured yet.",
+"Le courriel n'a pas pu être envoyé.": "The email could not be sent.",
+"Courriel de test envoyé à": "Test email sent to"
 };
