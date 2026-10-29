@@ -6,7 +6,7 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029g"></script>
+<script src="assets/i18n-en.js?v=20261029h"></script>
 <script src="assets/catalog.js?v=20261029d"></script>
 <script src="assets/shared.js?v=20261029d"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
@@ -579,8 +579,19 @@ const PAYMENT_METHODS = [
   {id:'card', label:'Carte bancaire', icon:'credit-card'},
   {id:'apple_pay', label:'Pay', mark:'assets/logos/apple-mark.svg', alt:'Apple Pay', only:'apple'},
   {id:'google_pay', label:'Pay', mark:'assets/logos/google-g.svg', alt:'Google Pay', only:'other'},
-  {id:'link', label:'link', mark:'assets/logos/link-mark.svg', alt:'Link'}
+  {id:'link', label:'link', mark:'assets/logos/link-mark.svg', alt:'Link'},
+  {id:'acss_debit', label:'Prélèvement bancaire', icon:'landmark'},
+  {id:'klarna', label:'Klarna.', badge:{bg:'#FFB3C7', fg:'#0B051D'}},
+  {id:'afterpay_clearpay', label:'afterpay', badge:{bg:'#B2FCE4', fg:'#000'}},
+  {id:'affirm', label:'affirm', badge:{bg:'#4A4AF4', fg:'#fff'}}
 ];
+function paymentChip(m){
+  if(m.badge) return `<span class="rounded-full px-3 py-1.5 text-xs font-bold" style="background:${m.badge.bg};color:${m.badge.fg};font-size:13px;letter-spacing:-0.01em">${m.label}</span>`;
+  const inner = m.mark
+    ? `<img src="${m.mark}" alt="${m.alt}" style="height:16px;width:auto;margin-top:-2px"><span aria-hidden="true" style="font-size:13px;letter-spacing:-0.01em">${m.label}</span>`
+    : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`;
+  return `<span class="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold">${inner}</span>`;
+}
 // Stripe ne montre Apple Pay que sur les appareils Apple, et Google Pay ailleurs : on annonce le portefeuille que le client verra.
 function isAppleDevice(){
   // Les iPad récents s'annoncent comme « Macintosh » : ils sont couverts par le même test.
@@ -588,11 +599,8 @@ function isAppleDevice(){
 }
 function renderPaymentMethods(){
   const device = isAppleDevice() ? 'apple' : 'other';
-  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.filter(m=>!m.only || m.only===device).map(m=>`
-    <span class="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold">
-      ${m.mark ? `<img src="${m.mark}" alt="${m.alt}" style="height:16px;width:auto;margin-top:-2px"><span aria-hidden="true" style="font-size:13px;letter-spacing:-0.01em">${m.label}</span>` : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`}
-    </span>
-  `).join('') + `<p class="w-full text-[11px] opacity-50 mt-1">Visa, Mastercard, American Express, Discover. Montants en dollars canadiens.</p>`;
+  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.filter(m=>!m.only || m.only===device).map(paymentChip).join('')
+    + `<p class="w-full text-[11px] opacity-50 mt-1">Visa, Mastercard, American Express, Discover. Payez en plusieurs fois avec Klarna, Afterpay ou Affirm (dès 50 $). Montants en dollars canadiens.</p>`;
   lucide.createIcons();
 }
 function openStripeModal(mode){

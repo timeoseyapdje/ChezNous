@@ -30,9 +30,15 @@ module.exports = async (req, res) => {
     const session = await stripeRequest('POST', '/checkout/sessions', {
       mode: 'payment',
       line_items: lineItems,
-      // Marché canadien uniquement : carte (Apple Pay et Google Pay passent par la carte) et Link, toujours en CAD.
-      payment_method_types: ['card', 'link'],
+      // Moyens choisis dans le dashboard Stripe. Sans conversion de devise, tout reste en CAD et Stripe ne propose
+      // que les moyens canadiens (carte, Apple Pay, Google Pay, Link, Klarna, Afterpay, Affirm dès 50 $, prélèvement DPA).
       adaptive_pricing: { enabled: false },
+      payment_method_options: {
+        acss_debit: {
+          verification_method: 'automatic',
+          mandate_options: { payment_schedule: 'sporadic', transaction_type: 'personal' },
+        },
+      },
       customer_email: user.email,
       client_reference_id: user.id,
       locale: body.lang === 'en' ? 'en' : 'fr',

@@ -11,7 +11,8 @@ module.exports = async (req, res) => {
     const user = await requireUser(req);
     const session = await retrieveSession(id);
     if (!session.metadata || session.metadata.buyer_id !== user.id) return send(res, 403, { error: 'Cette commande ne vous appartient pas.' });
-    if (session.payment_status !== 'paid') return send(res, 200, { paid: false });
+    // Un prélèvement bancaire (DPA) est accepté mais se confirme quelques jours plus tard : le webhook créera la commande.
+    if (session.payment_status !== 'paid') return send(res, 200, { paid: false, pending: session.status === 'complete' });
     const orders = await recordPaidSession(session);
     return send(res, 200, { paid: true, mode: session.metadata.mode === 'booking' ? 'booking' : 'cart', orders });
   } catch (err) {

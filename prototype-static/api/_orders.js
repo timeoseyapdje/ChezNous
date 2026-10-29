@@ -2,7 +2,10 @@ const crypto = require('crypto');
 const { stripeRequest, priceOrder } = require('./_stripe');
 const { supabaseRest } = require('./_supabase');
 
-const METHOD_LABELS = { card: 'Carte bancaire', apple_pay: 'Apple Pay', google_pay: 'Google Pay', link: 'Link', paypal: 'PayPal' };
+const METHOD_LABELS = {
+  card: 'Carte bancaire', apple_pay: 'Apple Pay', google_pay: 'Google Pay', link: 'Link',
+  klarna: 'Klarna', afterpay_clearpay: 'Afterpay', affirm: 'Affirm', acss_debit: 'Prélèvement bancaire',
+};
 
 function releaseCode() {
   return crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase();
