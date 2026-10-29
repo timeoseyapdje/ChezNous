@@ -6,9 +6,11 @@
 <title>Devenir vendeur — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029c"></script>
-<script src="assets/catalog.js?v=20261029c"></script>
-<script src="assets/shared.js?v=20261029c"></script>
+<script src="assets/i18n-en.js?v=20261029d"></script>
+<script src="assets/catalog.js?v=20261029d"></script>
+<script src="assets/shared.js?v=20261029d"></script>
+<script src="assets/vendor/supabase-2.45.4.js"></script>
+<script src="assets/auth.js?v=20261029d"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -211,16 +213,31 @@ function renderPaymentMethods(){
 }
 function selectPaymentMethod(id){ selectedPaymentMethod = id; renderPaymentMethods(); }
 
-function setSellerProfile(shopName, plan){
-  try{ localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName, plan})); }catch(e){}
+// Le rôle vendeur est accordé par Supabase (fonction become_seller) ; le navigateur ne peut pas se l'attribuer.
+async function setSellerProfile(shopName, plan){
+  if(!isLoggedIn() || !sb){
+    showToast('Connectez-vous pour créer votre boutique.','info');
+    setTimeout(()=>{ window.location.href = 'connexion.html?retour=devenir-vendeur.html'; }, 900);
+    return false;
+  }
+  const { data, error } = await sb.rpc('become_seller');
+  if(error || (data!=='seller' && data!=='admin')){
+    showToast("Impossible d'activer votre boutique pour le moment. Réessayez dans un instant.",'error');
+    return false;
+  }
+  try{
+    localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName, plan}));
+    localStorage.setItem('cheznous_server_role', data);
+  }catch(e){}
   persistRole('seller');
+  return true;
 }
 
 const plans = { 'sub-pro': {label:'Formule Pro — 129$/an', price:129, key:'pro'}, 'sub-premium': {label:'Formule Premium — 299$/an', price:299, key:'premium'} };
 let stripeMode = null;
-function activateFreePlan(){
+async function activateFreePlan(){
   const shop = document.getElementById('applyShop').value.trim() || 'Ma Boutique';
-  setSellerProfile(shop, 'basique');
+  if(!await setSellerProfile(shop, 'basique')) return;
   showToast('Formule Basique activée gratuitement. Profil en validation (48h). Redirection vers votre tableau de bord...','success');
   setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1500);
 }
@@ -234,11 +251,11 @@ function openStripeModal(mode){
   lucide.createIcons();
 }
 function closeStripe(){ document.getElementById('stripeModal').classList.add('hidden'); }
-function confirmStripe(){
+async function confirmStripe(){
   closeStripe();
   const plan = plans[stripeMode];
   const shop = document.getElementById('applyShop').value.trim() || 'Ma Boutique';
-  setSellerProfile(shop, plan.key);
+  if(!await setSellerProfile(shop, plan.key)) return;
   showToast(`Abonnement ${plan.label} activé ! Reçu envoyé par courriel. Redirection vers votre tableau de bord...`,'success');
   setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1500);
 }
@@ -253,10 +270,12 @@ function submitApply(e){
     document.getElementById('applyError').classList.remove('hidden');
     return false;
   }
-  setSellerProfile(shop || 'Ma Boutique', 'basique');
-  document.getElementById('applySuccess').classList.remove('hidden');
-  document.getElementById('applyForm').reset();
-  setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1800);
+  setSellerProfile(shop || 'Ma Boutique', 'basique').then(ok=>{
+    if(!ok) return;
+    document.getElementById('applySuccess').classList.remove('hidden');
+    document.getElementById('applyForm').reset();
+    setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1800);
+  });
   return false;
 }
 

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nouveau mot de passe — Chez Nous</title>
+<link rel="stylesheet" href="assets/tailwind.css">
+<script src="assets/lucide.min.js"></script>
+<script src="assets/i18n-en.js?v=20261029d"></script>
+<script src="assets/catalog.js?v=20261029d"></script>
+<script src="assets/shared.js?v=20261029d"></script>
+<script src="assets/vendor/supabase-2.45.4.js"></script>
+<script src="assets/auth.js?v=20261029d"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{background:#131A17;color:#131A17}
+.auth-bg{position:fixed;inset:0;z-index:0}
+.auth-bg img{width:100%;height:100%;object-fit:cover}
+.auth-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,17,15,.75),rgba(12,17,15,.92))}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div class="auth-bg">
+  <img src="https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=1600&auto=format&fit=crop" alt="">
+</div>
+
+<header class="relative z-10 max-w-[1280px] mx-auto px-4 md:px-6 py-5">
+  <a href="index.html" class="inline-flex items-center gap-2">
+    <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
+    <span class="font-display font-bold text-lg text-white">chez nous</span>
+  </a>
+</header>
+
+<main class="relative z-10 max-w-[420px] mx-auto px-4 md:px-6 py-6 md:py-10">
+  <div class="bg-ink/80 border border-white/10 rounded-2xl p-6 md:p-8 text-white">
+    <div id="resetChecking" class="text-sm opacity-70 text-center py-6">Vérification du lien…</div>
+
+    <form id="resetForm" onsubmit="return submitReset(event)" class="space-y-4 hidden">
+      <h1 class="font-display font-bold text-2xl">Choisir un nouveau mot de passe</h1>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">NOUVEAU MOT DE PASSE</label>
+        <input id="newPassword" required type="password" minlength="8" autocomplete="new-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
+      </div>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">CONFIRMER LE MOT DE PASSE</label>
+        <input id="confirmPassword" required type="password" minlength="8" autocomplete="new-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Retapez le mot de passe">
+      </div>
+      <div id="resetError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
+      <button id="resetSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Enregistrer le mot de passe</button>
+    </form>
+
+    <div id="resetInvalid" class="hidden space-y-4 text-center">
+      <h1 class="font-display font-bold text-2xl">Lien invalide ou expiré</h1>
+      <p class="text-sm opacity-70">Ce lien de réinitialisation n'est plus valable. Demandez-en un nouveau depuis la page de connexion.</p>
+      <a href="connexion.html" class="inline-block bg-forest text-white rounded-full px-6 py-3 font-bold hover:brightness-110">Retour à la connexion</a>
+    </div>
+
+    <div id="resetDone" class="hidden bg-forest/15 border border-forest/40 text-sm rounded-xl p-3 text-center">Mot de passe mis à jour. Redirection vers l'accueil…</div>
+  </div>
+</main>
+
+<script>
+function showResetState(id){
+  ['resetChecking','resetForm','resetInvalid','resetDone'].forEach(s=>document.getElementById(s).classList.toggle('hidden', s!==id));
+}
+// Le lien du courriel ouvre une session temporaire ; sans elle, le formulaire ne servirait à rien.
+authReady.then(async ()=>{
+  const params = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+  if(!sb || params.get('error')){ showResetState('resetInvalid'); return; }
+  const { data:{ session } } = await sb.auth.getSession();
+  showResetState(session ? 'resetForm' : 'resetInvalid');
+});
+async function submitReset(e){
+  e.preventDefault();
+  const pwd = document.getElementById('newPassword').value;
+  const err = document.getElementById('resetError');
+  err.classList.add('hidden');
+  if(pwd !== document.getElementById('confirmPassword').value){
+    err.textContent = 'Les deux mots de passe ne correspondent pas.';
+    err.classList.remove('hidden');
+    return false;
+  }
+  const btn = document.getElementById('resetSubmit');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  const { error } = await sb.auth.updateUser({ password: pwd });
+  btn.disabled = false;
+  btn.style.opacity = '';
+  if(error){
+    err.textContent = (error.message||'').toLowerCase().includes('different from the old')
+      ? 'Choisissez un mot de passe différent de l\'ancien.'
+      : 'Impossible d\'enregistrer ce mot de passe. Réessayez.';
+    err.classList.remove('hidden');
+    return false;
+  }
+  showResetState('resetDone');
+  setTimeout(()=>{ window.location.href = 'index.html'; }, 1500);
+  return false;
+}
+</script>
+</body>
+</html>

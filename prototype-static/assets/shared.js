@@ -608,6 +608,7 @@ function updateAccountButtonGlobal(){
 }
 
 function changeRoleGlobal(role){
+  if(!isRoleAllowed(role)) role = 'buyer';
   persistRole(role);
   if(role==='admin' || role==='seller'){
     window.location.href = 'tableau-de-bord.html';
@@ -624,8 +625,7 @@ function initSiteHeader(active){
   updateAccountButtonGlobal();
   const cityLabel = document.getElementById('deliverCityLabel');
   if(cityLabel) cityLabel.textContent = getDeliverCity();
-  const roleSel = document.getElementById('roleSelect');
-  if(roleSel) roleSel.value = getRolePersisted();
+  restrictRoleSelect();
   const dashSlot = document.getElementById('navDashboardLink');
   if(dashSlot && getRolePersisted()!=='buyer'){
     dashSlot.innerHTML = `<a href="tableau-de-bord.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap ${active==='dashboard'?'underline underline-offset-4':''}">Tableau de bord</a>`;
@@ -771,8 +771,24 @@ function getBotAnswer(m){
   return answers[intent ? intent.key : 'fallback'];
 }
 
+const ROLE_RANK = {buyer:0, seller:1, admin:2};
+// Rôle attribué par Supabase (mis en cache par assets/auth.js) : la vue choisie ne peut jamais le dépasser.
+function getServerRole(){
+  try{ return localStorage.getItem('cheznous_server_role') || 'buyer'; }catch(e){ return 'buyer'; }
+}
+function isRoleAllowed(role, serverRole = getServerRole()){
+  return role in ROLE_RANK && ROLE_RANK[role] <= (ROLE_RANK[serverRole] ?? 0);
+}
 function getRolePersisted(){
-  try{ return localStorage.getItem('cheznous_role') || 'buyer'; }catch(e){ return 'buyer'; }
+  let r = 'buyer';
+  try{ r = localStorage.getItem('cheznous_role') || 'buyer'; }catch(e){}
+  return isRoleAllowed(r) ? r : 'buyer';
+}
+function restrictRoleSelect(){
+  const sel = document.getElementById('roleSelect');
+  if(!sel) return;
+  [...sel.options].forEach(o=>{ if(!isRoleAllowed(o.value)) o.remove(); });
+  sel.value = getRolePersisted();
 }
 function persistRole(r){
   try{ localStorage.setItem('cheznous_role', r); }catch(e){}

@@ -6,9 +6,11 @@
 <title>Se connecter — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029c"></script>
-<script src="assets/catalog.js?v=20261029c"></script>
-<script src="assets/shared.js?v=20261029c"></script>
+<script src="assets/i18n-en.js?v=20261029d"></script>
+<script src="assets/catalog.js?v=20261029d"></script>
+<script src="assets/shared.js?v=20261029d"></script>
+<script src="assets/vendor/supabase-2.45.4.js"></script>
+<script src="assets/auth.js?v=20261029d"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -48,13 +50,26 @@ body{background:#131A17;color:#131A17}
       </div>
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
-        <input required type="password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="••••••••">
+        <input id="loginPassword" required type="password" autocomplete="current-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="••••••••">
       </div>
-      <button type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Se connecter</button>
+      <div id="loginError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
+      <button id="loginSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Se connecter</button>
       <div class="flex items-center justify-between text-xs opacity-60">
         <label class="flex items-center gap-2"><input type="checkbox" checked> Rester connecté</label>
-        <a href="#" class="hover:underline">Mot de passe oublié ?</a>
+        <a href="#" onclick="showForgot(); return false;" class="hover:underline">Mot de passe oublié ?</a>
       </div>
+    </form>
+
+    <form id="forgotForm" onsubmit="return submitForgot(event)" class="space-y-4 hidden">
+      <h1 class="font-display font-bold text-2xl">Mot de passe oublié</h1>
+      <p class="text-sm opacity-70">Saisissez votre courriel : nous vous enverrons un lien pour choisir un nouveau mot de passe.</p>
+      <div>
+        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <input id="forgotEmail" required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
+      </div>
+      <div id="forgotMessage" class="hidden bg-forest/15 border border-forest/40 text-sm rounded-xl p-3"></div>
+      <button id="forgotSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Envoyer le lien</button>
+      <button type="button" onclick="setAuthTab('login')" class="w-full text-xs opacity-60 hover:underline">Retour à la connexion</button>
     </form>
 
     <form id="signupForm" onsubmit="return submitAuth(event,'signup')" class="space-y-4 hidden">
@@ -69,7 +84,7 @@ body{background:#131A17;color:#131A17}
       </div>
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
-        <input required type="password" minlength="8" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
+        <input id="signupPassword" required type="password" minlength="8" autocomplete="new-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
       </div>
       <div class="space-y-2 pt-1">
         <label class="flex items-start gap-2 text-xs opacity-80">
@@ -85,7 +100,8 @@ body{background:#131A17;color:#131A17}
         </div>
       </div>
       <p class="text-[11px] opacity-50">En créant un compte, vous acceptez nos <a href="cgu-cgv.html" class="text-white underline">conditions générales</a>, notre <a href="confidentialite.html" class="text-white underline">politique de confidentialité</a> et notre <a href="charte-communaute.html" class="text-white underline">charte de la communauté</a>.</p>
-      <button type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Créer mon compte</button>
+      <div id="signupError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
+      <button id="signupSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Créer mon compte</button>
     </form>
 
     <div id="authSuccess" class="hidden mt-4 bg-forest/15 border border-forest/40 text-white text-sm rounded-xl p-3 text-center">Connexion réussie. Redirection vers l'accueil...</div>
@@ -121,36 +137,112 @@ function setAuthTab(tab){
   document.getElementById('tabSignup').className = 'flex-1 text-sm font-semibold rounded-full py-2 ' + (!isLogin?'tab-active':'tab-inactive');
   document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
   document.getElementById('signupForm').classList.toggle('hidden', isLogin);
+  document.getElementById('forgotForm').classList.add('hidden');
 }
-function submitAuth(e, mode){
-  e.preventDefault();
-  if(mode==='signup'){
-    const emailConsent = document.getElementById('consentEmail').checked;
-    const smsConsent = document.getElementById('consentSms').checked;
-    const phone = document.getElementById('signupPhone').value.trim();
-    try{
-      localStorage.setItem('cheznous_notif_email_consent', emailConsent ? '1' : '0');
-      localStorage.setItem('cheznous_notif_sms_consent', smsConsent ? '1' : '0');
-      if(phone) localStorage.setItem('cheznous_phone', phone);
-    }catch(err){}
-  }
+function showForgot(){
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('signupForm').classList.add('hidden');
+  document.getElementById('forgotForm').classList.remove('hidden');
+  document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value;
+}
+function returnTarget(){
+  // Seules les pages locales sont acceptées pour éviter une redirection ouverte.
+  const retour = new URLSearchParams(location.search).get('retour') || '';
+  return /^[a-z0-9-]+\.html(\?[^#]*)?$/i.test(retour) ? retour : 'index.html';
+}
+function authErrorMessage(err){
+  const m = (err && err.message || '').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Courriel ou mot de passe incorrect.';
+  if(m.includes('email not confirmed')) return 'Confirmez d\'abord votre adresse courriel avec le lien reçu.';
+  if(m.includes('already registered')) return 'Un compte existe déjà avec ce courriel. Connectez-vous.';
+  if(m.includes('password should be')) return 'Mot de passe trop faible : 8 caractères minimum.';
+  if(m.includes('rate limit')) return 'Trop de tentatives. Réessayez dans quelques minutes.';
+  return 'Impossible de joindre le serveur. Réessayez dans un instant.';
+}
+function setBusy(id, busy){
+  const b = document.getElementById(id);
+  b.disabled = busy;
+  b.style.opacity = busy ? '0.6' : '';
+}
+function showFormMessage(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+}
+async function finishSignIn(){
+  const profile = await fetchServerProfile();
+  if(profile) applyProfileCache(profile);
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('signupForm').classList.add('hidden');
   document.getElementById('authSuccess').classList.remove('hidden');
-  if(mode==='signup'){
-    saveCurrentUser({ name: document.getElementById('signupName').value.trim(), email: document.getElementById('signupEmail').value.trim() });
-  } else {
-    const email = document.getElementById('loginEmail').value.trim();
-    const known = getCurrentUser();
-    saveCurrentUser(known && known.email.toLowerCase()===email.toLowerCase() ? known : { name: nameFromEmail(email), email });
+  setTimeout(()=>{ window.location.href = returnTarget(); }, 1200);
+}
+async function submitAuth(e, mode){
+  e.preventDefault();
+  const isSignup = mode==='signup';
+  const btn = isSignup ? 'signupSubmit' : 'loginSubmit';
+  const errBox = isSignup ? 'signupError' : 'loginError';
+  showFormMessage(errBox, '');
+  if(!sb){ showFormMessage(errBox, 'Service de connexion indisponible.'); return false; }
+  setBusy(btn, true);
+  try{
+    if(isSignup){
+      const name = document.getElementById('signupName').value.trim();
+      if(containsProhibited(name)){ showFormMessage(errBox, 'Merci de choisir un nom sans langage inapproprié.'); return false; }
+      try{
+        localStorage.setItem('cheznous_notif_email_consent', document.getElementById('consentEmail').checked ? '1' : '0');
+        localStorage.setItem('cheznous_notif_sms_consent', document.getElementById('consentSms').checked ? '1' : '0');
+        const phone = document.getElementById('signupPhone').value.trim();
+        if(phone) localStorage.setItem('cheznous_phone', phone);
+      }catch(err){}
+      const { data, error } = await sb.auth.signUp({
+        email: document.getElementById('signupEmail').value.trim(),
+        password: document.getElementById('signupPassword').value,
+        options: { data: { full_name: name }, emailRedirectTo: new URL('connexion.html?retour=' + encodeURIComponent(returnTarget()), location.href).href }
+      });
+      if(error) throw error;
+      if(!data.session){
+        document.getElementById('signupForm').classList.add('hidden');
+        const box = document.getElementById('authSuccess');
+        box.textContent = 'Compte créé. Ouvrez le lien de confirmation envoyé à votre courriel pour activer votre compte.';
+        box.classList.remove('hidden');
+        return false;
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value
+      });
+      if(error) throw error;
+    }
+    await finishSignIn();
+  }catch(err){
+    showFormMessage(errBox, authErrorMessage(err));
+  }finally{
+    setBusy(btn, false);
   }
-  try{ localStorage.setItem('cheznous_logged_in','1'); }catch(err){}
-  // Seules les pages locales sont acceptées pour éviter une redirection ouverte.
-  const retour = new URLSearchParams(location.search).get('retour') || '';
-  const target = /^[a-z0-9-]+\.html(\?[^#]*)?$/i.test(retour) ? retour : 'index.html';
-  setTimeout(()=>{ window.location.href = target; }, 1200);
   return false;
 }
+async function submitForgot(e){
+  e.preventDefault();
+  if(!sb) return false;
+  setBusy('forgotSubmit', true);
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(document.getElementById('forgotEmail').value.trim(), {
+      redirectTo: new URL('reinitialiser-mot-de-passe.html', location.href).href
+    });
+    if(error && (error.message||'').toLowerCase().includes('rate limit')) throw error;
+    // Même message que le compte existe ou non, pour ne pas révéler quels courriels sont inscrits.
+    showFormMessage('forgotMessage', 'Si un compte existe avec ce courriel, un lien de réinitialisation vient d\'être envoyé. Pensez à vérifier vos indésirables.');
+  }catch(err){
+    showFormMessage('forgotMessage', authErrorMessage(err));
+  }finally{
+    setBusy('forgotSubmit', false);
+  }
+  return false;
+}
+// Déjà connecté (ou retour du lien de confirmation) : on renvoie directement vers la page demandée.
+authReady.then(r=>{ if(r && r.profile) window.location.replace(returnTarget()); });
 function oauthSignIn(provider){
   showToast(`Connexion ${provider==='google'?'Google':'Facebook'} : nécessite des identifiants OAuth réels côté backend (Supabase Auth). Pas encore configuré sur cette démo.`, 'info');
 }
