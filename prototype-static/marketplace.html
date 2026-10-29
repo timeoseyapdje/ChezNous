@@ -713,7 +713,12 @@ function applyUrlParams(){
   filterMarket();
   if(params.get('produit')) openProfile(Number(params.get('produit')));
   if(params.get('checkout')) checkoutCart();
-  if(params.get('paiement')==='annule') showToast('Paiement annulé : votre panier est conservé.','info');
+  if(params.get('paiement')==='annule'){
+    showToast('Paiement annulé : votre panier est conservé.','info');
+    // Retiré de l'adresse pour que le message ne réapparaisse pas à chaque rechargement.
+    params.delete('paiement');
+    history.replaceState(null, '', 'marketplace.html' + (params.toString() ? '?' + params.toString() : ''));
+  }
 }
 
 updateAccountButtonGlobal();
