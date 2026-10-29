@@ -193,11 +193,14 @@ lucide.createIcons();
 let selectedPaymentMethod = 'card';
 const PAYMENT_METHODS = [
   {id:'card', label:'Carte bancaire', desc:'Visa, Mastercard, American Express, Discover — via Stripe', icon:'credit-card'},
-  {id:'apple_pay', label:'Apple Pay', desc:'Paiement rapide et sécurisé — via Stripe', logo:'assets/logos/apple-pay.svg'},
+  {id:'apple_pay', label:'Apple Pay', desc:'Paiement rapide et sécurisé — via Stripe', logo:'assets/logos/apple-pay.svg', only:'apple'},
+  {id:'google_pay', label:'Google Pay', desc:'Paiement rapide et sécurisé — via Stripe', logo:'assets/logos/google-g.svg', only:'other'},
   {id:'link', label:'Link', desc:'Paiement en un clic avec vos infos enregistrées — via Stripe', logo:'assets/logos/link-mark.svg'}
 ];
 function renderPaymentMethods(){
-  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.map(m=>`
+  // Apple Pay sur les appareils Apple, Google Pay ailleurs, comme sur la page de paiement Stripe.
+  const device = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent || '') ? 'apple' : 'other';
+  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.filter(m=>!m.only || m.only===device).map(m=>`
     <button onclick="selectPaymentMethod('${m.id}')" class="w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${selectedPaymentMethod===m.id?'border-forest bg-forest/10':'border-white/15 hover:border-white/30'}">
       ${m.logo
         ? `<img src="${m.logo}" alt="${m.label}" class="h-7 w-auto shrink-0">`

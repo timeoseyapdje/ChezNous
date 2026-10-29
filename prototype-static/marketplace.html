@@ -577,11 +577,18 @@ function checkoutCart(){
 let stripeMode = 'booking';
 const PAYMENT_METHODS = [
   {id:'card', label:'Carte bancaire', icon:'credit-card'},
-  {id:'apple_pay', label:'Pay', mark:'assets/logos/apple-mark.svg', alt:'Apple Pay'},
+  {id:'apple_pay', label:'Pay', mark:'assets/logos/apple-mark.svg', alt:'Apple Pay', only:'apple'},
+  {id:'google_pay', label:'Pay', mark:'assets/logos/google-g.svg', alt:'Google Pay', only:'other'},
   {id:'link', label:'link', mark:'assets/logos/link-mark.svg', alt:'Link'}
 ];
+// Stripe ne montre Apple Pay que sur les appareils Apple, et Google Pay ailleurs : on annonce le portefeuille que le client verra.
+function isAppleDevice(){
+  // Les iPad récents s'annoncent comme « Macintosh » : ils sont couverts par le même test.
+  return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent || '');
+}
 function renderPaymentMethods(){
-  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.map(m=>`
+  const device = isAppleDevice() ? 'apple' : 'other';
+  document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.filter(m=>!m.only || m.only===device).map(m=>`
     <span class="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold">
       ${m.mark ? `<img src="${m.mark}" alt="${m.alt}" style="height:16px;width:auto;margin-top:-2px"><span aria-hidden="true" style="font-size:13px;letter-spacing:-0.01em">${m.label}</span>` : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`}
     </span>
