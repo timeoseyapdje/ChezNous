@@ -6,8 +6,9 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029b"></script>
-<script src="assets/shared.js?v=20261029b"></script>
+<script src="assets/i18n-en.js?v=20261029c"></script>
+<script src="assets/catalog.js?v=20261029c"></script>
+<script src="assets/shared.js?v=20261029c"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -232,14 +233,14 @@ body{background:#FFFFFF;color:#131A17}
       <div id="stripeDetail" class="bg-white/10 rounded-2xl p-4 flex justify-between items-center"></div>
 
       <div>
-        <div class="text-xs font-bold tracking-widest opacity-50 mb-2">MODE DE PAIEMENT</div>
-        <div id="paymentMethods" class="space-y-2"></div>
+        <div class="text-xs font-bold tracking-widest opacity-50 mb-2">MOYENS ACCEPTÉS</div>
+        <div id="paymentMethods" class="flex flex-wrap items-center gap-2"></div>
       </div>
 
-      <button onclick="confirmStripe()" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3.5 font-bold flex items-center justify-center gap-2">
+      <button id="stripePayBtn" onclick="confirmStripe()" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3.5 font-bold flex items-center justify-center gap-2">
         <i data-lucide="lock" class="w-4 h-4"></i> <span id="stripePayLabel">Payer</span>
       </button>
-      <p class="text-center text-[11px] opacity-40">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE). Paiement traité par Stripe (carte, Apple Pay) et PayPal.</p>
+      <p class="text-center text-[11px] opacity-40">En payant, vous acceptez les conditions générales et la politique de confidentialité (LPRPDE). Vous serez redirigé vers la page de paiement sécurisée Stripe.</p>
     </div>
   </div>
 </div>
@@ -572,28 +573,19 @@ function checkoutCart(){
 }
 
 let stripeMode = 'booking';
-let selectedPaymentMethod = 'card';
 const PAYMENT_METHODS = [
-  {id:'card', label:'Carte bancaire', desc:'Visa, Mastercard, Interac — via Stripe', icon:'credit-card'},
-  {id:'apple_pay', label:'Apple Pay', desc:'Paiement rapide et sécurisé — via Stripe', logo:'assets/logos/apple-pay.svg'},
-  {id:'paypal', label:'PayPal', desc:'Payer avec votre compte PayPal', logo:'assets/logos/paypal.svg'}
+  {id:'card', label:'Carte bancaire', icon:'credit-card'},
+  {id:'apple_pay', label:'Apple Pay', logo:'assets/logos/apple-pay.svg'},
+  {id:'google_pay', label:'Google Pay', icon:'smartphone'}
 ];
 function renderPaymentMethods(){
   document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.map(m=>`
-    <button onclick="selectPaymentMethod('${m.id}')" class="w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${selectedPaymentMethod===m.id?'border-forest bg-forest/10':'border-white/15 hover:border-white/30'}">
-      ${m.logo
-        ? `<img src="${m.logo}" alt="${m.label}" class="h-7 w-auto shrink-0">`
-        : `<span class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="${m.icon}" class="w-4 h-4"></i></span>`}
-      <span class="flex-1">
-        <span class="block text-sm font-semibold">${m.label}</span>
-        <span class="block text-xs opacity-50">${m.desc}</span>
-      </span>
-      <span class="w-4 h-4 rounded-full border-2 ${selectedPaymentMethod===m.id?'border-forest bg-forest':'border-white/30'} shrink-0"></span>
-    </button>
+    <span class="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold">
+      ${m.logo ? `<img src="${m.logo}" alt="${m.label}" class="h-5 w-auto">` : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`}
+    </span>
   `).join('');
   lucide.createIcons();
 }
-function selectPaymentMethod(id){ selectedPaymentMethod = id; renderPaymentMethods(); }
 function openStripeModal(mode){
   if(!isLoggedIn()){ requireLogin(mode==='cart' ? 'marketplace.html?checkout=1' : `marketplace.html?produit=${bookingItem ? bookingItem.id : ''}`); return; }
   if(mode==='booking' && !bookingItem) return;
@@ -617,40 +609,33 @@ function nextOrderId(orders){
 function todayLabel(){
   return new Date().toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
 }
-// Paiement simulé : la démo n'appelle pas Stripe, mais la commande garde ce qui a été choisi et payé.
-function confirmStripe(){
+// La commande n'est créée qu'au retour de Stripe, une fois le paiement vérifié côté serveur (mes-commandes.html).
+async function confirmStripe(){
   if(!isLoggedIn()){ closeStripe(); requireLogin('marketplace.html'); return; }
-  closeStripe(); closeBooking();
-  const orders = getOrders();
-  const method = PAYMENT_METHODS.find(m=>m.id===selectedPaymentMethod);
-  const paidAt = new Date().toISOString();
-  if(stripeMode==='cart'){
-    // Une commande par vendeur, avec ses lignes, pour que chacun reçoive son propre code de livraison.
-    const bySeller = {};
-    cart.forEach(c=>{
-      const p = listings.find(l=>l.id===c.id);
-      if(!p) return;
-      (bySeller[p.seller] = bySeller[p.seller] || []).push({id:p.id, name:p.name, qty:c.qty, unitPrice:p.price, cat:p.cat});
+  const items = stripeMode==='cart' ? cart.map(c=>({id:c.id, qty:c.qty})) : [{id:bookingItem.id, qty:1}];
+  const btn = document.getElementById('stripePayBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try{
+    const res = await fetch('api/checkout', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        mode: stripeMode,
+        items,
+        slot: stripeMode==='booking' ? bookingSlot : '',
+        details: stripeMode==='booking' ? bookingDetails : '',
+        email: (getCurrentUser() || {}).email || '',
+        lang: getLangPersisted()
+      })
     });
-    let nextId = nextOrderId(orders);
-    const created = Object.entries(bySeller).map(([seller, items])=>{
-      const price = items.reduce((s,i)=>s+i.unitPrice*i.qty,0);
-      return {id:nextId++, seller, service:items.map(i=>`${i.name} x${i.qty}`).join(', '), items, date:`${todayLabel()} • livraison 3 à 5 jours`, status:'confirmée', price, fees:0, total:price, paymentMethod:method.label, paidAt, type:items[0].cat, escrowStatus:'retenu', releaseCode:generateReleaseCode()};
-    });
-    setOrders([...created, ...orders]);
-    cart = [];
-    setCart(cart);
-    refreshCartBadge();
-    refreshNotifBadge();
-    showToast(`Paiement confirmé (${esc(method.label)}) ! ${created.length>1 ? created.length+' commandes créées, une par vendeur' : 'Commande créée'}. Votre argent est conservé en sécurité jusqu'à réception. <a href='mes-commandes.html' class='underline'>Voir mes commandes et les codes</a>`,'success');
-  } else {
-    const price = bookingItem.price;
-    const fees = Math.round(price*0.10*100)/100;
-    const code = generateReleaseCode();
-    orders.unshift({id:nextOrderId(orders), seller:bookingItem.seller, service:bookingItem.name, items:[{id:bookingItem.id, name:bookingItem.name, qty:1, unitPrice:price, cat:bookingItem.cat}], date:bookingSlot, details:bookingDetails, status:'confirmée', price, fees, total:price+fees, paymentMethod:method.label, paidAt, type:bookingItem.cat, escrowStatus:'retenu', releaseCode:code});
-    setOrders(orders);
-    refreshNotifBadge();
-    showToast(`Paiement confirmé ! ${esc(bookingItem.seller)} a été notifié pour le ${esc(bookingSlot)}. Code à remettre à la réception : <b>${code}</b>.`,'success');
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.url) throw new Error(data.error || 'Paiement indisponible pour le moment.');
+    window.location.href = data.url;
+  }catch(err){
+    btn.disabled = false;
+    btn.style.opacity = '';
+    showToast(esc(err.message), 'error');
   }
 }
 
@@ -711,6 +696,7 @@ function applyUrlParams(){
   filterMarket();
   if(params.get('produit')) openProfile(Number(params.get('produit')));
   if(params.get('checkout')) checkoutCart();
+  if(params.get('paiement')==='annule') showToast('Paiement annulé : votre panier est conservé.','info');
 }
 
 updateAccountButtonGlobal();
