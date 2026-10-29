@@ -11,6 +11,7 @@ async function fetchServerProfile(){
   const { data, error } = await sb.from('profiles').select('full_name, role').eq('id', session.user.id).maybeSingle();
   if(error) console.warn('profil Supabase :', error.message);
   return {
+    id: session.user.id,
     email: session.user.email,
     name: (data && data.full_name) || (session.user.user_metadata && session.user.user_metadata.full_name) || nameFromEmail(session.user.email),
     role: (data && data.role) || 'buyer'
@@ -20,6 +21,10 @@ async function fetchServerProfile(){
 function applyProfileCache(profile){
   const known = getCurrentUser() || {};
   const sameUser = known.email && known.email.toLowerCase()===profile.email.toLowerCase();
+  if(!sameUser){
+    // Autre compte sur le même navigateur : rien de l'ancien compte ne doit rester affiché.
+    try{ ['cheznous_orders','cheznous_messages_v1','cheznous_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  }
   saveCurrentUser({ ...(sameUser ? known : {}), name: profile.name, email: profile.email });
   try{
     localStorage.setItem('cheznous_logged_in','1');
@@ -30,7 +35,7 @@ function applyProfileCache(profile){
 
 function clearSessionCache(){
   try{
-    ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role'].forEach(k=>localStorage.removeItem(k));
+    ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role','cheznous_messages_v1','cheznous_orders'].forEach(k=>localStorage.removeItem(k));
   }catch(e){}
 }
 
@@ -65,7 +70,20 @@ const authReady = (async ()=>{
   } else {
     try{ sessionStorage.removeItem('cheznous_auth_reload'); }catch(e){}
   }
+  if(profile) syncUnreadMessages();
   return { offline:false, profile };
 })();
+
+// La cloche compte les messages non lus : on rafraîchit ce résumé depuis Supabase sur chaque page.
+async function syncUnreadMessages(){
+  try{
+    const { data, error } = await sb.rpc('my_conversations');
+    if(error) return;
+    localStorage.setItem('cheznous_messages_v1', JSON.stringify(data.filter(r=>Number(r.unread)>0).map(r=>({
+      id:r.partner_id, name:r.partner_name, unread:Number(r.unread), messages:[{text:r.last_body, time:''}]
+    }))));
+    if(typeof refreshNotifBadge==='function') refreshNotifBadge();
+  }catch(e){}
+}
 
 document.addEventListener('DOMContentLoaded', restrictRoleSelect);

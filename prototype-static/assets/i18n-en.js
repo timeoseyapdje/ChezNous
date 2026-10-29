@@ -680,5 +680,14 @@ const I18N_EN = {
 "Visa, Mastercard, American Express, UnionPay. Payez en plusieurs fois avec Klarna, Afterpay ou Affirm (dès 50 $). Montants en dollars canadiens.": "Visa, Mastercard, American Express, UnionPay. Pay in installments with Klarna, Afterpay or Affirm (from $50). Amounts in Canadian dollars.",
 "L'envoi de courriels n'est pas encore configuré.": "Email sending is not configured yet.",
 "Le courriel n'a pas pu être envoyé.": "The email could not be sent.",
-"Courriel de test envoyé à": "Test email sent to"
+"Courriel de test envoyé à": "Test email sent to",
+"Courriel d'un membre": "Member's email",
+"Aucune conversation. Saisissez le courriel d'un membre pour lui écrire.": "No conversations yet. Enter a member's email to write to them.",
+"Choisissez une conversation ou écrivez à un membre avec son courriel.": "Pick a conversation or write to a member using their email.",
+"Messagerie indisponible pour le moment.": "Messaging is unavailable right now.",
+"Impossible de charger cette conversation.": "Could not load this conversation.",
+"Message trop long (2000 caractères maximum).": "Message too long (2000 characters max).",
+"Le message n'a pas pu être envoyé.": "The message could not be sent.",
+"Aucun membre trouvé avec ce courriel.": "No member found with this email.",
+"Ce membre est introuvable.": "This member could not be found."
 };

@@ -228,18 +228,13 @@ function cartCount(cart){
   return cart.reduce((s,c)=>s+c.qty, 0);
 }
 
+// Cache des commandes de la personne connectée, rempli depuis Supabase par « Mes commandes » et le retour de paiement.
 function getOrders(){
   try{
     const raw = localStorage.getItem('cheznous_orders');
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  const seed = [
-    {id:101, seller:'Ankara Boutique', service:'Pagnes wax premium x2', date:'12 sept.', status:'confirmée', price:130, type:'mode', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
-    {id:102, seller:'Épicerie Le Baobab', service:'Panier épicerie', date:'13 sept. • ramassage 17:30', status:'en attente', price:38, type:'epicerie', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
-    {id:103, seller:'Natural Roots Hair Studio', service:'Tresses box braids', date:'02 sept. • 10:30', status:'terminée', price:80, type:'beaute', review:false, escrowStatus:'libéré', releaseCode:generateReleaseCode()}
-  ];
-  setOrders(seed);
-  return seed;
+  return [];
 }
 function setOrders(orders){
   try{ localStorage.setItem('cheznous_orders', JSON.stringify(orders)); }catch(e){}
@@ -354,7 +349,7 @@ function getNotifications(){
     const convs = JSON.parse(localStorage.getItem('cheznous_messages_v1') || '[]');
     convs.filter(c=>c.unread).forEach(c=>{
       const last = c.messages[c.messages.length-1];
-      list.push({id:`m${c.id}-${c.messages.length}`, icon:'message-circle', text:`Nouveau message de ${c.name}`, time:last ? last.time : '', href:`messagerie.html?avec=${encodeURIComponent(c.name)}`});
+      list.push({id:`m${c.id}-${c.messages.length}`, icon:'message-circle', text:`Nouveau message de ${c.name}`, time:last ? last.time : '', href:`messagerie.html?avec=${encodeURIComponent(c.id)}`});
     });
   }catch(e){}
   return list;
