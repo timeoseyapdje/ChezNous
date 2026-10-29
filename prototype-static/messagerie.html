@@ -6,9 +6,9 @@
 <title>Messagerie — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029q"></script>
+<script src="assets/i18n-en.js?v=20261029s"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029l"></script>
+<script src="assets/shared.js?v=20261029s"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
 <script src="assets/auth.js?v=20261029j"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -23,6 +23,8 @@ body{background:#FFFFFF;color:#131A17}
 .msg-thread{max-height:380px}
 .msg-form{margin:8px}
 .msg-meta{font-size:10px}
+/* Téléphone : liste courte qui défile, et pas de bulle Malik par-dessus la saisie des messages. */
+@media (max-width:767px){.msg-list{max-height:210px}#chatLauncher,#chatPanel{display:none !important}}
 </style>
 </head>
 <body class="font-sans antialiased">
@@ -97,6 +99,11 @@ function showToast(msg,type='success'){
   lucide.createIcons({nodes:[el]});
   setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
 }
+
+// Téléphone : la liste et le fil sont empilés ; ouvrir une conversation amène le fil et la saisie à l'écran.
+document.getElementById('conversations').addEventListener('click', ()=>{
+  if(window.innerWidth < 768) setTimeout(()=>document.querySelector('.msg-panel').scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+});
 
 // Une seule des deux messageries est chargée : elles partagent les mêmes noms de fonctions.
 const messagingScript = document.createElement('script');

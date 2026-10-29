@@ -12,10 +12,42 @@ function isLoggedIn(){
   }
   const style = document.createElement('style');
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
-  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu'];
+  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu','#prefsMenu'];
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
+  // Téléphone et petite tablette : en-tête sur deux rangées (logo + icônes, puis recherche) au lieu de quatre.
+  // Langue, devise et ville passent dans le menu Préférences ; les icônes font 40 px pour le doigt.
+  // Fenêtres de réservation et de paiement : sur un petit écran, leur contenu défile au lieu d'être coupé.
+  style.textContent += '#bookingBody{min-height:0}#stripeModal>div:last-child{max-height:calc(100dvh - 24px);overflow-y:auto}';
+  style.textContent += `#prefsWrap,.acct-icon{display:none}
+  @media (max-width:767px){
+    header>div:first-child{gap:8px !important;padding-top:10px !important;padding-bottom:10px !important;position:relative}
+    header div:has(>#currencySelect)>div.relative{position:static}
+    header div:has(>#currencySelect) .dropdown-panel{top:58px;left:16px;right:16px;width:auto;max-width:none}
+    header>div:first-child>:first-child{order:1}
+    header>div:first-child>:first-child .text-\\[9px\\]{display:none}
+    header div:has(>#currencySelect){order:2;flex-wrap:nowrap !important;gap:2px !important;margin-left:auto}
+    header div:has(>#heroSearch){order:3;flex-basis:100% !important;min-width:0 !important}
+    header div:has(>#deliverBtn),#currencySelect,#langSelect{display:none !important}
+    #prefsWrap{display:block}
+    .acct-text{display:none}
+    .acct-icon{display:block}
+    #prefsBtn,#accountBtn,#notifBtn,#cartLauncher{min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}
+    #chatLauncher{width:48px !important;height:48px !important;bottom:16px !important;right:12px !important}
+    #chatPanel{bottom:72px !important;right:8px !important;left:8px !important;width:auto !important;max-width:none !important;max-height:calc(100dvh - 96px) !important}
+    #toasts{left:12px !important;right:72px !important}
+    #cartCount{top:2px !important;right:0 !important}
+    #notifBadge{top:6px !important;right:6px !important}
+    header .h-11>a,header .h-11 button{padding-top:10px;padding-bottom:10px}
+    input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font-size:16px !important}
+  }
+  @media (pointer:coarse){
+    #notifBtn,#cartLauncher,#accountBtn{min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}
+    #currencySelect,#langSelect{min-height:40px}
+    header .h-11>a{padding-top:10px;padding-bottom:10px}
+    input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea{font-size:16px !important}
+  }`;
   if(IS_DEMO) document.addEventListener('DOMContentLoaded', ()=>{
     if(document.getElementById('demoBanner')) return;
     const banner = document.createElement('div');
@@ -499,6 +531,10 @@ document.addEventListener('click', function(e){
   if(deliverMenu && !deliverMenu.classList.contains('hidden') && !path.includes(deliverMenu) && !path.includes(deliverBtn)){
     deliverMenu.classList.add('hidden');
   }
+  const prefsMenu = document.getElementById('prefsMenu');
+  if(prefsMenu && !prefsMenu.classList.contains('hidden') && !path.includes(prefsMenu) && !path.includes(document.getElementById('prefsBtn'))){
+    prefsMenu.classList.add('hidden');
+  }
   const accountMenu = document.getElementById('accountMenu');
   const accountBtn = document.getElementById('accountBtn');
   if(accountMenu && !accountMenu.classList.contains('hidden') && !path.includes(accountMenu) && !path.includes(accountBtn)){
@@ -702,11 +738,14 @@ function updateAccountButtonGlobal(){
     btn.onclick = toggleAccountMenu;
     btn.setAttribute('aria-haspopup','menu');
     const first = userFirstName(getCurrentUser());
-    btn.innerHTML = `<div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div>`;
+    btn.setAttribute('aria-label','Mon compte');
+    btn.innerHTML = `<span class="acct-text"><div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div></span><i data-lucide="circle-user" class="acct-icon w-6 h-6"></i>`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
-    btn.innerHTML = `<div class="font-semibold">Se connecter</div>`;
+    btn.setAttribute('aria-label','Se connecter');
+    btn.innerHTML = `<span class="acct-text"><div class="font-semibold">Se connecter</div></span><i data-lucide="log-in" class="acct-icon w-6 h-6"></i>`;
   }
+  if(typeof lucide!=='undefined') lucide.createIcons({root:btn});
 }
 
 const ROLE_NAMES = { buyer:'Acheteur', seller:'Vendeur', admin:'Administrateur' };
@@ -717,7 +756,7 @@ function toggleAccountMenu(){
   if(!menu.classList.contains('hidden')){ menu.classList.add('hidden'); return; }
   const user = getCurrentUser() || { name:'Mon compte', email:'' };
   const role = IS_DEMO ? getRolePersisted() : getServerRole();
-  const item = (href, icon, label)=>`<a href="${href}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-sand text-ink text-sm"><i data-lucide="${icon}" class="w-4 h-4"></i> ${label}</a>`;
+  const item = (href, icon, label)=>`<a href="${href}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-sand text-ink text-sm"><i data-lucide="${icon}" class="w-4 h-4"></i> ${label}</a>`;
   menu.innerHTML = `
     <div class="flex items-center gap-3 px-3 py-2 border-b border-line mb-1">
       <span class="w-10 h-10 rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0">${escapeHtmlGlobal(userInitials(user) || '?')}</span>
@@ -730,10 +769,40 @@ function toggleAccountMenu(){
     ${item('mes-commandes.html','package','Mes commandes')}
     ${item('messagerie.html','message-square','Messagerie')}
     ${role==='seller' || role==='admin' ? item('tableau-de-bord.html','layout-dashboard','Tableau de bord') : item('devenir-vendeur.html','store','Ouvrir ma boutique')}
-    <button onclick="logoutGlobal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-sand text-ink text-sm border-t border-line mt-1"><i data-lucide="log-out" class="w-4 h-4"></i> Se déconnecter</button>`;
+    <button onclick="logoutGlobal()" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-sand text-ink text-sm border-t border-line mt-1"><i data-lucide="log-out" class="w-4 h-4"></i> Se déconnecter</button>`;
   menu.classList.remove('hidden');
   if(typeof lucide!=='undefined') lucide.createIcons({root:menu});
 }
+// Menu Préférences (téléphone) : mêmes réglages que les listes de l'en-tête, masquées sur petit écran.
+function setupMobilePrefs(){
+  const anchor = document.getElementById('accountBtn');
+  const group = anchor && anchor.closest('header div:has(> #currencySelect)');
+  if(!group || document.getElementById('prefsWrap')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'prefsWrap';
+  wrap.className = 'relative';
+  wrap.innerHTML = `<button id="prefsBtn" onclick="togglePrefsMenu()" aria-label="Langue, devise et ville" class="hover:opacity-80"><i data-lucide="globe" class="w-5 h-5"></i></button><div id="prefsMenu" class="dropdown-panel hidden"></div>`;
+  group.insertBefore(wrap, anchor.parentElement);
+  if(typeof lucide!=='undefined') lucide.createIcons({root:wrap});
+}
+function togglePrefsMenu(){
+  const menu = document.getElementById('prefsMenu');
+  if(!menu) return;
+  if(!menu.classList.contains('hidden')){ menu.classList.add('hidden'); return; }
+  const lang = document.getElementById('langSelect'), cur = document.getElementById('currencySelect');
+  const field = 'width:100%;margin-top:4px;border:1px solid #E5E5E5;border-radius:12px;padding:10px 12px;background:#fff;color:#131A17';
+  menu.innerHTML = `<div class="p-2 space-y-3 text-ink text-sm">
+    <label class="block"><span class="text-xs font-bold tracking-widest opacity-60">LANGUE</span><select style="${field}" onchange="setLang(this.value)">${lang ? lang.innerHTML : ''}</select></label>
+    <label class="block"><span class="text-xs font-bold tracking-widest opacity-60">DEVISE</span><select style="${field}" onchange="setCurrency(this.value)">${cur ? cur.innerHTML : ''}</select></label>
+    <label class="block"><span class="text-xs font-bold tracking-widest opacity-60">LIVRER À</span><select style="${field}" onchange="setDeliverCity(this.value)">${CITIES.map(c=>`<option ${c===getDeliverCity()?'selected':''}>${c}</option>`).join('')}</select></label>
+  </div>`;
+  const selects = menu.querySelectorAll('select');
+  if(lang) selects[0].value = lang.value;
+  if(cur) selects[1].value = cur.value;
+  menu.classList.remove('hidden');
+}
+document.addEventListener('DOMContentLoaded', setupMobilePrefs);
+
 async function logoutGlobal(everywhere){
   if(typeof signOutEverywhere==='function') await signOutEverywhere(everywhere);
   try{ ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role','cheznous_orders','cheznous_messages_v1','cheznous_seller_profile','cheznous_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
