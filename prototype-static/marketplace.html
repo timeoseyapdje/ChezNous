@@ -6,7 +6,7 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029o"></script>
+<script src="assets/i18n-en.js?v=20261029p"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
 <script src="assets/shared.js?v=20261029k"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
@@ -92,13 +92,13 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </header>
 
-<main class="max-w-[1280px] mx-auto px-4 md:px-6 py-8">
+<main class="max-w-[1280px] mx-auto px-4 md:px-6 py-8" style="padding-bottom:7rem">
   <h1 class="font-display font-bold text-2xl md:text-3xl">La boutique Chez Nous</h1>
   <p class="text-sm opacity-60 mt-1">Tout le catalogue de la diaspora africaine, partout au Canada.</p>
 
   <div class="bg-white rounded-2xl border border-line p-4 md:p-5 mt-6">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div class="flex flex-wrap items-center gap-2">
         <div id="marketTabs" class="flex bg-sand rounded-full p-1 shrink-0">
           <button onclick="setMarketTab('all')" id="tabAll" class="marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white">Tout</button>
           <button onclick="setMarketTab('produit')" id="tabProduit" class="marketTab px-5 py-2 rounded-full text-sm font-semibold">Produits</button>
@@ -298,7 +298,7 @@ function setCategoryFilter(id){
 function renderMarket(list=listings){
   if(listings.length===0){
     document.getElementById('cardsGrid').innerHTML = `
-      <div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1">
+      <div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1;padding-left:3.75rem;padding-right:3.75rem">
         <i data-lucide="store" class="w-8 h-8 mx-auto opacity-40"></i>
         <div class="font-semibold mt-3">Les premières boutiques arrivent bientôt</div>
         <p class="text-sm opacity-60 mt-1">Chez Nous ouvre ses portes : les annonces apparaîtront ici dès que les premiers vendeurs les publieront.</p>
@@ -310,7 +310,7 @@ function renderMarket(list=listings){
   }
   if(list.length===0){
     document.getElementById('cardsGrid').innerHTML = `
-      <div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1">
+      <div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1;padding-left:3.75rem;padding-right:3.75rem">
         <i data-lucide="search-x" class="w-8 h-8 mx-auto opacity-40"></i>
         <div class="font-semibold mt-3">Aucun résultat</div>
         <p class="text-sm opacity-60 mt-1">Essayez un autre mot-clé, une autre catégorie ou une autre ville.</p>
