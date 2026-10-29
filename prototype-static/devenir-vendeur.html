@@ -6,9 +6,9 @@
 <title>Devenir vendeur — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029l"></script>
+<script src="assets/i18n-en.js?v=20261029m"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029i"></script>
+<script src="assets/shared.js?v=20261029j"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
 <script src="assets/auth.js?v=20261029h"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@ body{background:#FFFFFF;color:#131A17}
 <main class="max-w-[1000px] mx-auto px-4 md:px-6 py-12">
   <span class="bg-forest text-white text-xs font-bold tracking-widest px-3 py-1 rounded-full">DEVENIR VENDEUR</span>
   <h1 class="font-display font-bold text-3xl md:text-4xl mt-4">Vendez à la diaspora africaine partout au Canada</h1>
-  <p class="text-[15px] opacity-70 mt-3 max-w-[640px]">Rejoignez plus de 640 vendeurs indépendants et proposez vos produits ou services à une communauté qui vous connaît déjà. Système d'abonnement simple, sans engagement.</p>
+  <p class="text-[15px] opacity-70 mt-3 max-w-[640px]">Rejoignez les vendeurs indépendants de Chez Nous et proposez vos produits ou services à une communauté qui vous connaît déjà. Système d'abonnement simple, sans engagement.</p>
 
   <div class="grid md:grid-cols-3 gap-4 mt-8">
     <div class="bg-white border border-line rounded-2xl p-6 flex flex-col">
@@ -241,6 +241,7 @@ async function setSellerProfile(shopName, plan){
   return true;
 }
 
+const esc = escapeHtmlGlobal;
 const plans = { 'sub-pro': {label:'Formule Pro — 129$/an', price:129, key:'pro'}, 'sub-premium': {label:'Formule Premium — 299$/an', price:299, key:'premium'} };
 let stripeMode = null;
 async function activateFreePlan(){
@@ -259,14 +260,58 @@ function openStripeModal(mode){
   lucide.createIcons();
 }
 function closeStripe(){ document.getElementById('stripeModal').classList.add('hidden'); }
+// La formule n'est activée qu'au retour de Stripe, une fois le paiement vérifié par le serveur.
 async function confirmStripe(){
-  closeStripe();
   const plan = plans[stripeMode];
+  if(!IS_DEMO && !isLoggedIn()){
+    closeStripe();
+    showToast('Connectez-vous pour créer votre boutique.','info');
+    setTimeout(()=>{ window.location.href = 'connexion.html?retour=devenir-vendeur.html'; }, 900);
+    return;
+  }
   const shop = document.getElementById('applyShop').value.trim() || 'Ma Boutique';
-  if(!await setSellerProfile(shop, plan.key)) return;
-  showToast(`Abonnement ${plan.label} activé ! Reçu envoyé par courriel. Redirection vers votre tableau de bord...`,'success');
-  setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1500);
+  if(containsProhibited(shop)){ closeStripe(); showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
+  try{
+    const res = await fetch('api/seller-plan', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...(await authHeaders())},
+      body: JSON.stringify({ plan: plan.key, shopName: shop, lang: getLangPersisted() })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.url) throw new Error(data.error || 'Abonnement indisponible pour le moment.');
+    window.location.href = data.url;
+  }catch(err){
+    closeStripe();
+    showToast(esc(err.message),'error');
+  }
 }
+async function handlePlanReturn(){
+  const params = new URLSearchParams(location.search);
+  const status = params.get('abonnement');
+  if(!status) return;
+  const sessionId = params.get('session_id') || '';
+  history.replaceState(null, '', location.pathname);
+  if(status==='annule'){ showToast('Paiement annulé : aucune formule n\'a été activée.','info'); return; }
+  if(status!=='ok' || !sessionId) return;
+  try{
+    const res = await fetch('api/seller-plan?session_id=' + encodeURIComponent(sessionId), { headers: await authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Vérification du paiement impossible.');
+    if(!data.paid){ showToast('Paiement en cours de confirmation. Votre formule sera activée dès réception.','info'); return; }
+    const label = data.plan==='premium' ? 'Premium' : 'Pro';
+    try{ localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName: data.shop || 'Ma Boutique', plan: data.plan})); }catch(e){}
+    if(!IS_DEMO){
+      const profile = await fetchServerProfile();
+      if(profile) applyProfileCache(profile);
+    }
+    persistRole('seller');
+    showToast(`Formule ${label} activée. Reçu Stripe envoyé par courriel. Redirection vers votre tableau de bord...`,'success');
+    setTimeout(()=>{ window.location.href = 'tableau-de-bord.html'; }, 1800);
+  }catch(err){
+    showToast(esc(err.message),'error');
+  }
+}
+authReady.then(handlePlanReturn);
 
 function submitApply(e){
   e.preventDefault();

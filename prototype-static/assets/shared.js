@@ -139,6 +139,28 @@ const I18N_PATTERNS = [
   [/^Écrivez votre premier message à (.+)\.$/, 'Write your first message to $1.'],
   [/^Vous : (.+)$/, 'You: $1'],
   [/^Bonjour, (.+)$/, 'Hello, $1'],
+  [/^Commande #(\d+) — (.+)\. Le paiement reste bloqué jusqu'à la décision de notre équipe\.$/, 'Order #$1 — $2. The payment stays on hold until our team decides.'],
+  [/^Commande #(\d+)$/, 'Order #$1'],
+  [/^Commande #(\d+) • payée le (.+)$/, 'Order #$1 • paid on $2'],
+  [/^Client : (.+) • Vendeur : (.+)$/, 'Customer: $1 • Seller: $2'],
+  [/^Moyen de paiement : (.+)$/, 'Payment method: $1'],
+  [/^Précisions : (.+)$/, 'Details: $1'],
+  [/^Précisions du client : (.+)$/, 'Customer details: $1'],
+  [/^Remboursement de (.+) émis sur votre moyen de paiement \(sous 5 jours ouvrables\)\.$/, 'Refund of $1 issued to your payment method (within 5 business days).'],
+  [/^Avis laissé \((\d)\/5\)$/, 'Review left ($1/5)'],
+  [/^Votre avis sur (.+)$/, 'Your review of $1'],
+  [/^(.+) — avis vérifié \(achat payé\)$/, '$1 — verified review (paid purchase)'],
+  [/^1 étoile$/, '1 star'],
+  [/^(\d) étoiles$/, '$1 stars'],
+  [/^Ouvert le (.+)$/, 'Opened on $1'],
+  [/^Commande confirmée chez (.+) \((.+)\)$/, 'Order confirmed at $1 ($2)'],
+  [/^Commande en attente chez (.+)$/, 'Order pending at $1'],
+  [/^Commande annulée chez (.+) — remboursement de (.+) en cours$/, 'Order cancelled at $1 — refund of $2 in progress'],
+  [/^Litige ouvert sur votre commande chez (.+)$/, 'Dispute opened on your order at $1'],
+  [/^Laissez un avis pour (.+)$/, 'Leave a review for $1'],
+  [/^Nouveau message de (.+)$/, 'New message from $1'],
+  [/^Mise à jour du descriptif « (.+) »$/, 'Description update for “$1”'],
+  [/^Formule (Pro|Premium) activée\. Reçu Stripe envoyé par courriel\. Redirection vers votre tableau de bord\.\.\.$/, '$1 plan activated. Stripe receipt sent by email. Redirecting to your dashboard...'],
   [/^(.+) • (.+) • à partir de (.+)$/, '$1 • $2 • from $3'],
   [/^(.+) — (.+)$/, '$1 — $2'],
   [/^(.+) • Acheteuse? vérifiée?$/, '$1 • Verified buyer'],
@@ -184,12 +206,15 @@ function i18nTranslateElementAttrs(el, lang){
 function i18nTranslateTree(root, lang){
   if(root.nodeType === 3){ i18nTranslateTextNode(root, lang); return; }
   if(root.nodeType !== 1) return;
-  if(root.closest && root.closest('script,style,textarea,[translate="no"]')) return;
+  if(root.closest && root.closest('script,style,[translate="no"]')) return;
+  // Le contenu d'un textarea est saisi par l'utilisateur : seul son placeholder se traduit.
+  if(root.tagName === 'TEXTAREA'){ i18nTranslateElementAttrs(root, lang); return; }
   i18nTranslateElementAttrs(root, lang);
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
     acceptNode(n){
-      if(n.nodeType===1) return /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.tagName) || n.getAttribute('translate')==='no' ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
-      return NodeFilter.FILTER_ACCEPT;
+      if(n.nodeType!==1) return NodeFilter.FILTER_ACCEPT;
+      if(n.tagName==='TEXTAREA'){ i18nTranslateElementAttrs(n, lang); return NodeFilter.FILTER_REJECT; }
+      return /^(SCRIPT|STYLE)$/.test(n.tagName) || n.getAttribute('translate')==='no' ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
     }
   });
   let n;

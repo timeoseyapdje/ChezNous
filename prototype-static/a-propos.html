@@ -6,9 +6,9 @@
 <title>À propos — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029l"></script>
+<script src="assets/i18n-en.js?v=20261029m"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029i"></script>
+<script src="assets/shared.js?v=20261029j"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
 <script src="assets/auth.js?v=20261029h"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -28,8 +28,8 @@ body{background:#FFFFFF;color:#131A17}
   <p class="text-[15px] leading-relaxed opacity-80 mt-5">Chez Nous est né d'un constat simple : partout au Canada, des milliers de commerçants, artisans, cuisinières et prestataires issus de la diaspora africaine proposent des produits et services de qualité, souvent connus uniquement par le bouche-à-oreille ou les groupes de réseaux sociaux communautaires. Notre plateforme leur donne une vitrine professionnelle, sécurisée et facile à trouver.</p>
   <p class="text-[15px] leading-relaxed opacity-80 mt-4">Épicerie africaine, tissus wax, soins capillaires afro, artisanat, cuisine maison ou services communautaires : chaque vendeur présent sur Chez Nous est vérifié manuellement avant la mise en ligne de son profil, afin de garantir un niveau de confiance élevé aux acheteurs.</p>
 
-  <div class="grid md:grid-cols-3 gap-4 mt-8">
-    <div class="bg-sand rounded-2xl p-5">
+  <div id="aboutStats" class="grid md:grid-cols-3 gap-4 mt-8">
+    <div id="statSellers" class="bg-sand rounded-2xl p-5">
       <div class="text-2xl font-display font-bold">640+</div>
       <div class="text-xs opacity-60 mt-1">vendeurs actifs</div>
     </div>
@@ -101,6 +101,11 @@ body{background:#FFFFFF;color:#131A17}
 </div>
 
 <script>
+// Le nombre de vendeurs est celui de la démo : le site réel ne l'affiche pas tant qu'il ne vient pas de la base.
+if(!IS_DEMO){
+  document.getElementById('statSellers').remove();
+  document.getElementById('aboutStats').classList.replace('md:grid-cols-3','md:grid-cols-2');
+}
 
 document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('');
 initSiteHeader('');

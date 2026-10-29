@@ -10,13 +10,14 @@ module.exports = async (req, res) => {
   try {
     if (IS_DEMO) {
       const session = await retrieveSession(id);
-      if (!session.metadata || session.metadata.app_mode !== 'demo') return send(res, 403, { error: 'Session invalide' });
+      if (!session.metadata || session.metadata.app_mode !== 'demo' || session.metadata.kind === 'seller_plan') return send(res, 403, { error: 'Session invalide' });
       if (session.payment_status !== 'paid') return send(res, 200, { paid: false, pending: session.status === 'complete' });
       return send(res, 200, describeDemoSession(session));
     }
     const user = await requireUser(req);
     const session = await retrieveSession(id);
     if (!session.metadata || session.metadata.buyer_id !== user.id) return send(res, 403, { error: 'Cette commande ne vous appartient pas.' });
+    if (session.metadata.kind === 'seller_plan') return send(res, 403, { error: 'Session invalide' });
     // Un prélèvement bancaire (DPA) est accepté mais se confirme quelques jours plus tard : le webhook créera la commande.
     if (session.payment_status !== 'paid') return send(res, 200, { paid: false, pending: session.status === 'complete' });
     const orders = await recordPaidSession(session);

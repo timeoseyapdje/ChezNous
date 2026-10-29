@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { send } = require('./_stripe');
 const { retrieveSession, recordPaidSession } = require('./_orders');
+const { retrievePlanSession, isPlanSession, recordSellerPlan, updateSubscriptionStatus } = require('./_seller-plans');
 
 const TOLERANCE_SECONDS = 300;
 
@@ -36,8 +37,19 @@ module.exports = async (req, res) => {
       // Les paiements de la démo passent par le même compte Stripe : ils n'ont pas d'acheteur réel et ne sont pas enregistrés.
       const meta = event.data.object.metadata || {};
       if (meta.app_mode !== 'demo' && meta.buyer_id) {
-        const session = await retrieveSession(event.data.object.id);
-        await recordPaidSession(session);
+        if (meta.kind === 'seller_plan') {
+          const session = await retrievePlanSession(event.data.object.id);
+          if (isPlanSession(session) && session.payment_status === 'paid') await recordSellerPlan(session);
+        } else {
+          const session = await retrieveSession(event.data.object.id);
+          await recordPaidSession(session);
+        }
+      }
+    }
+    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+      if ((subscription.metadata || {}).kind === 'seller_plan' && subscription.metadata.app_mode !== 'demo') {
+        await updateSubscriptionStatus(subscription, event.type === 'customer.subscription.deleted');
       }
     }
     return send(res, 200, { received: true });

@@ -47,6 +47,10 @@ function priceOrder(mode, rawItems) {
   if (mode === 'booking' && (lines.length !== 1 || lines[0].listing.type !== 'service')) {
     throw Object.assign(new Error('Réservation invalide'), { status: 400 });
   }
+  // Une prestation passe toujours par la réservation : sinon elle échapperait aux frais de service et au créneau.
+  if (mode !== 'booking' && lines.some(l => l.listing.type === 'service')) {
+    throw Object.assign(new Error('Les prestations se réservent depuis leur fiche, avec un créneau.'), { status: 400 });
+  }
   const subtotal = lines.reduce((s, l) => s + l.listing.price * l.quantity, 0);
   const fees = mode === 'booking' ? Math.round(subtotal * BOOKING_FEE_RATE * 100) / 100 : 0;
   return { lines, subtotal, fees, total: subtotal + fees };
