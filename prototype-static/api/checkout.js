@@ -30,6 +30,9 @@ module.exports = async (req, res) => {
     const session = await stripeRequest('POST', '/checkout/sessions', {
       mode: 'payment',
       line_items: lineItems,
+      // Marché canadien uniquement : carte (Apple Pay et Google Pay passent par la carte) et Link, toujours en CAD.
+      payment_method_types: ['card', 'link'],
+      adaptive_pricing: { enabled: false },
       customer_email: user.email,
       client_reference_id: user.id,
       locale: body.lang === 'en' ? 'en' : 'fr',
