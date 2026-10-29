@@ -29,6 +29,7 @@ as $$
 $$;
 
 -- Un utilisateur peut modifier son nom ou sa ville, jamais son propre rôle.
+-- Sans jeton JWT, la requête vient d'une connexion directe à la base (éditeur SQL du dashboard) : elle est autorisée.
 create or replace function public.prevent_role_escalation()
 returns trigger
 language plpgsql
@@ -36,6 +37,7 @@ security definer set search_path = public
 as $$
 begin
   if new.role is distinct from old.role
+     and nullif(current_setting('request.jwt.claims', true), '') is not null
      and coalesce(auth.role(), '') <> 'service_role'
      and coalesce(current_setting('cheznous.role_change_allowed', true), '') <> 'on'
      and not public.is_admin() then
