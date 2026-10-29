@@ -12,7 +12,7 @@ function isLoggedIn(){
   }
   const style = document.createElement('style');
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
-  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal'];
+  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu'];
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
@@ -392,7 +392,8 @@ function toggleNotifMenu(){
         </div>
       </a>
     `).join('') : `<div class="px-3 py-4 text-sm text-ink opacity-60 text-center">Aucune notification</div>`;
-    if(typeof lucide !== 'undefined') lucide.createIcons();
+    // Seulement les icônes du menu : redessiner toute la page remplacerait l'icône de la cloche qu'on vient de cliquer.
+    if(typeof lucide !== 'undefined') lucide.createIcons({root:menu});
     setReadNotifs(notifs.map(n=>n.id));
     refreshNotifBadge();
   }
@@ -402,15 +403,17 @@ function toggleNotifMenu(){
 document.addEventListener('keydown', function(e){
   if(e.key==='Enter' && e.target && e.target.id==='chatInput') sendChat();
 });
+// composedPath() garde le chemin du clic même si l'élément cliqué a été remplacé entre-temps (icônes redessinées).
 document.addEventListener('click', function(e){
+  const path = e.composedPath();
   const deliverMenu = document.getElementById('deliverMenu');
   const deliverBtn = document.getElementById('deliverBtn');
-  if(deliverMenu && !deliverMenu.classList.contains('hidden') && !deliverMenu.contains(e.target) && !deliverBtn.contains(e.target)){
+  if(deliverMenu && !deliverMenu.classList.contains('hidden') && !path.includes(deliverMenu) && !path.includes(deliverBtn)){
     deliverMenu.classList.add('hidden');
   }
   const notifMenu = document.getElementById('notifMenu');
   const notifBtn = document.getElementById('notifBtn');
-  if(notifMenu && !notifMenu.classList.contains('hidden') && !notifMenu.contains(e.target) && !notifBtn.contains(e.target)){
+  if(notifMenu && !notifMenu.classList.contains('hidden') && !path.includes(notifMenu) && !path.includes(notifBtn)){
     notifMenu.classList.add('hidden');
   }
 });
