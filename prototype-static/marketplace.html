@@ -6,11 +6,11 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029p"></script>
+<script src="assets/i18n-en.js?v=20261029q"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029k"></script>
+<script src="assets/shared.js?v=20261029l"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029i"></script>
+<script src="assets/auth.js?v=20261029j"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -56,9 +56,12 @@ body{background:#FFFFFF;color:#131A17}
     <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
       <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
       <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
-      <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
       <div class="relative">
-        <button id="notifBtn" onclick="toggleNotifMenu()" class="relative hover:opacity-80">
+        <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
+        <div id="accountMenu" class="dropdown-panel hidden"></div>
+      </div>
+      <div class="relative">
+        <button id="notifBtn" onclick="toggleNotifMenu()" aria-label="Notifications" class="relative hover:opacity-80">
           <i data-lucide="bell" class="w-5 h-5"></i>
           <span id="notifBadge" class="absolute -top-1 -right-1 bg-coral text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
         </button>

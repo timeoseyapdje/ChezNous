@@ -1,6 +1,6 @@
 // Pages réservées aux utilisateurs connectés : sans session, on les masque de la navigation
 // et un accès direct renvoie vers la connexion, qui ramène ensuite à la page demandée.
-const PRIVATE_PAGES = ['mes-commandes.html','messagerie.html','tableau-de-bord.html'];
+const PRIVATE_PAGES = ['mes-commandes.html','messagerie.html','tableau-de-bord.html','profil.html'];
 function isLoggedIn(){
   try{ return localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){ return false; }
 }
@@ -12,7 +12,7 @@ function isLoggedIn(){
   }
   const style = document.createElement('style');
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
-  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu'];
+  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu'];
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
@@ -167,6 +167,8 @@ const I18N_PATTERNS = [
   [/^Litige ouvert sur votre commande chez (.+)$/, 'Dispute opened on your order at $1'],
   [/^Laissez un avis pour (.+)$/, 'Leave a review for $1'],
   [/^Nouveau message de (.+)$/, 'New message from $1'],
+  [/^(.+) • (Acheteur|Vendeur|Administrateur)$/, '$1 • $2'],
+  [/^Un lien de confirmation a été envoyé à (.+)\. Votre courriel changera dès que vous l'aurez ouvert\.$/, 'A confirmation link was sent to $1. Your email will change once you open it.'],
   [/^Mise à jour du descriptif « (.+) »$/, 'Description update for “$1”'],
   [/^Formule (Pro|Premium) activée\. Reçu Stripe envoyé par courriel\. Redirection vers votre tableau de bord\.\.\.$/, '$1 plan activated. Stripe receipt sent by email. Redirecting to your dashboard...'],
   [/^(.+) • (.+) • à partir de (.+)$/, '$1 • $2 • from $3'],
@@ -497,6 +499,11 @@ document.addEventListener('click', function(e){
   if(deliverMenu && !deliverMenu.classList.contains('hidden') && !path.includes(deliverMenu) && !path.includes(deliverBtn)){
     deliverMenu.classList.add('hidden');
   }
+  const accountMenu = document.getElementById('accountMenu');
+  const accountBtn = document.getElementById('accountBtn');
+  if(accountMenu && !accountMenu.classList.contains('hidden') && !path.includes(accountMenu) && !path.includes(accountBtn)){
+    accountMenu.classList.add('hidden');
+  }
   const notifMenu = document.getElementById('notifMenu');
   const notifBtn = document.getElementById('notifBtn');
   if(notifMenu && !notifMenu.classList.contains('hidden') && !path.includes(notifMenu) && !path.includes(notifBtn)){
@@ -614,7 +621,10 @@ function renderSiteHeader(active){
       <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
         <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
         <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
-        <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
+        <div class="relative">
+          <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
+          <div id="accountMenu" class="dropdown-panel hidden"></div>
+        </div>
         <div class="relative">
           <button id="notifBtn" onclick="toggleNotifMenu()" aria-label="Notifications" class="relative hover:opacity-80">
             <i data-lucide="bell" class="w-5 h-5"></i>
@@ -689,13 +699,45 @@ function updateAccountButtonGlobal(){
   let loggedIn = false;
   try{ loggedIn = localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){}
   if(loggedIn){
-    btn.onclick = ()=>{ window.location.href='mes-commandes.html'; };
+    btn.onclick = toggleAccountMenu;
+    btn.setAttribute('aria-haspopup','menu');
     const first = userFirstName(getCurrentUser());
     btn.innerHTML = `<div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div>`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.innerHTML = `<div class="font-semibold">Se connecter</div>`;
   }
+}
+
+const ROLE_NAMES = { buyer:'Acheteur', seller:'Vendeur', admin:'Administrateur' };
+// Menu du compte, identique sur toutes les pages : profil, commandes, messagerie, tableau de bord et déconnexion.
+function toggleAccountMenu(){
+  const menu = document.getElementById('accountMenu');
+  if(!menu) return;
+  if(!menu.classList.contains('hidden')){ menu.classList.add('hidden'); return; }
+  const user = getCurrentUser() || { name:'Mon compte', email:'' };
+  const role = IS_DEMO ? getRolePersisted() : getServerRole();
+  const item = (href, icon, label)=>`<a href="${href}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-sand text-ink text-sm"><i data-lucide="${icon}" class="w-4 h-4"></i> ${label}</a>`;
+  menu.innerHTML = `
+    <div class="flex items-center gap-3 px-3 py-2 border-b border-line mb-1">
+      <span class="w-10 h-10 rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0">${escapeHtmlGlobal(userInitials(user) || '?')}</span>
+      <div class="min-w-0 text-ink">
+        <div class="font-semibold text-sm truncate">${escapeHtmlGlobal(user.name)}</div>
+        <div class="text-xs opacity-60 truncate">${escapeHtmlGlobal([user.email, ROLE_NAMES[role]].filter(Boolean).join(' • '))}</div>
+      </div>
+    </div>
+    ${item('profil.html','user','Mon profil')}
+    ${item('mes-commandes.html','package','Mes commandes')}
+    ${item('messagerie.html','message-square','Messagerie')}
+    ${role==='seller' || role==='admin' ? item('tableau-de-bord.html','layout-dashboard','Tableau de bord') : item('devenir-vendeur.html','store','Ouvrir ma boutique')}
+    <button onclick="logoutGlobal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-sand text-ink text-sm border-t border-line mt-1"><i data-lucide="log-out" class="w-4 h-4"></i> Se déconnecter</button>`;
+  menu.classList.remove('hidden');
+  if(typeof lucide!=='undefined') lucide.createIcons({root:menu});
+}
+async function logoutGlobal(everywhere){
+  if(typeof signOutEverywhere==='function') await signOutEverywhere(everywhere);
+  try{ ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role','cheznous_orders','cheznous_messages_v1','cheznous_seller_profile','cheznous_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  window.location.href = 'index.html';
 }
 
 function changeRoleGlobal(role){

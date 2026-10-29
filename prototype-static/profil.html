@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon profil — Chez Nous</title>
+<link rel="stylesheet" href="assets/tailwind.css">
+<script src="assets/lucide.min.js"></script>
+<script src="assets/i18n-en.js?v=20261029q"></script>
+<script src="assets/catalog.js?v=20261029e"></script>
+<script src="assets/shared.js?v=20261029l"></script>
+<script src="assets/vendor/supabase-2.45.4.js"></script>
+<script src="assets/auth.js?v=20261029j"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{scroll-behavior:smooth}
+body{background:#FFFFFF;color:#131A17}
+.field{width:100%;margin-top:4px;border:1px solid #E5E5E5;border-radius:12px;padding:10px 12px;font-size:14px;outline:none;background:#fff}
+.field:focus{border-color:#146B4F}
+.field:disabled{background:#F6F3EE;opacity:.7}
+.form-msg{font-size:13px;border-radius:12px;padding:10px 12px;margin-top:12px}
+.form-msg.ok{background:rgba(20,107,79,.1);color:#146B4F}
+.form-msg.err{background:#FEF2F2;color:#B91C1C}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div id="siteHeaderMount"></div>
+
+<main class="max-w-[900px] mx-auto px-4 md:px-6 py-10" style="padding-bottom:7rem">
+  <div class="flex items-center gap-4">
+    <span id="profileAvatar" class="w-16 h-16 rounded-full bg-forest text-white text-xl font-bold flex items-center justify-center shrink-0"></span>
+    <div class="min-w-0">
+      <h1 class="font-display font-bold text-2xl md:text-3xl">Mon profil</h1>
+      <p id="profileSummary" class="text-sm opacity-60 mt-1 truncate"></p>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mt-8">
+    <form id="identityForm" onsubmit="return saveIdentity(event)" class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i> Informations personnelles</h2>
+      <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOM COMPLET</label>
+      <input id="fullName" required maxlength="80" class="field" autocomplete="name">
+      <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">TÉLÉPHONE (FACULTATIF)</label>
+      <input id="phone" type="tel" maxlength="20" class="field" placeholder="Pour les rappels par SMS" autocomplete="tel">
+      <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">VILLE</label>
+      <select id="city" class="field"></select>
+      <button id="identitySubmit" type="submit" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer</button>
+      <div id="identityMsg" class="form-msg hidden"></div>
+    </form>
+
+    <div class="space-y-4">
+      <form id="emailForm" onsubmit="return saveEmail(event)" class="bg-white border border-line rounded-2xl p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5"></i> Courriel</h2>
+        <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">ADRESSE DE CONNEXION</label>
+        <input id="email" type="email" required maxlength="200" class="field" autocomplete="email">
+        <button id="emailSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer de courriel</button>
+        <div id="emailMsg" class="form-msg hidden"></div>
+      </form>
+
+      <form id="passwordForm" onsubmit="return savePassword(event)" class="bg-white border border-line rounded-2xl p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Mot de passe</h2>
+        <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOUVEAU MOT DE PASSE</label>
+        <input id="newPassword" type="password" required minlength="8" class="field" autocomplete="new-password" placeholder="8 caractères minimum">
+        <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">CONFIRMATION</label>
+        <input id="confirmPassword" type="password" required minlength="8" class="field" autocomplete="new-password">
+        <button id="passwordSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer le mot de passe</button>
+        <div id="passwordMsg" class="form-msg hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mt-4">
+    <div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</h2>
+      <label class="flex items-start gap-3 mt-4 text-sm cursor-pointer">
+        <input id="notifEmail" type="checkbox" class="mt-1">
+        <span>Courriels de suivi : confirmation, annulation et rappel 24 h avant chaque rendez-vous.</span>
+      </label>
+      <label class="flex items-start gap-3 mt-3 text-sm cursor-pointer">
+        <input id="notifSms" type="checkbox" class="mt-1">
+        <span>Rappels par SMS (numéro de téléphone requis).</span>
+      </label>
+      <button id="notifSubmit" onclick="saveNotifications()" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer mes préférences</button>
+      <div id="notifMsg" class="form-msg hidden"></div>
+    </div>
+
+    <div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="store" class="w-5 h-5"></i> Mon activité</h2>
+      <div id="activityBox" class="text-sm mt-4 space-y-2"></div>
+      <div class="grid grid-cols-2 gap-2 mt-5 text-sm">
+        <a href="mes-commandes.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
+        <a href="messagerie.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="message-square" class="w-4 h-4"></i> Messagerie</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-line rounded-2xl p-6 mt-4">
+    <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="log-out" class="w-5 h-5"></i> Session et compte</h2>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button onclick="logoutGlobal()" class="bg-ink text-white rounded-full px-5 py-2.5 text-sm font-bold">Se déconnecter</button>
+      <button id="logoutAllBtn" onclick="logoutGlobal(true)" class="bg-white border border-line rounded-full px-5 py-2.5 text-sm font-semibold">Se déconnecter de tous les appareils</button>
+    </div>
+    <div class="border-t border-line mt-6" style="padding-top:1.25rem">
+      <div class="font-semibold text-sm">Supprimer mon compte</div>
+      <p class="text-sm opacity-60 mt-1">Votre demande est transmise à notre responsable de la protection des données, qui supprime votre compte et vos données personnelles, à l'exception de ce que la loi nous oblige à conserver (factures et paiements).</p>
+      <a id="deleteAccountLink" href="mailto:dpo@cheznous.ca" class="inline-flex items-center gap-2 mt-3 text-sm font-semibold text-red-600 hover:underline"><i data-lucide="trash-2" class="w-4 h-4"></i> Demander la suppression de mon compte</a>
+    </div>
+  </div>
+</main>
+
+<footer id="footer" class="bg-white border-t border-line mt-10">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Explorer</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
+          <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
+          <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="contact.html" class="hover:underline">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Légal</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<script>
+document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('');
+initSiteHeader('');
+renderChatWidget();
+lucide.createIcons();
+
+const PLAN_NAMES = {basique:'Basique (gratuite)', pro:'Pro — 129 $/an', premium:'Premium — 299 $/an'};
+let me = null;
+
+function showMsg(id, text, ok){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'form-msg ' + (ok ? 'ok' : 'err');
+}
+function setBusy(id, busy){
+  const b = document.getElementById(id);
+  b.disabled = busy;
+  b.style.opacity = busy ? '0.6' : '';
+}
+function readLocal(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+function writeLocal(key, value){ try{ localStorage.setItem(key, value); }catch(e){} }
+function authErrorText(err){
+  const m = (err && err.message || '').toLowerCase();
+  if(m.includes('different from the old')) return 'Choisissez un mot de passe différent de l\'actuel.';
+  if(m.includes('password should be') || m.includes('weak')) return 'Mot de passe trop faible : 8 caractères minimum.';
+  if(m.includes('already') && m.includes('registered')) return 'Un compte existe déjà avec ce courriel.';
+  if(m.includes('reauthentication') || m.includes('recent')) return 'Par sécurité, reconnectez-vous puis réessayez.';
+  if(m.includes('rate limit')) return 'Trop de tentatives. Réessayez dans quelques minutes.';
+  return 'La modification n\'a pas pu être enregistrée. Réessayez dans un instant.';
+}
+
+function renderHeaderCard(){
+  const user = getCurrentUser() || { name:'', email:'' };
+  document.getElementById('profileAvatar').textContent = userInitials(user) || '?';
+  document.getElementById('profileSummary').textContent = [user.email, ROLE_NAMES[me.role] || 'Acheteur'].filter(Boolean).join(' • ');
+}
+function renderActivity(plan){
+  const box = document.getElementById('activityBox');
+  const seller = me.role==='seller' || me.role==='admin';
+  const shop = (()=>{ try{ return JSON.parse(readLocal('cheznous_seller_profile') || 'null'); }catch(e){ return null; } })();
+  box.innerHTML = `
+    <div class="flex justify-between gap-3"><span class="opacity-60">Rôle</span><span class="font-semibold">${escapeHtmlGlobal(ROLE_NAMES[me.role] || 'Acheteur')}</span></div>
+    ${seller ? `
+      <div class="flex justify-between gap-3"><span class="opacity-60">Boutique</span><span class="font-semibold truncate">${escapeHtmlGlobal((shop && shop.shopName) || '—')}</span></div>
+      <div class="flex justify-between gap-3"><span class="opacity-60">Formule</span><span class="font-semibold">${escapeHtmlGlobal(PLAN_NAMES[plan || (shop && shop.plan) || 'basique'])}</span></div>
+      <a href="tableau-de-bord.html" class="inline-flex items-center gap-1 text-forest font-semibold hover:underline mt-1">Ouvrir mon tableau de bord <i data-lucide="arrow-right" class="w-4 h-4"></i></a>`
+    : `<p class="opacity-60">Vous vendez des produits ou des services de la diaspora ?</p>
+      <a href="devenir-vendeur.html" class="inline-flex items-center gap-1 text-forest font-semibold hover:underline">Ouvrir ma boutique <i data-lucide="arrow-right" class="w-4 h-4"></i></a>`}`;
+  lucide.createIcons({root:box});
+}
+
+async function loadProfile(){
+  const { profile } = await authReady;
+  const cached = getCurrentUser() || {};
+  me = { id: profile ? profile.id : null, role: IS_DEMO ? getRolePersisted() : (profile ? profile.role : getServerRole()), email: cached.email || '', name: cached.name || '', phone: readLocal('cheznous_phone') || '', city: getDeliverCity(),
+         notifEmail: readLocal('cheznous_notif_email_consent')!=='0', notifSms: readLocal('cheznous_notif_sms_consent')==='1' };
+  let plan = null;
+  if(!IS_DEMO && sb && profile){
+    // Nom et ville dans la table profiles ; téléphone et préférences dans les métadonnées du compte Supabase.
+    const [{ data:row }, { data:userData }, planRes] = await Promise.all([
+      sb.from('profiles').select('full_name, city').eq('id', profile.id).maybeSingle(),
+      sb.auth.getUser(),
+      sb.from('seller_plans').select('plan, status').eq('seller_id', profile.id).maybeSingle()
+    ]);
+    const meta = (userData && userData.user && userData.user.user_metadata) || {};
+    me.email = profile.email;
+    me.name = (row && row.full_name) || profile.name;
+    if(row && row.city) me.city = row.city;
+    if(meta.phone !== undefined) me.phone = meta.phone;
+    if(meta.notif_email !== undefined) me.notifEmail = !!meta.notif_email;
+    if(meta.notif_sms !== undefined) me.notifSms = !!meta.notif_sms;
+    plan = planRes && planRes.data && planRes.data.status==='active' ? planRes.data.plan : null;
+  }
+  document.getElementById('fullName').value = me.name;
+  document.getElementById('phone').value = me.phone;
+  document.getElementById('city').innerHTML = CITIES.map(c=>`<option ${c===me.city?'selected':''}>${c}</option>`).join('');
+  document.getElementById('email').value = me.email;
+  document.getElementById('notifEmail').checked = me.notifEmail;
+  document.getElementById('notifSms').checked = me.notifSms;
+  document.getElementById('deleteAccountLink').href = 'mailto:dpo@cheznous.ca?subject=' + encodeURIComponent('Demande de suppression de compte') + '&body=' + encodeURIComponent(`Bonjour,\n\nJe demande la suppression de mon compte Chez Nous associé au courriel ${me.email}.\n\nMerci.`);
+  if(IS_DEMO) document.getElementById('logoutAllBtn').classList.add('hidden');
+  renderHeaderCard();
+  renderActivity(plan);
+}
+
+async function saveIdentity(e){
+  e.preventDefault();
+  const name = document.getElementById('fullName').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const city = document.getElementById('city').value;
+  if(name.length < 2){ showMsg('identityMsg', 'Indiquez votre nom complet.', false); return false; }
+  if(containsProhibited(name)){ showMsg('identityMsg', 'Merci de choisir un nom sans langage inapproprié.', false); return false; }
+  if(phone && !/^\+?[0-9 ().-]{7,20}$/.test(phone)){ showMsg('identityMsg', 'Numéro de téléphone invalide.', false); return false; }
+  setBusy('identitySubmit', true);
+  try{
+    if(!IS_DEMO){
+      const { error } = await sb.from('profiles').update({ full_name:name, city }).eq('id', me.id);
+      if(error) throw error;
+      const res = await sb.auth.updateUser({ data:{ full_name:name, phone } });
+      if(res.error) throw res.error;
+    }
+    saveCurrentUser({ ...(getCurrentUser() || {}), name, email: me.email });
+    writeLocal('cheznous_phone', phone);
+    setDeliverCity(city);
+    me.name = name; me.phone = phone; me.city = city;
+    renderHeaderCard();
+    updateAccountButtonGlobal();
+    showMsg('identityMsg', 'Vos informations sont enregistrées.', true);
+  }catch(err){
+    showMsg('identityMsg', authErrorText(err), false);
+  }finally{
+    setBusy('identitySubmit', false);
+  }
+  return false;
+}
+
+async function saveEmail(e){
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  if(email === me.email.toLowerCase()){ showMsg('emailMsg', 'C\'est déjà votre adresse actuelle.', false); return false; }
+  setBusy('emailSubmit', true);
+  try{
+    if(IS_DEMO){
+      saveCurrentUser({ ...(getCurrentUser() || {}), email });
+      me.email = email;
+      renderHeaderCard();
+      showMsg('emailMsg', 'Version démo : courriel modifié dans ce navigateur uniquement.', true);
+    } else {
+      // Supabase n'applique le changement qu'après clic sur le lien envoyé : l'ancienne adresse reste valable d'ici là.
+      const { error } = await sb.auth.updateUser({ email }, { emailRedirectTo: new URL('profil.html', location.href).href });
+      if(error) throw error;
+      document.getElementById('email').value = me.email;
+      showMsg('emailMsg', `Un lien de confirmation a été envoyé à ${email}. Votre courriel changera dès que vous l'aurez ouvert.`, true);
+    }
+  }catch(err){
+    showMsg('emailMsg', authErrorText(err), false);
+  }finally{
+    setBusy('emailSubmit', false);
+  }
+  return false;
+}
+
+async function savePassword(e){
+  e.preventDefault();
+  const pwd = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  if(pwd.length < 8){ showMsg('passwordMsg', 'Mot de passe trop faible : 8 caractères minimum.', false); return false; }
+  if(pwd !== confirm){ showMsg('passwordMsg', 'Les deux mots de passe ne correspondent pas.', false); return false; }
+  setBusy('passwordSubmit', true);
+  try{
+    if(IS_DEMO){
+      showMsg('passwordMsg', 'Version démo : aucun mot de passe n\'est enregistré.', true);
+    } else {
+      const { error } = await sb.auth.updateUser({ password: pwd });
+      if(error) throw error;
+      showMsg('passwordMsg', 'Mot de passe modifié.', true);
+    }
+    document.getElementById('passwordForm').reset();
+  }catch(err){
+    showMsg('passwordMsg', authErrorText(err), false);
+  }finally{
+    setBusy('passwordSubmit', false);
+  }
+  return false;
+}
+
+async function saveNotifications(){
+  const notifEmail = document.getElementById('notifEmail').checked;
+  const notifSms = document.getElementById('notifSms').checked;
+  if(notifSms && !document.getElementById('phone').value.trim()){ showMsg('notifMsg', 'Ajoutez d\'abord votre numéro de téléphone pour recevoir des SMS.', false); return; }
+  setBusy('notifSubmit', true);
+  try{
+    if(!IS_DEMO){
+      const { error } = await sb.auth.updateUser({ data:{ notif_email:notifEmail, notif_sms:notifSms } });
+      if(error) throw error;
+    }
+    writeLocal('cheznous_notif_email_consent', notifEmail ? '1' : '0');
+    writeLocal('cheznous_notif_sms_consent', notifSms ? '1' : '0');
+    showMsg('notifMsg', 'Préférences enregistrées.', true);
+  }catch(err){
+    showMsg('notifMsg', authErrorText(err), false);
+  }finally{
+    setBusy('notifSubmit', false);
+  }
+}
+
+loadProfile();
+</script>
+</body>
+</html>

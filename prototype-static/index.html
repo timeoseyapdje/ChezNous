@@ -6,11 +6,11 @@
 <title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029p"></script>
+<script src="assets/i18n-en.js?v=20261029q"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029k"></script>
+<script src="assets/shared.js?v=20261029l"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029i"></script>
+<script src="assets/auth.js?v=20261029j"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -63,12 +63,15 @@ body{background:#FFFFFF;color:#131A17}
     <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
       <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
       <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
-      <button id="accountBtn" onclick="openAuth()" class="text-left leading-tight hover:opacity-80">
-        <div class="text-[10px]">Bonjour</div>
-        <div class="font-semibold" data-i18n="accountOrders">Comptes & Commandes</div>
-      </button>
       <div class="relative">
-        <button id="notifBtn" onclick="toggleNotifMenu()" class="relative hover:opacity-80">
+        <button id="accountBtn" class="text-left leading-tight hover:opacity-80">
+          <div class="text-[10px]">Bonjour</div>
+          <div class="font-semibold" data-i18n="accountOrders">Comptes & Commandes</div>
+        </button>
+        <div id="accountMenu" class="dropdown-panel hidden"></div>
+      </div>
+      <div class="relative">
+        <button id="notifBtn" onclick="toggleNotifMenu()" aria-label="Notifications" class="relative hover:opacity-80">
           <i data-lucide="bell" class="w-5 h-5"></i>
           <span id="notifBadge" class="absolute -top-1 -right-1 bg-coral text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
         </button>
@@ -191,31 +194,6 @@ body{background:#FFFFFF;color:#131A17}
 
 <div id="tourGuide" class="hidden"><img src="assets/malik-classic.jpg"></div>
 
-<div id="authModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-ink/50" onclick="closeAuth()"></div>
-  <div class="absolute top-20 right-4 md:right-10 bg-white rounded-2xl shadow-2xl w-[320px] overflow-hidden">
-    <div class="p-5 border-b border-line flex items-center gap-3">
-      <span id="profileInitials" class="w-12 h-12 rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0"></span>
-      <div class="min-w-0">
-        <div id="profileName" class="font-semibold truncate"></div>
-        <div id="profileMeta" class="text-xs opacity-60 truncate"></div>
-      </div>
-    </div>
-    <div class="p-3 space-y-1 text-sm">
-      <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Mon profil</button>
-      <a href="mes-commandes.html" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
-      <button onclick="logout()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-sand flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> Déconnexion</button>
-    </div>
-    <div class="p-3 bg-sand m-3 rounded-xl text-xs">
-      <div class="font-bold">Changer de rôle (démo)</div>
-      <div class="grid grid-cols-2 gap-2 mt-2">
-        <button onclick="changeRole('buyer');closeAuth()" class="bg-white border border-line rounded-full py-1.5 font-medium">Acheteur</button>
-        <button onclick="changeRole('admin');closeAuth()" class="bg-ink text-white rounded-full py-1.5 font-medium">Admin</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <footer id="footer" class="bg-white border-t border-line mt-6">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
     <div class="grid md:grid-cols-3 gap-8 text-sm">
@@ -332,20 +310,13 @@ function updateAccountButton(){
   let loggedIn = false;
   try{ loggedIn = localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){}
   if(loggedIn){
-    btn.onclick = openAuth;
+    btn.onclick = toggleAccountMenu;
     const first = userFirstName(getCurrentUser());
     btn.innerHTML = `<div class="text-[10px]">${i18n[lang].greeting}${first ? ', ' + escapeHtmlGlobal(first) : ''}</div><div class="font-semibold">${i18n[lang].accountOrders}</div>`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.innerHTML = `<div class="font-semibold">${lang==='fr'?'Se connecter':'Sign in'}</div>`;
   }
-}
-async function logout(){
-  await signOutEverywhere();
-  updateAccountButton();
-  closeAuth();
-  showToast('Vous avez été déconnecté.','info');
-  setTimeout(()=>location.reload(), 800);
 }
 
 function renderCategories(){
@@ -497,15 +468,6 @@ function showToast(msg,type='success'){
   lucide.createIcons({nodes:[el]});
   setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); },3500);
 }
-const ROLE_LABELS = { buyer:'Acheteur', seller:'Vendeur', admin:'Administrateur' };
-function openAuth(){
-  const user = getCurrentUser() || { name:'Mon compte', email:'' };
-  document.getElementById('profileInitials').textContent = userInitials(user) || '?';
-  document.getElementById('profileName').textContent = user.name;
-  document.getElementById('profileMeta').textContent = [user.email, ROLE_LABELS[getRolePersisted()]].filter(Boolean).join(' • ');
-  document.getElementById('authModal').classList.remove('hidden');
-}
-function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
 
 function setCookieConsent(accepted){
   try{ localStorage.setItem('cheznous_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}

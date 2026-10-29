@@ -40,8 +40,9 @@ function clearSessionCache(){
   }catch(e){}
 }
 
-async function signOutEverywhere(){
-  try{ if(sb) await sb.auth.signOut(); }catch(e){}
+// everywhere : ferme aussi les sessions ouvertes sur les autres appareils.
+async function signOutEverywhere(everywhere){
+  try{ if(sb) await sb.auth.signOut(everywhere ? { scope:'global' } : undefined); }catch(e){}
   clearSessionCache();
 }
 
