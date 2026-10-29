@@ -33,13 +33,21 @@ function isLoggedIn(){
 })();
 
 function getCategoryVendorCount(catId){
-  return new Set(CATALOG.filter(p=>p.cat===catId).map(p=>p.seller)).size;
+  return new Set(getAllListings().filter(p=>p.cat===catId).map(p=>p.seller)).size;
 }
 function getTopListings(n){
-  return [...CATALOG].sort((a,b)=> (b.rating*Math.log(b.reviews+1)) - (a.rating*Math.log(a.reviews+1))).slice(0,n);
+  return getAllListings().sort((a,b)=> (b.rating*Math.log(b.reviews+1)) - (a.rating*Math.log(a.reviews+1)) || String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,n);
 }
 function getSponsoredListings(){
   return CATALOG.filter(p=>p.plan==='premium');
+}
+// Argument d'un onclick : les annonces de démo ont un id numérique, celles de la base un uuid (texte).
+function jsArg(id){
+  return typeof id==='number' ? String(id) : `'${String(id).replace(/[^a-zA-Z0-9-]/g,'')}'`;
+}
+function listingIdFrom(value){
+  const v = String(value||'');
+  return /^\d+$/.test(v) ? Number(v) : v;
 }
 
 const CUR = {
@@ -269,16 +277,30 @@ function getOrders(){
     if(raw) return JSON.parse(raw);
   }catch(e){}
   if(!IS_DEMO) return [];
+  // Dates calculées depuis aujourd'hui : une commande « en cours » ne doit pas porter une date déjà passée.
   const seed = [
-    {id:101, seller:'Ankara Boutique', service:'Pagnes wax premium x2', date:'12 sept.', status:'confirmée', price:130, type:'mode', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
-    {id:102, seller:'Épicerie Le Baobab', service:'Panier épicerie', date:'13 sept. • ramassage 17:30', status:'en attente', price:38, type:'epicerie', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
-    {id:103, seller:'Natural Roots Hair Studio', service:'Tresses box braids', date:'02 sept. • 10:30', status:'terminée', price:80, type:'beaute', review:false, escrowStatus:'libéré', releaseCode:generateReleaseCode()}
+    {id:101, seller:'Ankara Boutique', service:'Pagnes wax premium x2', date:shortDateLabel(2), status:'confirmée', price:130, type:'mode', escrowStatus:'retenu', releaseCode:generateReleaseCode(), paidAt:new Date(Date.now()-86400000).toISOString()},
+    {id:102, seller:'Épicerie Le Baobab', service:'Panier épicerie', date:`${shortDateLabel(1)} • ramassage 17:30`, status:'en attente', price:38, type:'epicerie', escrowStatus:'retenu', releaseCode:generateReleaseCode()},
+    {id:103, seller:'Natural Roots Hair Studio', service:'Tresses box braids', date:`${shortDateLabel(-10)} • 10:30`, status:'terminée', price:80, type:'beaute', review:false, escrowStatus:'libéré', releaseCode:generateReleaseCode()}
   ];
   setOrders(seed);
   return seed;
 }
 function setOrders(orders){
   try{ localStorage.setItem('cheznous_orders', JSON.stringify(orders)); }catch(e){}
+}
+function shortDateLabel(daysFromToday){
+  return new Date(Date.now() + daysFromToday*86400000).toLocaleDateString('fr-CA',{day:'2-digit',month:'short'});
+}
+function isoToShortDate(iso){
+  // Une date seule (AAAA-MM-JJ) serait lue à minuit UTC, donc la veille au Canada : on la place à midi.
+  const d = iso ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso) : null;
+  return d && !isNaN(d) ? d.toLocaleDateString('fr-CA',{day:'2-digit',month:'short'}) : '';
+}
+// Heure toujours au format 17:54 : toLocaleTimeString('fr-CA') donnerait « 17 h 54 », différent des messages d'exemple.
+function clockTime(date){
+  const d = date instanceof Date ? date : new Date(date);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 function generateReleaseCode(){
   return Math.random().toString(36).slice(2,8).toUpperCase();
@@ -331,18 +353,41 @@ function containsProhibited(text){
 function safeUrl(url){
   return /^(https?:\/\/|assets\/)/i.test(String(url||'')) ? String(url) : '';
 }
+// Image fournie par un vendeur : https uniquement, une adresse http serait bloquée sur un site https.
+function safeImageUrl(url){
+  return /^(https:\/\/|assets\/)/i.test(String(url||'')) ? String(url) : '';
+}
+const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop';
+const DEFAULT_AVATAR = 'https://i.pravatar.cc/100?img=48';
+// Site réel : annonces lues dans Supabase par auth.js ; gardées en sessionStorage pour l'affichage immédiat de la page suivante.
+let REMOTE_LISTINGS = (()=>{
+  try{ return JSON.parse(sessionStorage.getItem('cheznous_listings_cache') || '[]'); }catch(e){ return []; }
+})();
+function listingFromRow(r){
+  return {
+    id: r.id, sellerId: r.seller_id, cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
+    seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: 0, reviews: 0, plan: 'basique',
+    active: r.active !== false, createdAt: r.created_at,
+    cover: safeImageUrl(r.cover_url) || DEFAULT_COVER, image: DEFAULT_AVATAR
+  };
+}
+function setRemoteListings(rows){
+  REMOTE_LISTINGS = rows.map(listingFromRow);
+  try{ sessionStorage.setItem('cheznous_listings_cache', JSON.stringify(REMOTE_LISTINGS)); }catch(e){}
+  document.dispatchEvent(new CustomEvent('cheznous:listings'));
+}
 function getSellerListings(){
   try{ return JSON.parse(localStorage.getItem('cheznous_seller_catalog') || '[]'); }catch(e){ return []; }
 }
 // Les annonces publiées depuis le tableau de bord vendeur s'ajoutent au catalogue de démo.
 function getAllListings(){
-  // Site réel : seules les annonces enregistrées en base pourront s'afficher (pas les brouillons locaux d'un navigateur).
-  if(!IS_DEMO) return [...CATALOG];
+  // Site réel : seules les annonces enregistrées en base s'affichent (pas les brouillons locaux d'un navigateur).
+  if(!IS_DEMO) return [...CATALOG, ...REMOTE_LISTINGS.filter(p=>p.active)];
   const ids = new Set(CATALOG.map(p=>p.id));
   const fromSellers = getSellerListings().filter(p=>p && !ids.has(p.id)).map(p=>({
     tags:[], desc:'', rating:5, reviews:0, plan:'basique', ...p,
-    cover: safeUrl(p.cover) || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop',
-    image: safeUrl(p.image) || 'https://i.pravatar.cc/100?img=48'
+    cover: safeImageUrl(p.cover) || DEFAULT_COVER,
+    image: safeUrl(p.image) || DEFAULT_AVATAR
   }));
   return [...CATALOG, ...fromSellers];
 }
@@ -380,12 +425,15 @@ function toggleDeliverMenu(){
 function getNotifications(){
   if(!isLoggedIn()) return [];
   const list = [];
+  const disputes = getDisputes();
+  // Chaque notification est datée du moment de l'événement (annulation, litige, paiement), pas du rendez-vous.
   getOrders().slice(0,5).forEach(o=>{
     const total = fmt(orderTotal(o));
-    if(o.status==='annulée') list.push({id:`o${o.id}-annulee`, icon:'rotate-ccw', text:`Commande annulée chez ${o.seller} — remboursement de ${total} en cours`, time:o.date});
-    else if(o.escrowStatus==='litige') list.push({id:`o${o.id}-litige`, icon:'alert-triangle', text:`Litige ouvert sur votre commande chez ${o.seller}`, time:o.date});
+    const dispute = disputes.find(d=>d.orderId===o.id);
+    if(o.status==='annulée') list.push({id:`o${o.id}-annulee`, icon:'rotate-ccw', text:`Commande annulée chez ${o.seller} — remboursement de ${total} en cours`, time:isoToShortDate(o.cancelledAt) || o.date});
+    else if(o.escrowStatus==='litige') list.push({id:`o${o.id}-litige`, icon:'alert-triangle', text:`Litige ouvert sur votre commande chez ${o.seller}`, time:(dispute && isoToShortDate(dispute.date)) || o.date});
     else if(o.status==='terminée' && !o.review) list.push({id:`o${o.id}-avis`, icon:'star', text:`Laissez un avis pour ${o.seller}`, time:o.date});
-    else if(o.status==='confirmée') list.push({id:`o${o.id}-confirmee`, icon:'check-circle', text:`Commande confirmée chez ${o.seller} (${total})`, time:o.date});
+    else if(o.status==='confirmée') list.push({id:`o${o.id}-confirmee`, icon:'check-circle', text:`Commande confirmée chez ${o.seller} (${total})`, time:isoToShortDate(o.paidAt) || o.date});
     else if(o.status==='en attente') list.push({id:`o${o.id}-attente`, icon:'clock', text:`Commande en attente chez ${o.seller}`, time:o.date});
   });
   try{
@@ -568,7 +616,7 @@ function renderSiteHeader(active){
         <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
         <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
         <div class="relative">
-          <button id="notifBtn" onclick="toggleNotifMenu()" class="relative hover:opacity-80">
+          <button id="notifBtn" onclick="toggleNotifMenu()" aria-label="Notifications" class="relative hover:opacity-80">
             <i data-lucide="bell" class="w-5 h-5"></i>
             <span id="notifBadge" class="absolute -top-1 -right-1 bg-coral text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
           </button>

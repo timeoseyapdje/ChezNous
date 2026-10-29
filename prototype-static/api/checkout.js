@@ -8,16 +8,24 @@ module.exports = async (req, res) => {
     const user = IS_DEMO ? null : await requireUser(req);
     const body = await readJson(req);
     const mode = body.mode === 'booking' ? 'booking' : 'cart';
-    const { lines, fees } = priceOrder(mode, body.items);
+    const { lines, fees } = await priceOrder(mode, body.items);
+    if (user && lines.some(l => l.listing.sellerId === user.id)) return send(res, 400, { error: 'Vous ne pouvez pas acheter votre propre annonce.' });
     const origin = siteOrigin(req);
     const slot = String(body.slot || '').slice(0, 80);
     const details = String(body.details || '').slice(0, 450);
+    // Le prix payé voyage avec la session : la commande enregistrée après paiement reprend exactement ce montant.
+    const items = JSON.stringify(lines.map(l => ({
+      id: l.listing.id, qty: l.quantity, p: l.unitPrice,
+      ...(l.listing.custom ? { n: l.listing.name, s: l.listing.seller, t: l.listing.type } : {}),
+    })));
+    // Stripe limite chaque métadonnée à 500 caractères.
+    if (items.length > 500) return send(res, 400, { error: 'Panier trop volumineux : réglez-le en deux fois.' });
 
-    const lineItems = lines.map(({ listing, quantity }) => ({
+    const lineItems = lines.map(({ listing, quantity, unitPrice }) => ({
       quantity,
       price_data: {
         currency: 'cad',
-        unit_amount: Math.round(listing.price * 100),
+        unit_amount: Math.round(unitPrice * 100),
         product_data: { name: listing.name, description: listing.seller },
       },
     }));
@@ -49,7 +57,7 @@ module.exports = async (req, res) => {
         mode,
         app_mode: IS_DEMO ? 'demo' : 'real',
         buyer_id: user ? user.id : undefined,
-        items: JSON.stringify(lines.map(l => ({ id: l.listing.id, qty: l.quantity }))),
+        items,
         slot,
         details,
       },

@@ -23,13 +23,13 @@ function paymentMethodLabel(session) {
 }
 
 // Démo : rien n'est enregistré en base, on renvoie seulement le détail recalculé pour la commande locale.
-function describeDemoSession(session) {
+async function describeDemoSession(session) {
   const mode = session.metadata.mode === 'booking' ? 'booking' : 'cart';
-  const { lines, subtotal, fees, total } = priceOrder(mode, JSON.parse(session.metadata.items || '[]'));
+  const { lines, subtotal, fees, total } = await priceOrder(mode, JSON.parse(session.metadata.items || '[]'), { paid: true });
   return {
     paid: true,
     mode,
-    items: lines.map(l => ({ id: l.listing.id, name: l.listing.name, seller: l.listing.seller, cat: l.listing.cat, qty: l.quantity, unitPrice: l.listing.price })),
+    items: lines.map(l => ({ id: l.listing.id, name: l.listing.name, seller: l.listing.seller, cat: l.listing.cat, qty: l.quantity, unitPrice: l.unitPrice })),
     subtotal, fees, total,
     slot: session.metadata.slot || '',
     details: session.metadata.details || '',
@@ -46,22 +46,24 @@ async function recordPaidSession(session) {
   if (!buyerId) throw Object.assign(new Error('Session sans acheteur'), { status: 400 });
 
   const mode = session.metadata.mode === 'booking' ? 'booking' : 'cart';
-  const { lines, fees } = priceOrder(mode, JSON.parse(session.metadata.items || '[]'));
+  // paid : une annonce retirée après le paiement reste lisible, et le prix payé fait foi.
+  const { lines, fees } = await priceOrder(mode, JSON.parse(session.metadata.items || '[]'), { paid: true });
   const pi = session.payment_intent && typeof session.payment_intent === 'object' ? session.payment_intent : null;
   const pm = pi && pi.payment_method;
   const methodType = pm ? (pm.card && pm.card.wallet ? pm.card.wallet.type : pm.type) : 'card';
   const paidAt = new Date(session.created * 1000).toISOString();
 
   const bySeller = new Map();
-  for (const { listing, quantity } of lines) {
-    if (!bySeller.has(listing.seller)) bySeller.set(listing.seller, []);
-    bySeller.get(listing.seller).push({ id: listing.id, name: listing.name, cat: listing.cat, qty: quantity, unitPrice: listing.price });
+  for (const { listing, quantity, unitPrice } of lines) {
+    if (!bySeller.has(listing.seller)) bySeller.set(listing.seller, { sellerId: listing.sellerId || null, items: [] });
+    bySeller.get(listing.seller).items.push({ id: listing.id, name: listing.name, cat: listing.cat, qty: quantity, unitPrice });
   }
 
-  const rows = [...bySeller.entries()].map(([seller, items]) => {
-    const subtotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const rows = [...bySeller.entries()].map(([seller, { sellerId, items }]) => {
+    const subtotal = Math.round(items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100;
     return {
       buyer_id: buyerId,
+      seller_id: sellerId,
       seller_name: seller,
       items,
       slot: session.metadata.slot || null,

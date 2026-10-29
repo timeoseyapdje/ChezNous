@@ -11,7 +11,7 @@ function initials(name){
 function timeLabel(iso){
   const d = new Date(iso);
   const sameDay = d.toDateString()===new Date().toDateString();
-  return sameDay ? d.toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString('fr-CA',{day:'2-digit',month:'short'});
+  return sameDay ? clockTime(d) : d.toLocaleDateString('fr-CA',{day:'2-digit',month:'short'});
 }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

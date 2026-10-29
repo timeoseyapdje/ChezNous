@@ -35,14 +35,45 @@ async function stripeRequest(method, path, params, extraHeaders = {}) {
   return data;
 }
 
-// Le navigateur n'envoie que des identifiants et des quantités : le prix vient toujours du catalogue serveur.
-function priceOrder(mode, rawItems) {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DEMO_MAX_CUSTOM_PRICE = 1000;
+const badItem = () => Object.assign(new Error("Cette annonce n'est pas encore payable en ligne."), { status: 400 });
+
+// Site réel : les annonces des vendeurs sont lues en base avec la clé serveur, jamais depuis le navigateur.
+async function fetchDbListings(ids, includeInactive) {
+  if (IS_DEMO || ids.length === 0) return [];
+  const { supabaseRest } = require('./_supabase');
+  const rows = await supabaseRest('GET', `listings?id=in.(${ids.join(',')})&select=id,seller_id,seller_name,type,category,name,price_cad,active`);
+  return rows.filter(r => includeInactive || r.active).map(r => ({
+    id: r.id, sellerId: r.seller_id, seller: r.seller_name, type: r.type, cat: r.category, name: r.name, price: Number(r.price_cad),
+  }));
+}
+
+// Démo : une annonce créée dans le navigateur n'existe nulle part côté serveur ; on accepte ses données, bornées,
+// puisque la démo n'encaisse qu'en mode test.
+function demoCustomListing(raw) {
+  const c = raw.custom || (raw.n ? { name: raw.n, seller: raw.s, type: raw.t, price: raw.p } : null);
+  if (!IS_DEMO || !c) return null;
+  const price = Number(c.price);
+  const name = String(c.name || '').trim().slice(0, 40);
+  if (!name || !(price > 0 && price <= DEMO_MAX_CUSTOM_PRICE)) return null;
+  return { id: String(raw.id).slice(0, 20), name, seller: String(c.seller || 'Ma Boutique').trim().slice(0, 40), type: c.type === 'service' ? 'service' : 'produit', cat: '', price, custom: true };
+}
+
+// Le navigateur n'envoie que des identifiants et des quantités : le prix vient du catalogue ou de la base.
+// Une fois la session payée (paid), le prix gardé dans ses métadonnées fait foi, même si le vendeur l'a changé depuis.
+async function priceOrder(mode, rawItems, { paid = false } = {}) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) throw Object.assign(new Error('Panier vide'), { status: 400 });
-  const lines = rawItems.map(({ id, qty }) => {
-    const listing = CATALOG.find(p => p.id === Number(id));
-    if (!listing) throw Object.assign(new Error("Cette annonce n'est pas encore payable en ligne."), { status: 400 });
-    const quantity = mode === 'booking' ? 1 : Math.min(MAX_QTY, Math.max(1, Math.floor(Number(qty) || 1)));
-    return { listing, quantity };
+  const dbIds = [...new Set(rawItems.map(r => String(r && r.id).toLowerCase()).filter(id => UUID.test(id)))];
+  const dbListings = await fetchDbListings(dbIds, paid);
+  const lines = rawItems.map(raw => {
+    const id = String(raw && raw.id).toLowerCase();
+    const listing = UUID.test(id) ? dbListings.find(l => l.id === id)
+      : CATALOG.find(p => p.id === Number(id)) || demoCustomListing(raw);
+    if (!listing) throw badItem();
+    const quantity = mode === 'booking' ? 1 : Math.min(MAX_QTY, Math.max(1, Math.floor(Number(raw.qty) || 1)));
+    const unitPrice = paid && Number(raw.p) > 0 ? Number(raw.p) : listing.price;
+    return { listing, quantity, unitPrice };
   });
   if (mode === 'booking' && (lines.length !== 1 || lines[0].listing.type !== 'service')) {
     throw Object.assign(new Error('Réservation invalide'), { status: 400 });
@@ -51,7 +82,7 @@ function priceOrder(mode, rawItems) {
   if (mode !== 'booking' && lines.some(l => l.listing.type === 'service')) {
     throw Object.assign(new Error('Les prestations se réservent depuis leur fiche, avec un créneau.'), { status: 400 });
   }
-  const subtotal = lines.reduce((s, l) => s + l.listing.price * l.quantity, 0);
+  const subtotal = Math.round(lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0) * 100) / 100;
   const fees = mode === 'booking' ? Math.round(subtotal * BOOKING_FEE_RATE * 100) / 100 : 0;
   return { lines, subtotal, fees, total: subtotal + fees };
 }

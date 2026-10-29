@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
       const session = await retrieveSession(id);
       if (!session.metadata || session.metadata.app_mode !== 'demo' || session.metadata.kind === 'seller_plan') return send(res, 403, { error: 'Session invalide' });
       if (session.payment_status !== 'paid') return send(res, 200, { paid: false, pending: session.status === 'complete' });
-      return send(res, 200, describeDemoSession(session));
+      return send(res, 200, await describeDemoSession(session));
     }
     const user = await requireUser(req);
     const session = await retrieveSession(id);

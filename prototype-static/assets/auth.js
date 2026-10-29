@@ -76,6 +76,17 @@ const authReady = (async ()=>{
   return { offline:false, profile };
 })();
 
+// Annonces actives de la marketplace (lecture publique, protégée par RLS).
+const LISTING_COLUMNS = 'id, seller_id, seller_name, type, category, name, description, price_cad, cover_url, city, active, created_at';
+async function loadRemoteListings(){
+  if(!sb) return;
+  try{
+    const { data, error } = await sb.from('listings').select(LISTING_COLUMNS).eq('active', true).order('created_at', { ascending:false }).limit(500);
+    if(!error && data) setRemoteListings(data);
+  }catch(e){}
+}
+loadRemoteListings();
+
 // La cloche compte les messages non lus : on rafraîchit ce résumé depuis Supabase sur chaque page.
 async function syncUnreadMessages(){
   try{

@@ -6,11 +6,11 @@
 <title>Contact — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029m"></script>
+<script src="assets/i18n-en.js?v=20261029o"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029j"></script>
+<script src="assets/shared.js?v=20261029k"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029h"></script>
+<script src="assets/auth.js?v=20261029i"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -31,15 +31,15 @@ body{background:#FFFFFF;color:#131A17}
     <form id="contactForm" onsubmit="return submitContact(event)" class="bg-white border border-line rounded-2xl p-6 space-y-4">
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">NOM COMPLET</label>
-        <input required class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="Votre nom">
+        <input id="contactName" required maxlength="100" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="Votre nom">
       </div>
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
-        <input required type="email" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="vous@exemple.com">
+        <input id="contactEmail" required type="email" maxlength="200" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none" placeholder="vous@exemple.com">
       </div>
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">SUJET</label>
-        <select class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none bg-white">
+        <select id="contactSubject" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none bg-white">
           <option>Question sur une commande</option>
           <option>Devenir vendeur</option>
           <option>Signaler un problème</option>
@@ -48,11 +48,12 @@ body{background:#FFFFFF;color:#131A17}
       </div>
       <div>
         <label class="text-xs font-bold tracking-widest opacity-60">MESSAGE</label>
-        <textarea id="contactMessage" required class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none h-28" placeholder="Décrivez votre demande..."></textarea>
+        <textarea id="contactMessage" required minlength="10" maxlength="5000" class="w-full mt-1 border border-line rounded-xl px-3 py-2.5 text-sm outline-none h-28" placeholder="Décrivez votre demande..."></textarea>
       </div>
+      <input id="contactWebsite" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="hidden">
       <p class="text-[11px] opacity-50">En envoyant, vous acceptez notre <a href="charte-communaute.html" class="text-forest underline">charte de la communauté</a>.</p>
-      <button type="submit" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold">Envoyer le message</button>
-      <div id="contactError" class="hidden bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center">Votre message contient des termes non autorisés par notre charte de la communauté. Merci de le reformuler.</div>
+      <button id="contactSubmit" type="submit" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold">Envoyer le message</button>
+      <div id="contactError" class="hidden bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center"></div>
       <div id="contactSuccess" class="hidden bg-forest/10 text-forest text-sm rounded-xl p-3 text-center">Message envoyé. Notre équipe vous répondra sous peu.</div>
     </form>
 
@@ -128,16 +129,41 @@ document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('contact
 initSiteHeader('contact');
 renderChatWidget();
 
-function submitContact(e){
+async function submitContact(e){
   e.preventDefault();
-  document.getElementById('contactError').classList.add('hidden');
-  document.getElementById('contactSuccess').classList.add('hidden');
-  if(containsProhibited(document.getElementById('contactMessage').value.toLowerCase())){
-    document.getElementById('contactError').classList.remove('hidden');
-    return false;
+  const errBox = document.getElementById('contactError');
+  const okBox = document.getElementById('contactSuccess');
+  errBox.classList.add('hidden');
+  okBox.classList.add('hidden');
+  const message = document.getElementById('contactMessage').value;
+  const showError = msg=>{ errBox.textContent = msg; errBox.classList.remove('hidden'); };
+  if(containsProhibited(message.toLowerCase())){ showError('Votre message contient des termes non autorisés par notre charte de la communauté. Merci de le reformuler.'); return false; }
+  const btn = document.getElementById('contactSubmit');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try{
+    const res = await fetch('api/contact', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: document.getElementById('contactName').value,
+        email: document.getElementById('contactEmail').value,
+        subject: document.getElementById('contactSubject').value,
+        message,
+        website: document.getElementById('contactWebsite').value
+      })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || "Le message n'a pas pu être envoyé. Écrivez-nous à aide@cheznous.ca.");
+    okBox.textContent = data.demo ? 'Version démo : le message n\'est pas envoyé.' : 'Message envoyé. Notre équipe vous répondra sous peu.';
+    okBox.classList.remove('hidden');
+    document.getElementById('contactForm').reset();
+  }catch(err){
+    showError(err.message);
+  }finally{
+    btn.disabled = false;
+    btn.style.opacity = '';
   }
-  document.getElementById('contactSuccess').classList.remove('hidden');
-  document.getElementById('contactForm').reset();
   return false;
 }
 

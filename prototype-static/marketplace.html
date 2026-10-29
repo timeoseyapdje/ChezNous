@@ -6,11 +6,11 @@
 <title>Boutique — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029m"></script>
+<script src="assets/i18n-en.js?v=20261029o"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029j"></script>
+<script src="assets/shared.js?v=20261029k"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029h"></script>
+<script src="assets/auth.js?v=20261029i"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -264,7 +264,7 @@ const categories = [
   {id:'services', label:'Services communautaires', icon:'users'}
 ];
 
-const listings = getAllListings();
+let listings = getAllListings();
 const esc = escapeHtmlGlobal;
 
 function starRow(n){
@@ -321,12 +321,12 @@ function renderMarket(list=listings){
     return;
   }
   document.getElementById('cardsGrid').innerHTML = list.map(p=>`
-    <div class="bg-white rounded-xl border border-line overflow-hidden card-hover group cursor-pointer" onclick="openProfile(${p.id})">
+    <div class="bg-white rounded-xl border border-line overflow-hidden card-hover group cursor-pointer" onclick="openProfile(${jsArg(p.id)})">
       <div class="relative h-[160px] overflow-hidden">
         <img src="${esc(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
-        <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating} <span class="opacity-60 font-normal">(${p.reviews})</span></div>
+        <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1">${p.reviews ? `<i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating} <span class="opacity-60 font-normal">(${p.reviews})</span>` : 'Nouveau'}</div>
         <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2">
           <img src="${esc(p.image)}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
           <div class="text-white">
@@ -343,10 +343,10 @@ function renderMarket(list=listings){
           ${p.tags.map(t=>`<span class="text-[11px] bg-sand border border-line px-2 py-1 rounded-full">${esc(t)}</span>`).join('')}
         </div>
         <div class="flex gap-2 mt-4">
-          <button onclick="event.stopPropagation();openProfile(${p.id})" class="flex-1 bg-sand hover:bg-white border border-line rounded-full py-2 text-sm font-semibold">Voir détails</button>
+          <button onclick="event.stopPropagation();openProfile(${jsArg(p.id)})" class="flex-1 bg-sand hover:bg-white border border-line rounded-full py-2 text-sm font-semibold">Voir détails</button>
           ${p.type==='produit'
-            ? `<button onclick="event.stopPropagation();addToCart(${p.id})" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-2 text-sm font-bold">Ajouter au panier</button>`
-            : `<button onclick="event.stopPropagation();openBooking(${p.id})" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-2 text-sm font-bold">Réserver</button>`}
+            ? `<button onclick="event.stopPropagation();addToCart(${jsArg(p.id)})" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-2 text-sm font-bold">Ajouter au panier</button>`
+            : `<button onclick="event.stopPropagation();openBooking(${jsArg(p.id)})" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-2 text-sm font-bold">Réserver</button>`}
         </div>
       </div>
     </div>
@@ -384,6 +384,7 @@ function setMarketTab(t){
 
 function openProfile(id){
   const p = listings.find(x=>x.id===id);
+  if(!p) return;
   document.getElementById('profileModal').classList.remove('hidden');
   const actionBlock = p.type==='produit' ? `
     <div class="flex items-center gap-3 mt-4">
@@ -392,14 +393,14 @@ function openProfile(id){
         <span id="profileQtyValue" class="w-8 text-center text-sm font-semibold">1</span>
         <button onclick="profileQty(1)" class="w-9 h-9 flex items-center justify-center">+</button>
       </div>
-      <button onclick="addToCart(${p.id}, profileQtyGet());closeProfile()" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Ajouter au panier — ${fmt(p.price)}</button>
+      <button onclick="addToCart(${jsArg(p.id)}, profileQtyGet());closeProfile()" class="flex-1 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Ajouter au panier — ${fmt(p.price)}</button>
     </div>` : `
     <div class="mt-4">
       <div class="font-semibold text-sm mb-2">Choisissez un créneau</div>
       <div class="grid grid-cols-3 gap-2">
         ${SLOT_TIMES.map(t=>`<button onclick="selectProfileSlot(this,'${t}')" class="${slotClass(t===profileSlotTime)} profile-slot">${t}</button>`).join('')}
       </div>
-      <button onclick="openBooking(${p.id});closeProfile()" class="w-full mt-4 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Réserver — ${fmt(p.price)}</button>
+      <button onclick="openBooking(${jsArg(p.id)});closeProfile()" class="w-full mt-4 bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Réserver — ${fmt(p.price)}</button>
     </div>`;
   document.getElementById('profileContent').innerHTML = `
     <div class="relative h-[240px]">
@@ -411,7 +412,7 @@ function openProfile(id){
         <div class="pb-1">
           <h2 class="font-display text-2xl font-bold leading-none">${esc(p.seller)}</h2>
           <div class="text-sm opacity-90">${esc(p.name)} • ${esc(p.city)}</div>
-          <div class="flex items-center gap-2 mt-1 text-xs"><span class="bg-white text-ink px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</span> <span>${p.reviews} avis vérifiés</span></div>
+          <div class="flex items-center gap-2 mt-1 text-xs">${p.reviews ? `<span class="bg-white text-ink px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}</span> <span>${p.reviews} avis vérifiés</span>` : `<span class="bg-white text-ink px-2 py-0.5 rounded-full font-bold">Nouveau</span>`}</div>
         </div>
         <div class="ml-auto hidden md:block text-right">
           <div class="text-3xl font-bold">${fmt(p.price)}</div>
@@ -421,14 +422,14 @@ function openProfile(id){
     </div>
     <div class="p-6 md:p-8 grid lg:grid-cols-[1.3fr_.7fr] gap-8">
       <div>
-        <div class="flex gap-2 mb-4 flex-wrap">
+        ${IS_DEMO ? `<div class="flex gap-2 mb-4 flex-wrap">
           <span class="bg-forest text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><i data-lucide="shield-check" class="w-3 h-3"></i> Profil vérifié</span>
           <span class="bg-gold/20 text-[#7A5A00] text-xs font-bold px-3 py-1 rounded-full">Répond en ~2h</span>
-        </div>
+        </div>` : ''}
         <h3 class="font-semibold">À propos</h3>
         <p class="text-sm opacity-70 mt-2 leading-relaxed">${esc(p.desc)} Paiement sécurisé Stripe, reçus automatiques, livraison ou ramassage selon le vendeur.</p>
         <h3 class="font-semibold mt-6">Avis vérifiés <span class="bg-sand px-2 py-0.5 rounded-full text-xs">${p.reviews}</span></h3>
-        <div class="space-y-3 mt-3">
+        ${IS_DEMO && p.reviews ? `<div class="space-y-3 mt-3">
           <div class="border border-line rounded-2xl p-4">
             <div class="flex items-center gap-2 text-sm"><span class="font-semibold">Sarah M.</span> <span class="flex items-center gap-0.5">${starRow(5)}</span> <span class="text-xs opacity-50">• achat vérifié</span></div>
             <p class="text-sm opacity-70 mt-1">Exactement ce que je cherchais, ça a un vrai goût de chez nous.</p>
@@ -437,12 +438,12 @@ function openProfile(id){
             <div class="flex items-center gap-2 text-sm"><span class="font-semibold">Jade K.</span> <span class="flex items-center gap-0.5">${starRow(5)}</span> <span class="text-xs opacity-50">• achat vérifié</span></div>
             <p class="text-sm opacity-70 mt-1">Vendeur ponctuel et à l'écoute, je recommande.</p>
           </div>
-        </div>
+        </div>` : `<p class="text-sm opacity-60 mt-3">Aucun avis pour le moment. Les avis sont publiés uniquement après un achat payé.</p>`}
       </div>
       <div>
         <div class="border border-line rounded-2xl p-5 sticky top-4">
           ${actionBlock}
-          <a href="messagerie.html?avec=${encodeURIComponent(p.seller)}" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</a>
+          <a href="messagerie.html?avec=${encodeURIComponent(p.sellerId || p.seller)}" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</a>
           <p class="text-center text-[11px] opacity-50 mt-3">Paiement Stripe • Annulation gratuite 24h • Reçu par courriel</p>
         </div>
       </div>
@@ -476,7 +477,7 @@ function upcomingSlots(){
   return slots;
 }
 function openBooking(id){
-  if(!isLoggedIn()){ requireLogin(`marketplace.html?produit=${id}`); return; }
+  if(!isLoggedIn()){ requireLogin(`marketplace.html?produit=${encodeURIComponent(id)}`); return; }
   bookingItem = listings.find(x=>x.id===id);
   const slots = upcomingSlots();
   bookingSlot = slots.find(s=>s.endsWith(profileSlotTime)) || slots[0];
@@ -555,14 +556,14 @@ function renderCart(){
           <div class="font-semibold text-sm">${esc(p.name)}</div>
           <div class="text-xs opacity-60">${esc(p.seller)}</div>
           <div class="flex items-center gap-2 mt-1">
-            <button onclick="changeQty(${p.id},-1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">-</button>
+            <button onclick="changeQty(${jsArg(p.id)},-1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">-</button>
             <span class="text-sm font-medium">${c.qty}</span>
-            <button onclick="changeQty(${p.id},1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">+</button>
+            <button onclick="changeQty(${jsArg(p.id)},1)" class="w-6 h-6 rounded-full border border-line flex items-center justify-center text-xs">+</button>
           </div>
         </div>
         <div class="text-right">
           <div class="font-bold text-sm">${fmt(p.price*c.qty)}</div>
-          <button onclick="removeFromCart(${p.id})" class="text-xs text-coral mt-1">Retirer</button>
+          <button onclick="removeFromCart(${jsArg(p.id)})" class="text-xs text-coral mt-1">Retirer</button>
         </div>
       </div>`;
     }).join('');
@@ -615,7 +616,7 @@ function renderPaymentMethods(){
   lucide.createIcons();
 }
 function openStripeModal(mode){
-  if(!isLoggedIn()){ requireLogin(mode==='cart' ? 'marketplace.html?checkout=1' : `marketplace.html?produit=${bookingItem ? bookingItem.id : ''}`); return; }
+  if(!isLoggedIn()){ requireLogin(mode==='cart' ? 'marketplace.html?checkout=1' : `marketplace.html?produit=${bookingItem ? encodeURIComponent(bookingItem.id) : ''}`); return; }
   if(mode==='booking' && !bookingItem) return;
   stripeMode = mode;
   if(mode==='booking'){
@@ -637,10 +638,16 @@ function nextOrderId(orders){
 function todayLabel(){
   return new Date().toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
 }
+// Démo : une annonce publiée dans ce navigateur est inconnue du serveur, on lui transmet son nom et son prix (mode test).
+function withDemoListing(item){
+  if(!IS_DEMO || CATALOG.some(p=>p.id===item.id)) return item;
+  const p = listings.find(l=>l.id===item.id);
+  return p ? {...item, custom:{name:p.name, price:p.price, type:p.type, seller:p.seller}} : item;
+}
 // La commande n'est créée qu'au retour de Stripe, une fois le paiement vérifié côté serveur (mes-commandes.html).
 async function confirmStripe(){
   if(!isLoggedIn()){ closeStripe(); requireLogin('marketplace.html'); return; }
-  const items = stripeMode==='cart' ? cart.map(c=>({id:c.id, qty:c.qty})) : [{id:bookingItem.id, qty:1}];
+  const items = (stripeMode==='cart' ? cart.map(c=>({id:c.id, qty:c.qty})) : [{id:bookingItem.id, qty:1}]).map(withDemoListing);
   const btn = document.getElementById('stripePayBtn');
   btn.disabled = true;
   btn.style.opacity = '0.6';
@@ -716,6 +723,15 @@ function showToast(msg,type='success'){
 
 renderChatWidget();
 
+// Site réel : les annonces arrivent de Supabase après le premier affichage (ou changent depuis le cache).
+let pendingProfileId = null;
+document.addEventListener('cheznous:listings', ()=>{
+  listings = getAllListings();
+  filterMarket();
+  if(!document.getElementById('cartModal').classList.contains('hidden')) renderCart();
+  if(stripeMode==='cart' && !document.getElementById('stripeModal').classList.contains('hidden')) checkoutCart();
+  if(pendingProfileId!==null && listings.some(p=>p.id===pendingProfileId)){ openProfile(pendingProfileId); pendingProfileId = null; }
+});
 function applyUrlParams(){
   const params = new URLSearchParams(window.location.search);
   if(params.get('q')) document.getElementById('heroSearch').value = params.get('q');
@@ -723,7 +739,10 @@ function applyUrlParams(){
   if(params.get('tab')) marketTab = params.get('tab');
   if(hasChosenDeliverCity() && !params.get('q')) document.getElementById('filterCity').value = getDeliverCity();
   filterMarket();
-  if(params.get('produit')) openProfile(Number(params.get('produit')));
+  if(params.get('produit')){
+    const id = listingIdFrom(params.get('produit'));
+    if(listings.some(p=>p.id===id)) openProfile(id); else pendingProfileId = id;
+  }
   if(params.get('checkout')) checkoutCart();
   if(params.get('paiement')==='annule'){
     showToast('Paiement annulé : votre panier est conservé.','info');

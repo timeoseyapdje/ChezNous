@@ -30,7 +30,7 @@ function initials(name){
   return name.replace(/^Client\s*:\s*/,'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 }
 function nowTime(){
-  return new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'});
+  return clockTime(new Date());
 }
 
 const conversations = loadConversations();

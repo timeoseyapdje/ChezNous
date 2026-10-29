@@ -6,11 +6,11 @@
 <title>Tableau de bord — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029m"></script>
+<script src="assets/i18n-en.js?v=20261029o"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029j"></script>
+<script src="assets/shared.js?v=20261029k"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029h"></script>
+<script src="assets/auth.js?v=20261029i"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -83,7 +83,8 @@ body{background:#FFFFFF;color:#131A17}
               <option value="service">Service</option>
             </select>
           </div>
-          <input id="itemCover" placeholder="URL de la photo (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          <input id="itemCover" placeholder="URL de la photo en https (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          <textarea id="itemDesc" maxlength="2000" placeholder="Description (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none h-20"></textarea>
           <div class="flex gap-2">
             <button onclick="addSellerItem()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier l'annonce</button>
             <button onclick="toggleAddItemForm()" class="text-sm font-semibold px-4 py-2 rounded-full border border-line">Annuler</button>
@@ -203,16 +204,27 @@ function showToast(msg,type='success'){
 let role = 'buyer';
 const esc = escapeHtmlGlobal;
 
+// Démo : boutique et annonces dans ce navigateur. Site réel : annonces, formule et commandes lues dans Supabase.
+let sellerUserId = null;
+let sellerRemote = { catalog: [], orders: [], plan: null };
+const DB_ORDER_STATUS = {en_attente:'en attente', confirmee:'confirmée', terminee:'terminée', annulee:'annulée', remboursee:'annulée'};
+
 function getSellerProfile(){
   try{
     const raw = localStorage.getItem('cheznous_seller_profile');
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const p = JSON.parse(raw);
+      return IS_DEMO || !sellerRemote.plan ? p : {...p, plan: sellerRemote.plan};
+    }
   }catch(e){}
-  const p = {shopName:'Natural Roots Hair Studio', plan:'basique'};
-  localStorage.setItem('cheznous_seller_profile', JSON.stringify(p));
+  const p = IS_DEMO
+    ? {shopName:'Natural Roots Hair Studio', plan:'basique'}
+    : {shopName:(getCurrentUser()||{}).name || 'Ma Boutique', plan: sellerRemote.plan || 'basique'};
+  if(IS_DEMO) localStorage.setItem('cheznous_seller_profile', JSON.stringify(p));
   return p;
 }
 function getSellerCatalog(){
+  if(!IS_DEMO) return sellerRemote.catalog;
   try{
     const raw = localStorage.getItem('cheznous_seller_catalog');
     if(raw) return JSON.parse(raw);
@@ -225,6 +237,35 @@ function getSellerCatalog(){
 function setSellerCatalog(list){
   localStorage.setItem('cheznous_seller_catalog', JSON.stringify(list));
 }
+function getSellerOrders(){
+  if(!IS_DEMO) return sellerRemote.orders;
+  const shop = getSellerProfile().shopName;
+  return getOrders().filter(o=>o.seller===shop);
+}
+async function loadSellerData(){
+  if(IS_DEMO || !sb || !sellerUserId) return;
+  const [listings, orders, plan] = await Promise.all([
+    sb.from('listings').select(LISTING_COLUMNS).eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false }),
+    sb.from('orders').select('order_number, items, slot, details, amount_cad, status, escrow_status, paid_at').eq('seller_id', sellerUserId).order('created_at', { ascending:false }),
+    sb.from('seller_plans').select('plan, shop_name, status').eq('seller_id', sellerUserId).maybeSingle()
+  ]);
+  if(listings.error || orders.error) showToast('Impossible de charger vos données vendeur pour le moment.','error');
+  sellerRemote.catalog = (listings.data || []).map(listingFromRow);
+  sellerRemote.orders = (orders.data || []).map(r=>({
+    id: r.order_number,
+    service: (r.items || []).map(i=>`${i.name} x${i.qty}`).join(', '),
+    date: r.slot || (r.paid_at ? new Date(r.paid_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'}) : ''),
+    details: r.details || '',
+    status: DB_ORDER_STATUS[r.status] || r.status,
+    escrowStatus: r.escrow_status,
+    total: Number(r.amount_cad), price: Number(r.amount_cad)
+  }));
+  sellerRemote.plan = plan.data && plan.data.status==='active' ? plan.data.plan : null;
+  if(plan.data && plan.data.shop_name && !localStorage.getItem('cheznous_seller_profile')){
+    try{ localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName: plan.data.shop_name, plan: plan.data.plan})); }catch(e){}
+  }
+  renderSellerView();
+}
 
 function renderSellerView(){
   document.getElementById('sellerView').classList.remove('hidden');
@@ -232,36 +273,37 @@ function renderSellerView(){
   const planLabels = {basique:'Basique — gratuite',pro:'Pro — 129$/an',premium:'Premium — 299$/an'};
   document.getElementById('sellerPlanLabel').textContent = planLabels[profile.plan] || 'Basique';
 
-  const orders = getOrders();
+  const orders = getSellerOrders();
   const active = orders.filter(o=>o.status!=='terminée' && o.status!=='annulée');
-  const revenue = orders.filter(o=>o.status==='confirmée' || o.status==='terminée').reduce((s,o)=>s+o.price,0);
+  const revenue = orders.filter(o=>o.status==='confirmée' || o.status==='terminée').reduce((s,o)=>s+orderTotal(o),0);
   document.getElementById('sellerRevenue').textContent = fmt(revenue);
   document.getElementById('sellerActiveOrders').textContent = active.length;
 
   const catalog = getSellerCatalog();
-  const avgRating = catalog.length ? (catalog.reduce((s,p)=>s+p.rating,0)/catalog.length).toFixed(1) : '—';
-  document.getElementById('sellerRating').innerHTML = catalog.length ? `<i data-lucide="star" class="w-5 h-5 fill-gold text-gold"></i> ${avgRating}` : '—';
+  const rated = catalog.filter(p=>p.reviews>0);
+  const avgRating = rated.length ? (rated.reduce((s,p)=>s+p.rating,0)/rated.length).toFixed(1) : '';
+  document.getElementById('sellerRating').innerHTML = avgRating ? `<i data-lucide="star" class="w-5 h-5 fill-gold text-gold"></i> ${avgRating}` : '—';
 
   const catSel = document.getElementById('itemCat');
-  catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  if(!catSel.options.length) catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
 
   document.getElementById('sellerCatalogList').innerHTML = catalog.length ? catalog.map((p,i)=>`
     <div class="flex items-center gap-3 border border-line rounded-xl p-3">
-      <img src="${esc(safeUrl(p.cover) || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=200&auto=format&fit=crop')}" class="w-14 h-14 rounded-lg object-cover shrink-0">
+      <img src="${esc(safeImageUrl(p.cover) || DEFAULT_COVER)}" class="w-14 h-14 rounded-lg object-cover shrink-0">
       <div class="flex-1 min-w-0">
         <div class="font-semibold text-sm truncate">${esc(p.name)}</div>
-        <div class="text-xs opacity-60">${fmt(p.price)} • ${p.type==='produit'?'Produit':'Service'} • <i data-lucide="star" class="w-3 h-3 inline fill-gold text-gold"></i> ${p.rating} (${p.reviews})</div>
+        <div class="text-xs opacity-60">${fmt(p.price)} • ${p.type==='produit'?'Produit':'Service'}${p.reviews?` • <i data-lucide="star" class="w-3 h-3 inline fill-gold text-gold"></i> ${p.rating} (${p.reviews})`:''}</div>
       </div>
-      <button onclick="removeSellerItem(${i})" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="removeSellerItem(${i})" aria-label="Supprimer l'annonce" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune annonce publiée. Ajoutez votre premier produit ou service.</div>`;
 
   document.getElementById('sellerOrdersList').innerHTML = active.length ? active.map(o=>`
     <div class="border border-line rounded-xl p-3">
       <div class="font-semibold text-sm">${esc(o.service)}</div>
-      <div class="text-xs opacity-60 mt-1">${esc(o.date)} • ${fmt(o.price)}</div>
+      <div class="text-xs opacity-60 mt-1">${esc(o.date)} • ${fmt(orderTotal(o))}</div>
       ${o.details?`<div class="text-xs opacity-60 mt-1">Précisions du client : ${esc(o.details)}</div>`:''}
-      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${o.status}</span>
+      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${esc(o.status)}</span>
       ${o.escrowStatus==='retenu' ? `
       <div class="mt-2 flex gap-2">
         <input id="codeInput${o.id}" placeholder="Code du client" class="flex-1 border border-line rounded-lg px-2 py-1.5 text-xs outline-none font-mono uppercase">
@@ -272,50 +314,75 @@ function renderSellerView(){
 
   lucide.createIcons();
 }
-function tryReleaseEscrow(orderId){
+async function tryReleaseEscrow(orderId){
   const input = document.getElementById('codeInput'+orderId);
-  const ok = releaseEscrow(orderId, input.value);
-  if(ok){
+  if(IS_DEMO){
+    if(releaseEscrow(orderId, input.value)){ showToast('Code validé, le paiement vous a été transféré.','success'); renderSellerView(); }
+    else showToast('Code incorrect. Vérifiez avec le client.','error');
+    return;
+  }
+  try{
+    const res = await fetch('api/release-order', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...(await authHeaders())},
+      body: JSON.stringify({ orderNumber: orderId, code: input.value })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Validation impossible pour le moment.');
     showToast('Code validé, le paiement vous a été transféré.','success');
-    renderSellerView();
-  } else {
-    showToast('Code incorrect. Vérifiez avec le client.','error');
+    await loadSellerData();
+  }catch(err){
+    showToast(esc(err.message),'error');
   }
 }
 function toggleAddItemForm(){ document.getElementById('addItemForm').classList.toggle('hidden'); }
-function addSellerItem(){
+async function addSellerItem(){
   const name = document.getElementById('itemName').value.trim();
-  const price = parseFloat(document.getElementById('itemPrice').value);
-  if(!name || !price || price<=0){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
+  const price = Math.round(parseFloat(document.getElementById('itemPrice').value)*100)/100;
+  const desc = document.getElementById('itemDesc').value.trim();
+  if(!name || !price || price<=0 || price>100000){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
   const cover = document.getElementById('itemCover').value.trim();
-  if(cover && !safeUrl(cover)){ showToast("L'adresse de l'image doit commencer par https://",'error'); return; }
-  if(containsProhibited(name)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
-  const catalog = getSellerCatalog();
+  if(cover && !safeImageUrl(cover)){ showToast("L'adresse de l'image doit commencer par https://",'error'); return; }
+  if(containsProhibited(name) || containsProhibited(desc)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
   const profile = getSellerProfile();
-  catalog.push({
-    id: Date.now(),
+  const item = {
     cat: document.getElementById('itemCat').value,
     type: document.getElementById('itemType').value,
-    name, price,
+    name, price, desc,
     seller: profile.shopName,
     city: getDeliverCity(),
-    rating: 5.0, reviews: 0,
-    image: 'https://i.pravatar.cc/100?img=48',
-    cover: cover || 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop',
-    tags: [], desc: ''
-  });
-  setSellerCatalog(catalog);
-  document.getElementById('itemName').value = '';
-  document.getElementById('itemPrice').value = '';
-  document.getElementById('itemCover').value = '';
+    cover: cover || DEFAULT_COVER
+  };
+  if(IS_DEMO){
+    const catalog = getSellerCatalog();
+    catalog.push({ id: Date.now(), ...item, rating: 0, reviews: 0, image: DEFAULT_AVATAR, tags: [] });
+    setSellerCatalog(catalog);
+  } else {
+    const { error } = await sb.from('listings').insert({
+      seller_id: sellerUserId, seller_name: item.seller.slice(0,80), type: item.type, category: item.cat,
+      name: item.name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: item.price, cover_url: cover || null, city: item.city
+    });
+    if(error){ showToast("L'annonce n'a pas pu être publiée. Réessayez dans un instant.",'error'); return; }
+    await Promise.all([loadSellerData(), loadRemoteListings()]);
+  }
+  ['itemName','itemPrice','itemCover','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
   toggleAddItemForm();
   renderSellerView();
   showToast("Annonce publiée : elle est visible sur la <a href='marketplace.html' class='underline'>marketplace</a>.",'success');
 }
-function removeSellerItem(i){
+async function removeSellerItem(i){
   const catalog = getSellerCatalog();
-  catalog.splice(i,1);
-  setSellerCatalog(catalog);
+  const item = catalog[i];
+  if(!item) return;
+  if(IS_DEMO){
+    catalog.splice(i,1);
+    setSellerCatalog(catalog);
+  } else {
+    // Retrait plutôt que suppression : une commande déjà payée garde la trace de l'annonce.
+    const { error } = await sb.from('listings').update({ active:false }).eq('id', item.id);
+    if(error){ showToast("L'annonce n'a pas pu être retirée.",'error'); return; }
+    await Promise.all([loadSellerData(), loadRemoteListings()]);
+  }
   renderSellerView();
   showToast('Annonce supprimée.','info');
 }
@@ -442,7 +509,8 @@ authReady.then(({ profile })=>{
   const serverRole = profile ? profile.role : 'buyer';
   const wanted = localStorage.getItem('cheznous_role') || 'buyer';
   role = isRoleAllowed(wanted, serverRole) ? wanted : 'buyer';
-  if(role==='seller') renderSellerView();
+  sellerUserId = profile ? profile.id : null;
+  if(role==='seller'){ renderSellerView(); loadSellerData(); }
   else if(role==='admin') renderAdminView();
   else document.getElementById('buyerView').classList.remove('hidden');
 });

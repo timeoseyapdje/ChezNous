@@ -6,11 +6,11 @@
 <title>Mes commandes — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029m"></script>
+<script src="assets/i18n-en.js?v=20261029o"></script>
 <script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029j"></script>
+<script src="assets/shared.js?v=20261029k"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029h"></script>
+<script src="assets/auth.js?v=20261029i"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -24,7 +24,7 @@ body{background:#FFFFFF;color:#131A17}
 
 <div id="siteHeaderMount"></div>
 
-<main class="max-w-[900px] mx-auto px-4 md:px-6 py-10">
+<main class="max-w-[900px] mx-auto px-4 md:px-6 py-10" style="padding-bottom:7rem">
   <h1 class="font-display font-bold text-2xl md:text-3xl flex items-center gap-2"><i data-lucide="calendar-days" class="w-6 h-6"></i> Mes commandes & réservations</h1>
   <p class="text-sm opacity-60 mt-1">Suivez vos commandes, vos réservations et vos reçus Stripe.</p>
 
@@ -240,14 +240,20 @@ function mapDbOrder(row, local){
   }
   return mapped;
 }
+const ORDER_COLUMNS = 'order_number, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
 async function loadServerOrders(){
   if(IS_DEMO) return;
   const { profile } = await authReady;
   if(!profile || !sb) return;
-  const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending:false });
+  // Le code de réception n'est pas lisible dans la table (un vendeur la lit aussi) : l'acheteur l'obtient par my_release_codes().
+  const [{ data, error }, codes] = await Promise.all([
+    sb.from('orders').select(ORDER_COLUMNS).eq('buyer_id', profile.id).order('created_at', { ascending:false }),
+    sb.rpc('my_release_codes')
+  ]);
   if(error){ console.warn('commandes Supabase :', error.message); return; }
+  const codeByOrder = new Map((codes.data || []).map(c=>[c.order_number, c.release_code]));
   const localById = new Map(getOrders().map(o=>[o.id, o]));
-  orders = data.map(row=>mapDbOrder(row, localById.get(row.order_number)));
+  orders = data.map(row=>mapDbOrder({ ...row, release_code: codeByOrder.get(row.order_number) }, localById.get(row.order_number)));
   setOrders(orders);
   renderDash();
   refreshNotifBadge();
