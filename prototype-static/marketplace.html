@@ -577,13 +577,12 @@ function checkoutCart(){
 let stripeMode = 'booking';
 const PAYMENT_METHODS = [
   {id:'card', label:'Carte bancaire', icon:'credit-card'},
-  {id:'apple_pay', label:'Apple Pay', logo:'assets/logos/apple-pay.svg'},
-  {id:'google_pay', label:'Google Pay', icon:'smartphone'}
+  {id:'apple_pay', label:'Pay', mark:'assets/logos/apple-mark.svg', alt:'Apple Pay'}
 ];
 function renderPaymentMethods(){
   document.getElementById('paymentMethods').innerHTML = PAYMENT_METHODS.map(m=>`
     <span class="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold">
-      ${m.logo ? `<img src="${m.logo}" alt="${m.label}" class="h-5 w-auto">` : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`}
+      ${m.mark ? `<img src="${m.mark}" alt="${m.alt}" style="height:16px;width:auto;margin-top:-2px"><span aria-hidden="true" style="font-size:13px;letter-spacing:-0.01em">${m.label}</span>` : `<i data-lucide="${m.icon}" class="w-4 h-4"></i>${m.label}`}
     </span>
   `).join('');
   lucide.createIcons();
