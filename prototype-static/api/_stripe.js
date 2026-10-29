@@ -13,7 +13,7 @@ function toForm(obj, prefix, out = []) {
   return out.join('&');
 }
 
-async function stripeRequest(method, path, params) {
+async function stripeRequest(method, path, params, extraHeaders = {}) {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw Object.assign(new Error('STRIPE_SECRET_KEY manquante'), { status: 503 });
   const query = params ? toForm(params) : '';
@@ -22,6 +22,7 @@ async function stripeRequest(method, path, params) {
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      ...extraHeaders,
     },
     body: method === 'GET' ? undefined : query,
   });

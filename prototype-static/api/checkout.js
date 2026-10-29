@@ -1,8 +1,10 @@
 const { stripeRequest, priceOrder, siteOrigin, readJson, send } = require('./_stripe');
+const { requireUser } = require('./_supabase');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'Méthode non autorisée' });
   try {
+    const user = await requireUser(req);
     const body = await readJson(req);
     const mode = body.mode === 'booking' ? 'booking' : 'cart';
     const { lines, fees } = priceOrder(mode, body.items);
@@ -28,12 +30,14 @@ module.exports = async (req, res) => {
     const session = await stripeRequest('POST', '/checkout/sessions', {
       mode: 'payment',
       line_items: lineItems,
-      customer_email: body.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) ? body.email : undefined,
+      customer_email: user.email,
+      client_reference_id: user.id,
       locale: body.lang === 'en' ? 'en' : 'fr',
       success_url: `${origin}/mes-commandes.html?paiement=ok&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/marketplace.html?paiement=annule`,
       metadata: {
         mode,
+        buyer_id: user.id,
         items: JSON.stringify(lines.map(l => ({ id: l.listing.id, qty: l.quantity }))),
         slot,
         details,

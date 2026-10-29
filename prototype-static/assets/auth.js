@@ -39,6 +39,13 @@ async function signOutEverywhere(){
   clearSessionCache();
 }
 
+// En-tête à joindre aux appels /api : le serveur revalide ce jeton auprès de Supabase.
+async function authHeaders(){
+  if(!sb) return {};
+  const { data:{ session } } = await sb.auth.getSession();
+  return session ? { Authorization: 'Bearer ' + session.access_token } : {};
+}
+
 function authStateSignature(){
   return [isLoggedIn(), getServerRole(), getRolePersisted(), (getCurrentUser()||{}).email || ''].join('|');
 }
