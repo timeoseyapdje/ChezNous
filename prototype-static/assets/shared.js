@@ -14,6 +14,8 @@ function isLoggedIn(){
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
   const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal'];
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
+  // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
+  style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
   if(!isLoggedIn()){
     const nav = PRIVATE_PAGES.map(p=>`header a[href^="${p}"], #mobileMenu a[href^="${p}"], footer a[href^="${p}"]`).join(',');
     style.textContent += `${nav}, header div:has(> #roleSelect){display:none !important}`;
