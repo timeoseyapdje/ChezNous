@@ -6,11 +6,11 @@
 <title>Tableau de bord — Chez Nous</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029s"></script>
-<script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029s"></script>
+<script src="assets/i18n-en.js?v=20261105a"></script>
+<script src="assets/catalog.js?v=20261105a"></script>
+<script src="assets/shared.js?v=20261105a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029j"></script>
+<script src="assets/auth.js?v=20261105a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -141,6 +141,28 @@ body{background:#FFFFFF;color:#131A17}
     </div>
 
     <div class="bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="store" class="w-5 h-5"></i> Catalogue de la Boutique Chez Nous</h2>
+        <button onclick="toggleBoutiqueForm()" class="bg-forest text-white text-xs font-bold px-4 py-2 rounded-full hover:brightness-110 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter un produit</button>
+      </div>
+      <p class="text-xs opacity-60 mt-1">Produits vendus directement par Chez Nous. Ils apparaissent uniquement dans la Boutique, jamais dans la marketplace.</p>
+      <div id="boutiqueForm" class="hidden mt-4 bg-sand rounded-2xl p-4 space-y-3">
+        <div class="grid md:grid-cols-2 gap-3">
+          <input id="bName" placeholder="Nom du produit" maxlength="120" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          <input id="bPrice" type="number" min="0" step="0.01" placeholder="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+        </div>
+        <select id="bCat" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white"></select>
+        <input id="bCover" placeholder="URL de la photo (https, optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+        <textarea id="bDesc" placeholder="Description" maxlength="2000" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none h-20"></textarea>
+        <div class="flex gap-2">
+          <button onclick="addBoutiqueProduct()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier dans la boutique</button>
+          <button onclick="toggleBoutiqueForm()" class="text-sm font-semibold px-4 py-2 rounded-full border border-line">Annuler</button>
+        </div>
+      </div>
+      <div id="adminBoutiqueList" class="mt-4 space-y-3"></div>
+    </div>
+
+    <div class="bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="scale" class="w-5 h-5"></i> Litiges paiement séquestre</h2>
       <p class="text-xs opacity-60 mt-1">Le paiement reste bloqué tant que le litige n'est pas tranché. Examinez les preuves des deux parties avant de statuer.</p>
       <div id="adminDisputesList" class="mt-4 space-y-3"></div>
@@ -162,11 +184,12 @@ body{background:#FFFFFF;color:#131A17}
     <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
         <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
-        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+        <p class="opacity-60 mt-3 leading-relaxed">Boutique en ligne et marketplace de la diaspora africaine, active partout au Canada.</p>
       </div>
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="boutique.html" class="hover:underline">Boutique Chez Nous</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
           <li><a href="contact.html" class="hover:underline">Contact</a></li>
@@ -392,7 +415,7 @@ function getValidationLog(){
     const raw = localStorage.getItem('cheznous_validation_log');
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  const sellers = [...new Set(CATALOG.map(p=>p.seller))];
+  const sellers = [...new Set(CATALOG.filter(p=>p.channel!=='boutique').map(p=>p.seller))];
   const seeded = sellers.map((s,i)=>({name:s, date:`${12-i} sept.`, status:'approuvé'}));
   localStorage.setItem('cheznous_validation_log', JSON.stringify(seeded));
   return seeded;
@@ -447,12 +470,74 @@ function resolveDispute(disputeId, winner){
   showToast(winner==='acheteur' ? 'Litige tranché en faveur de l\'acheteur : remboursement émis.' : 'Litige tranché en faveur du vendeur : paiement libéré.', 'success');
 }
 
+// Boutique Chez Nous : démo, produits ajoutés dans ce navigateur ; site réel, annonces de la base marquées channel = boutique.
+function toggleBoutiqueForm(){ document.getElementById('boutiqueForm').classList.toggle('hidden'); }
+function getBoutiqueDemoExtras(){
+  try{ return JSON.parse(localStorage.getItem('cheznous_boutique_catalog') || '[]'); }catch(e){ return []; }
+}
+async function addBoutiqueProduct(){
+  const name = document.getElementById('bName').value.trim();
+  const price = parseFloat(document.getElementById('bPrice').value);
+  const cat = document.getElementById('bCat').value;
+  const cover = document.getElementById('bCover').value.trim();
+  const desc = document.getElementById('bDesc').value.trim();
+  if(!name || !price || price<=0){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
+  if(containsProhibited(name) || containsProhibited(desc)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
+  if(cover && !/^https:\/\//i.test(cover)){ showToast("La photo doit être une adresse https.",'error'); return; }
+  if(IS_DEMO){
+    const extras = getBoutiqueDemoExtras();
+    extras.push({ id: Date.now(), channel:'boutique', cat, type:'produit', name, price, desc, seller:'Chez Nous', city:'Canada', rating:5, reviews:0, plan:'officiel', tags:[], image:'assets/malik-airpods.jpg', cover: cover || DEFAULT_COVER });
+    localStorage.setItem('cheznous_boutique_catalog', JSON.stringify(extras));
+  } else {
+    const { error } = await sb.from('listings').insert({
+      seller_id: sellerUserId, seller_name: 'Chez Nous', type:'produit', category: cat, channel:'boutique',
+      name: name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: price, cover_url: cover || null, city:'Canada'
+    });
+    if(error){ showToast("Le produit n'a pas pu être publié. Vérifiez que la migration 0007 (canal boutique) a été exécutée dans Supabase.",'error'); return; }
+    await loadRemoteListings();
+  }
+  ['bName','bPrice','bCover','bDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  toggleBoutiqueForm();
+  renderAdminBoutique();
+  showToast("Produit publié dans la <a href='boutique.html' class='underline'>Boutique Chez Nous</a>.",'success');
+}
+async function removeBoutiqueProduct(id){
+  if(IS_DEMO){
+    localStorage.setItem('cheznous_boutique_catalog', JSON.stringify(getBoutiqueDemoExtras().filter(p=>String(p.id)!==String(id))));
+  } else {
+    const { error } = await sb.from('listings').update({ active:false }).eq('id', id);
+    if(error){ showToast("Le produit n'a pas pu être retiré.",'error'); return; }
+    await loadRemoteListings();
+  }
+  renderAdminBoutique();
+  showToast('Produit retiré de la boutique.','info');
+}
+function renderAdminBoutique(){
+  const sel = document.getElementById('bCat');
+  if(sel && !sel.options.length) sel.innerHTML = CATEGORIES.map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join('');
+  const removable = new Set(IS_DEMO ? getBoutiqueDemoExtras().map(p=>String(p.id)) : getBoutiqueListings().map(p=>String(p.id)));
+  const items = getBoutiqueListings();
+  document.getElementById('adminBoutiqueList').innerHTML = items.length ? items.map(p=>`
+    <div class="flex items-center gap-3 border border-line rounded-xl p-3">
+      <img src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-lg object-cover shrink-0">
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm truncate">${esc(p.name)}</div>
+        <div class="text-xs opacity-60">${fmt(p.price)}</div>
+      </div>
+      ${removable.has(String(p.id)) ? `<button onclick="removeBoutiqueProduct(${jsArg(p.id)})" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0" aria-label="Retirer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : `<span class="text-[11px] opacity-50 shrink-0">Exemple de démo</span>`}
+    </div>
+  `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucun produit dans la boutique pour le moment. Ajoutez le premier.</div>`;
+  lucide.createIcons();
+}
+document.addEventListener('cheznous:listings', ()=>{ if(role==='admin') renderAdminBoutique(); });
+
 function renderAdminView(){
   document.getElementById('adminView').classList.remove('hidden');
+  renderAdminBoutique();
   const orders = getOrders();
   const gmv = orders.filter(o=>o.status!=='annulée').reduce((s,o)=>s+o.price,0);
   document.getElementById('adminGMV').textContent = fmt(gmv);
-  document.getElementById('adminSellerCount').textContent = new Set(CATALOG.map(p=>p.seller)).size;
+  document.getElementById('adminSellerCount').textContent = new Set(CATALOG.filter(p=>p.channel!=='boutique').map(p=>p.seller)).size;
   document.getElementById('adminCommission').textContent = fmt(gmv*0.12);
 
   const log = getValidationLog();

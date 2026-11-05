@@ -79,11 +79,13 @@ const authReady = (async ()=>{
 
 // Annonces actives de la marketplace (lecture publique, protégée par RLS).
 const LISTING_COLUMNS = 'id, seller_id, seller_name, type, category, name, description, price_cad, cover_url, city, active, created_at';
+// La colonne channel (boutique ou marketplace) vient de la migration 0007 : tant qu'elle n'existe pas, on relit sans elle.
 async function loadRemoteListings(){
   if(!sb) return;
   try{
-    const { data, error } = await sb.from('listings').select(LISTING_COLUMNS).eq('active', true).order('created_at', { ascending:false }).limit(500);
-    if(!error && data) setRemoteListings(data);
+    let res = await sb.from('listings').select(LISTING_COLUMNS + ', channel').eq('active', true).order('created_at', { ascending:false }).limit(500);
+    if(res.error) res = await sb.from('listings').select(LISTING_COLUMNS).eq('active', true).order('created_at', { ascending:false }).limit(500);
+    if(!res.error && res.data) setRemoteListings(res.data);
   }catch(e){}
 }
 loadRemoteListings();

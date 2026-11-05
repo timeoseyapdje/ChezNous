@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chez Nous — Marketplace de la diaspora africaine au Canada</title>
+<title>Chez Nous — Boutique et marketplace de la diaspora africaine au Canada</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261029s"></script>
-<script src="assets/catalog.js?v=20261029e"></script>
-<script src="assets/shared.js?v=20261029s"></script>
+<script src="assets/i18n-en.js?v=20261105a"></script>
+<script src="assets/catalog.js?v=20261105a"></script>
+<script src="assets/shared.js?v=20261105a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261029j"></script>
+<script src="assets/auth.js?v=20261105a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -92,6 +92,7 @@ body{background:#FFFFFF;color:#131A17}
         <i data-lucide="menu" class="w-4 h-4"></i> <span data-i18n="menu">Menu</span>
       </button>
       <button onclick="scrollToId('home')" class="hidden lg:inline shrink-0 hover:opacity-80 font-medium" data-i18n="navHome">Accueil</button>
+      <a href="boutique.html" class="shrink-0 hover:opacity-80 font-medium">Boutique</a>
       <a href="marketplace.html" class="shrink-0 hover:opacity-80 font-medium" data-i18n="navMarket">Marketplace</a>
       <a href="mes-commandes.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">Mes commandes</a>
       <a href="messagerie.html" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">Messagerie</a>
@@ -112,6 +113,7 @@ body{background:#FFFFFF;color:#131A17}
 
 <div id="mobileMenu" class="hidden lg:hidden bg-white border-b border-line px-4 py-3 space-y-1 text-sm">
   <button onclick="scrollToId('home');toggleMobileMenu()" class="w-full text-left py-2 font-medium">Accueil</button>
+  <a href="boutique.html" class="block w-full text-left py-2 font-medium">Boutique</a>
   <a href="marketplace.html" class="block w-full text-left py-2 font-medium">Marketplace</a>
   <a href="mes-commandes.html" class="block w-full text-left py-2 font-medium">Mes commandes</a>
   <a href="messagerie.html" class="block w-full text-left py-2 font-medium">Messagerie</a>
@@ -129,17 +131,28 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </section>
 
+<section id="boutique" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-10">
+  <div class="flex items-end justify-between gap-4">
+    <div>
+      <h2 class="font-display font-bold text-2xl md:text-3xl">La boutique Chez Nous</h2>
+      <p class="text-xs opacity-50 mt-1">Uniquement nos propres produits, expédiés directement par Chez Nous.</p>
+    </div>
+    <a href="boutique.html" class="text-sm font-semibold text-forest hover:underline flex items-center gap-1 shrink-0">Voir la boutique <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+  </div>
+  <div id="boutiqueHomeGrid" class="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2 mt-4"></div>
+</section>
+
 <section id="categories" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-10">
   <div class="flex items-end justify-between">
-    <h2 class="font-display font-bold text-2xl md:text-3xl" data-i18n="catTitle">Explorer par catégorie</h2>
+    <h2 class="font-display font-bold text-2xl md:text-3xl" data-i18n="catTitle">Marketplace : explorer par catégorie</h2>
   </div>
   <div id="categoryGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-4"></div>
 </section>
 
 <section id="featured" class="max-w-[1280px] mx-auto px-4 md:px-6 mt-10 pb-10">
   <div class="flex items-end justify-between">
-    <h2 class="font-display font-bold text-2xl md:text-3xl">Produits en vedette</h2>
-    <a href="marketplace.html" class="text-sm font-semibold text-forest hover:underline flex items-center gap-1 shrink-0">Voir toute la boutique <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+    <h2 class="font-display font-bold text-2xl md:text-3xl">Vedettes de la marketplace</h2>
+    <a href="marketplace.html" class="text-sm font-semibold text-forest hover:underline flex items-center gap-1 shrink-0">Voir toute la marketplace <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
   </div>
   <div class="relative mt-4">
     <button onclick="scrollCarousel(-1)" class="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
@@ -196,6 +209,7 @@ body{background:#FFFFFF;color:#131A17}
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="boutique.html" class="hover:underline">Boutique Chez Nous</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="#categories" class="hover:underline">Catégories</a></li>
           <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
@@ -237,24 +251,24 @@ const i18n = {
     deliverTo:"Livrer à", allCategories:"Toutes catégories", menu:"Menu",
     navHome:"Accueil", navMarket:"Marketplace", navSell:"Vendre sur Chez Nous",
     greeting:"Bonjour", accountOrders:"Comptes & Commandes", roleLabel:"RÔLE",
-    heroDesc:"Épicerie africaine, tissus wax, cheveux afro, artisanat, cuisine maison et services communautaires : des vendeurs indépendants de la diaspora, partout au pays.",
+    heroDesc:"Notre boutique en ligne pour les produits Chez Nous, et une marketplace réunissant les vendeurs indépendants de la diaspora : épicerie, tissus wax, beauté afro, artisanat, cuisine maison et services.",
     popular:"Populaires :",
     step1Title:"1. Parcourez & comparez", step1Desc:"Filtrez par ville, catégorie ou origine culturelle.",
     step2Title:"2. Payez en toute sécurité", step2Desc:"Stripe, reçu automatique, remboursement encadré sous 5 jours.",
     step3Title:"3. Avis vérifiés", step3Desc:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis.",
-    catTitle:"Explorer par catégorie"
+    catTitle:"Marketplace : explorer par catégorie"
   },
   en:{
     logoSub:"AFRICAN DIASPORA • CANADA",
     deliverTo:"Deliver to", allCategories:"All categories", menu:"Menu",
     navHome:"Home", navMarket:"Marketplace", navSell:"Sell on Chez Nous",
     greeting:"Hello", accountOrders:"Accounts & Orders", roleLabel:"ROLE",
-    heroDesc:"African groceries, wax fabrics, afro hair care, crafts, home cooking and community services: independent diaspora sellers, across the country.",
+    heroDesc:"Our online shop for Chez Nous products, and a marketplace of independent diaspora sellers: groceries, wax fabrics, afro beauty, crafts, home cooking and services.",
     popular:"Popular:",
     step1Title:"1. Browse & compare", step1Desc:"Filter by city, category or cultural origin.",
     step2Title:"2. Pay securely", step2Desc:"Stripe, automatic receipt, refund handled within 5 days.",
     step3Title:"3. Verified reviews", step3Desc:"Only buyers who actually paid can leave a review.",
-    catTitle:"Browse by category"
+    catTitle:"Marketplace: browse by category"
   }
 };
 
@@ -293,6 +307,7 @@ function setLang(l){
   renderCategories();
   renderHeroCarousel();
   renderFeatured();
+  renderBoutiqueHome();
   applyI18n(l);
   updateAccountButton();
 }
@@ -331,8 +346,9 @@ function renderCategories(){
 
 const heroSlides = [
   {type:'intro'},
-  {type:'section', tag:'ÉPICERIE & ARTISANAT', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', overlay:'bg-ink/55', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
-  {type:'section', tag:'CUISINE & SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-forest', overlay:'bg-forestDark/55', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
+  {type:'section', tag:'BOUTIQUE CHEZ NOUS', icon:'store', href:'boutique.html', bg:'bg-forest', overlay:'bg-forestDark/60', img:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', title:'Nos propres produits,<br>expédiés par nous', desc:'La boutique en ligne Chez Nous : une sélection de produits de la diaspora vendus directement par notre équipe.', cta:'Visiter la boutique', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • PRODUITS', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', overlay:'bg-ink/55', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits des vendeurs<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-forest', overlay:'bg-forestDark/55', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
 ].concat(getSponsoredListings().map(p=>({
   type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${p.id}`, bg:'bg-ink', overlay:'bg-ink/60', img:p.cover, title:p.name, desc:`${p.seller} • ${p.city} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
 })));
@@ -344,8 +360,8 @@ function renderHeroCarousel(){
     const visible = i===heroIndex ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none';
     if(s.type==='intro'){
       const heroTitle = lang==='fr'
-        ? 'La marketplace<br><span class="text-forest">de la diaspora africaine,</span><br>livrée partout au Canada.'
-        : 'The marketplace<br><span class="text-forest">for the African diaspora,</span><br>delivered across Canada.';
+        ? 'Boutique et marketplace<br><span class="text-forest">de la diaspora africaine,</span><br>livrées partout au Canada.'
+        : 'Online shop and marketplace<br><span class="text-forest">for the African diaspora,</span><br>delivered across Canada.';
       return `
       <div class="absolute inset-0 rounded-2xl overflow-hidden bg-white border border-line p-6 md:p-10 flex flex-col justify-center transition-opacity duration-500 ${visible}">
         <h1 class="font-display font-black text-[26px] sm:text-[32px] md:text-[46px] leading-[1.1]">${heroTitle}</h1>
@@ -390,6 +406,34 @@ function scrollCarousel(dir){
   box.scrollBy({left: dir * 280, behavior:'smooth'});
 }
 
+function renderBoutiqueHome(){
+  const items = getBoutiqueListings();
+  const box = document.getElementById('boutiqueHomeGrid');
+  if(!items.length){
+    box.innerHTML = `<div class="w-full bg-sand rounded-xl p-6 text-sm">
+      <div class="font-semibold">${lang==='fr'?'La boutique Chez Nous ouvre bientôt.':'The Chez Nous shop is opening soon.'}</div>
+      <div class="opacity-60 mt-1">${lang==='fr'?'Nos premiers produits arrivent. En attendant, découvrez la marketplace.':'Our first products are on their way. Meanwhile, discover the marketplace.'}</div>
+    </div>`;
+    return;
+  }
+  box.innerHTML = items.map(p=>`
+    <a href="boutique.html" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block">
+      <div class="relative h-[160px] overflow-hidden">
+        <img src="${escapeHtmlGlobal(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+        <div class="absolute top-3 left-3 bg-forest text-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">CHEZ NOUS</div>
+      </div>
+      <div class="p-4">
+        <div class="font-semibold text-[15px] leading-tight">${escapeHtmlGlobal(p.name)}</div>
+        <div class="flex items-center justify-between mt-3">
+          <span class="font-bold text-sm">${fmt(p.price)}</span>
+          <span class="text-xs font-semibold text-forest">${lang==='fr'?'Voir en boutique':'See in the shop'}</span>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
 function renderFeatured(){
   // Site réel avant les premières annonces : on invite les vendeurs plutôt que d'afficher une rangée vide.
   if(!featured.length){
@@ -432,6 +476,7 @@ function onCurrencyChange(){
   const sel = document.getElementById('currencySelect');
   if(sel) sel.value = window.currency;
   renderFeatured();
+  renderBoutiqueHome();
 }
 
 function changeRole(role){
@@ -489,8 +534,9 @@ handleUserInput = function(text){
 const tourSteps = [
   {sel:'#heroSearch', title:'Recherchez', text:'Trouvez un produit, un plat ou un service partout au Canada, en un instant.'},
   {sel:'#categoryGrid', title:'Explorez les catégories', text:'Épicerie, mode, beauté, artisanat, cuisine, services : six univers de la diaspora.'},
-  {sel:'#featuredGrid > a:first-child', title:'Produits en vedette', text:'La sélection du moment. Le catalogue complet se trouve dans la boutique.'},
-  {sel:'#cartLauncher', title:'Votre panier', text:'Ajoutez des produits depuis la boutique et payez en toute sécurité via Stripe.'},
+  {sel:'#boutiqueHomeGrid > a:first-child', title:'La boutique Chez Nous', text:'Nos propres produits, expédiés directement par Chez Nous.'},
+  {sel:'#featuredGrid > a:first-child', title:'La marketplace', text:'Les vedettes des vendeurs indépendants. Le catalogue complet se trouve dans la marketplace.'},
+  {sel:'#cartLauncher', title:'Votre panier', text:'Ajoutez des produits depuis la boutique ou la marketplace et payez en toute sécurité.'},
   {sel:'#chatLauncher', title:'Une question ?', text:'Cliquez ici à tout moment pour me parler, je suis là pour vous aider.'}
 ];
 let tourIndex = 0;
@@ -568,8 +614,9 @@ renderCategories();
 renderHeroCarousel();
 restartHeroTimer();
 renderFeatured();
+renderBoutiqueHome();
 // Site réel : les annonces des vendeurs arrivent de Supabase après le premier affichage.
-document.addEventListener('cheznous:listings', ()=>{ featured = getTopListings(4); renderFeatured(); renderCategories(); });
+document.addEventListener('cheznous:listings', ()=>{ featured = getTopListings(4); renderFeatured(); renderBoutiqueHome(); renderCategories(); });
 refreshCartBadge();
 initCookieBanner();
 initTourPrompt();

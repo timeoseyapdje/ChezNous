@@ -64,14 +64,21 @@ function isLoggedIn(){
   document.head.appendChild(style);
 })();
 
+// Deux espaces : la boutique (produits de Chez Nous) et la marketplace (vendeurs indépendants).
+function getBoutiqueListings(){
+  return getAllListings().filter(p=>p.channel==='boutique');
+}
+function getMarketplaceListings(){
+  return getAllListings().filter(p=>p.channel!=='boutique');
+}
 function getCategoryVendorCount(catId){
-  return new Set(getAllListings().filter(p=>p.cat===catId).map(p=>p.seller)).size;
+  return new Set(getMarketplaceListings().filter(p=>p.cat===catId).map(p=>p.seller)).size;
 }
 function getTopListings(n){
-  return getAllListings().sort((a,b)=> (b.rating*Math.log(b.reviews+1)) - (a.rating*Math.log(a.reviews+1)) || String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,n);
+  return getMarketplaceListings().sort((a,b)=> (b.rating*Math.log(b.reviews+1)) - (a.rating*Math.log(a.reviews+1)) || String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,n);
 }
 function getSponsoredListings(){
-  return CATALOG.filter(p=>p.plan==='premium');
+  return CATALOG.filter(p=>p.plan==='premium' && p.channel!=='boutique');
 }
 // Argument d'un onclick : les annonces de démo ont un id numérique, celles de la base un uuid (texte).
 function jsArg(id){
@@ -399,7 +406,7 @@ let REMOTE_LISTINGS = (()=>{
 })();
 function listingFromRow(r){
   return {
-    id: r.id, sellerId: r.seller_id, cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
+    id: r.id, sellerId: r.seller_id, channel: r.channel==='boutique' ? 'boutique' : 'marketplace', cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
     seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: 0, reviews: 0, plan: 'basique',
     active: r.active !== false, createdAt: r.created_at,
     cover: safeImageUrl(r.cover_url) || DEFAULT_COVER, image: DEFAULT_AVATAR
@@ -418,12 +425,14 @@ function getAllListings(){
   // Site réel : seules les annonces enregistrées en base s'affichent (pas les brouillons locaux d'un navigateur).
   if(!IS_DEMO) return [...CATALOG, ...REMOTE_LISTINGS.filter(p=>p.active)];
   const ids = new Set(CATALOG.map(p=>p.id));
+  let boutiqueExtras = [];
+  try{ boutiqueExtras = JSON.parse(localStorage.getItem('cheznous_boutique_catalog') || '[]').filter(p=>p && p.channel==='boutique'); }catch(e){}
   const fromSellers = getSellerListings().filter(p=>p && !ids.has(p.id)).map(p=>({
     tags:[], desc:'', rating:5, reviews:0, plan:'basique', ...p,
     cover: safeImageUrl(p.cover) || DEFAULT_COVER,
     image: safeUrl(p.image) || DEFAULT_AVATAR
   }));
-  return [...CATALOG, ...fromSellers];
+  return [...CATALOG, ...boutiqueExtras, ...fromSellers];
 }
 function orderTotal(o){
   return typeof o.total==='number' ? o.total : o.price;
@@ -568,6 +577,13 @@ function ensureCartModal(){
     </div>`;
   document.body.appendChild(div.firstElementChild);
 }
+function cartAdd(id, qty=1){
+  const cart = getCart();
+  const it = cart.find(c=>c.id===id);
+  if(it) it.qty += qty; else cart.push({id, qty});
+  setCart(cart);
+  refreshCartBadge();
+}
 function renderCartGeneric(){
   const cart = getCart();
   const box = document.getElementById('cartItems');
@@ -677,6 +693,7 @@ function renderSiteHeader(active){
     <div class="border-t border-white/10 bg-forestDark">
       <div class="max-w-[1400px] mx-auto px-4 md:px-6 h-11 flex items-center gap-5 overflow-x-auto no-scrollbar text-sm">
         ${navLink('index.html','Accueil','accueil')}
+        ${navLink('boutique.html','Boutique','boutique')}
         ${navLink('marketplace.html','Marketplace','marketplace')}
         ${navLink('mes-commandes.html','Mes commandes','commandes')}
         ${navLink('messagerie.html','Messagerie','messagerie')}
@@ -927,6 +944,7 @@ const BOT_INTENTS = [
   {key:'returns', re:/retour|rembours|annul|return|refund|cancel/},
   {key:'payment', re:/paiement|stripe|carte|payer|escrow|litige|payment|\bpay\b|card|dispute/},
   {key:'categories', re:/cat[ée]gor|produit|service|product/},
+  {key:'shop', re:/boutique|\bshop\b|vos produits|your products/},
   {key:'order', re:/panier|commander|acheter|\border|\bbuy|\bcart|purchase/},
   {key:'account', re:/compte|connex|inscri|account|log ?in|sign ?(in|up)|register/},
   {key:'reviews', re:/avis|note|[ée]toile|review|rating|star/},
@@ -942,7 +960,8 @@ const BOT_ANSWERS = {
     returns:"Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.",
     payment:"Vos paiements sont retenus de façon sécurisée jusqu'à confirmation de réception avec votre code de livraison. En cas de litige, notre équipe tranche après examen des preuves des deux parties.",
     categories:"Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.",
-    order:"Parcourez la <a href='marketplace.html' class='underline text-forest'>boutique</a>, ajoutez un produit au panier, puis finalisez votre achat.",
+    shop:"La <a href='boutique.html' class='underline text-forest'>Boutique Chez Nous</a> regroupe uniquement nos propres produits, expédiés par nous. La <a href='marketplace.html' class='underline text-forest'>Marketplace</a> regroupe ceux des vendeurs indépendants de la diaspora.",
+    order:"Parcourez la <a href='boutique.html' class='underline text-forest'>Boutique Chez Nous</a> (nos produits) ou la <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (vendeurs indépendants), ajoutez un produit au panier, puis finalisez votre achat.",
     account:"Cliquez sur « Se connecter » en haut de la page pour gérer votre profil et vos commandes.",
     reviews:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.",
     privacy:"Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.",
@@ -957,7 +976,8 @@ const BOT_ANSWERS = {
     returns:"A service can be cancelled for free up to 24h before. For products, see our <a href='retours-remboursement.html' class='underline text-forest'>Returns & refunds</a> page.",
     payment:"Your payment is held securely until you confirm receipt with your delivery code. In case of a dispute, our team decides after reviewing evidence from both sides.",
     categories:"Six categories are available: African grocery, Fashion & fabrics, Afro beauty & hair, Crafts & decor, Home cooking & catering, and Community services.",
-    order:"Browse the <a href='marketplace.html' class='underline text-forest'>marketplace</a>, add a product to your cart, then check out.",
+    shop:"The <a href='boutique.html' class='underline text-forest'>Chez Nous Shop</a> only contains our own products, shipped by us. The <a href='marketplace.html' class='underline text-forest'>Marketplace</a> gathers products from independent diaspora sellers.",
+    order:"Browse the <a href='boutique.html' class='underline text-forest'>Chez Nous Shop</a> (our products) or the <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (independent sellers), add a product to your cart, then check out.",
     account:"Click « Sign in » at the top of the page to manage your profile and orders.",
     reviews:"Only buyers who actually paid can leave a review, so reviews stay trustworthy.",
     privacy:"Your data is protected under PIPEDA, GDPR and CCPA. Details on our <a href='confidentialite.html' class='underline text-forest'>Privacy</a> page.",
