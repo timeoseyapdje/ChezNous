@@ -346,11 +346,11 @@ function renderCategories(){
 
 const heroSlides = [
   {type:'intro'},
-  {type:'section', tag:'BOUTIQUE CHEZ NOUS', icon:'store', href:'boutique.html', bg:'bg-forest', overlay:'bg-forestDark/60', img:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', title:'Nos propres produits,<br>expédiés par nous', desc:'La boutique en ligne Chez Nous : une sélection de produits de la diaspora vendus directement par notre équipe.', cta:'Visiter la boutique', ctaClass:'bg-white text-ink'},
-  {type:'section', tag:'MARKETPLACE • PRODUITS', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', overlay:'bg-ink/55', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits des vendeurs<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
-  {type:'section', tag:'MARKETPLACE • SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-forest', overlay:'bg-forestDark/55', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
+  {type:'section', tag:'BOUTIQUE CHEZ NOUS', icon:'store', href:'boutique.html', bg:'bg-ink', img:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', title:'Nos propres produits,<br>expédiés par nous', desc:'La boutique en ligne Chez Nous : une sélection de produits de la diaspora vendus directement par notre équipe.', cta:'Visiter la boutique', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • PRODUITS', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits des vendeurs<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-ink', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
 ].concat(getSponsoredListings().map(p=>({
-  type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${p.id}`, bg:'bg-ink', overlay:'bg-ink/60', img:p.cover, title:p.name, desc:`${p.seller} • ${p.city} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
+  type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${p.id}`, bg:'bg-ink', img:p.cover, title:p.name, desc:`${p.seller} • ${p.city} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
 })));
 let heroIndex = 0;
 let heroTimer = null;
@@ -370,8 +370,8 @@ function renderHeroCarousel(){
     }
     return `
     <a href="${s.href}" class="absolute inset-0 rounded-2xl overflow-hidden ${s.bg} text-white p-6 md:p-10 flex flex-col justify-between transition-opacity duration-500 ${visible}">
-      <img src="${s.img}" class="absolute inset-0 w-full h-full object-cover opacity-40">
-      <div class="absolute inset-0 ${s.overlay}"></div>
+      <img src="${s.img}" class="absolute inset-0 w-full h-full object-cover">
+      <div class="absolute inset-0" style="background:rgba(0,0,0,.3)"></div>
       <div class="relative flex justify-between items-start">
         <span class="bg-white text-ink text-[11px] font-bold tracking-widest px-3 py-1 rounded-full">${s.tag}</span>
         <span class="bg-white/15 rounded-full w-8 h-8 flex items-center justify-center shrink-0"><i data-lucide="${s.icon}" class="w-4 h-4"></i></span>
