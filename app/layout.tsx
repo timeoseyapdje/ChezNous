@@ -12,7 +12,7 @@ const libreFranklin = Libre_Franklin({
 });
 
 export const metadata: Metadata = {
-  title: "Chez Nous — Marketplace de la diaspora africaine au Canada",
+  title: "AkwaOne — Marketplace de la diaspora africaine au Canada",
   description:
     "Epicerie africaine, tissus wax, cheveux afro, artisanat, cuisine maison et services communautaires, partout au Canada.",
 };

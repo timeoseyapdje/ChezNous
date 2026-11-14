@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
   try {
     const resend = getResendClient();
     await resend.emails.send({
-      from: process.env.EMAIL_FROM ?? "aide@cheznous.ca",
-      to: "aide@cheznous.ca",
+      from: process.env.EMAIL_FROM ?? "aide@akwaone.ca",
+      to: "aide@akwaone.ca",
       replyTo: email,
       subject: `[Contact] ${subject ?? "Nouvelle demande"} - ${name}`,
       text: message,

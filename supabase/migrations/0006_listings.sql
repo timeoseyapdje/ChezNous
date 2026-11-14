@@ -1,4 +1,4 @@
--- Chez Nous — annonces publiées par les vendeurs, lues par la marketplace et par le serveur de paiement.
+-- AkwaOne — annonces publiées par les vendeurs, lues par la marketplace et par le serveur de paiement.
 -- À exécuter après 0005_seller_plans.sql.
 
 -- La table sellers de 0001 n'est jamais remplie : une annonce et une commande pointent directement vers le profil du vendeur.

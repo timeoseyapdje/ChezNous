@@ -1,4 +1,4 @@
--- Chez Nous — initial schema
+-- AkwaOne — initial schema
 -- Run via `supabase db push` once the project is linked, or paste into the
 -- Supabase SQL editor. Region: choose a Canadian region at project creation
 -- to satisfy LPRPDE data-residency guidance from the devis.

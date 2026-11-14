@@ -23,13 +23,13 @@ module.exports = async (req, res) => {
     }
 
     const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey || !apiKey.startsWith('re_')) return send(res, 503, { error: 'L\'envoi de messages n\'est pas encore disponible. Écrivez-nous à aide@cheznous.ca.' });
+    if (!apiKey || !apiKey.startsWith('re_')) return send(res, 503, { error: 'L\'envoi de messages n\'est pas encore disponible. Écrivez-nous à aide@akwaone.ca.' });
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'Chez Nous <aide@cheznous.ca>',
-        to: process.env.CONTACT_TO || 'aide@cheznous.ca',
+        from: process.env.EMAIL_FROM || 'AkwaOne <aide@akwaone.ca>',
+        to: process.env.CONTACT_TO || 'aide@akwaone.ca',
         reply_to: email,
         subject: `[Contact] ${subject} — ${name}`,
         html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#131A17">
@@ -40,11 +40,11 @@ module.exports = async (req, res) => {
     });
     if (!r.ok) {
       console.error('contact resend error:', r.status, await r.text());
-      return send(res, 502, { error: 'Le message n\'a pas pu être envoyé. Écrivez-nous à aide@cheznous.ca.' });
+      return send(res, 502, { error: 'Le message n\'a pas pu être envoyé. Écrivez-nous à aide@akwaone.ca.' });
     }
     return send(res, 200, { sent: true });
   } catch (err) {
     console.error('contact error:', err.message);
-    return send(res, 500, { error: 'Le message n\'a pas pu être envoyé. Écrivez-nous à aide@cheznous.ca.' });
+    return send(res, 500, { error: 'Le message n\'a pas pu être envoyé. Écrivez-nous à aide@akwaone.ca.' });
   }
 };

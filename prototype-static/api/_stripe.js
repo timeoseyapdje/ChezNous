@@ -1,7 +1,7 @@
 const CATALOG = require('../assets/catalog.js');
 
-// Projet Vercel de la démo : CHEZNOUS_MODE=demo. Jamais de clé live sur la démo.
-const IS_DEMO = process.env.CHEZNOUS_MODE === 'demo';
+// Projet Vercel de la démo : AKWAONE_MODE=demo. Jamais de clé live sur la démo.
+const IS_DEMO = process.env.AKWAONE_MODE === 'demo';
 
 const BOOKING_FEE_RATE = 0.10;
 const MAX_QTY = 20;

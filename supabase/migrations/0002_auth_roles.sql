@@ -1,4 +1,4 @@
--- Chez Nous — comptes et rôles décidés côté serveur.
+-- AkwaOne — comptes et rôles décidés côté serveur.
 -- À exécuter après 0001_init.sql dans l'éditeur SQL Supabase.
 
 -- Chaque inscription crée son profil, toujours en « buyer » : le rôle envoyé par le navigateur est ignoré.
@@ -39,7 +39,7 @@ begin
   if new.role is distinct from old.role
      and nullif(current_setting('request.jwt.claims', true), '') is not null
      and coalesce(auth.role(), '') <> 'service_role'
-     and coalesce(current_setting('cheznous.role_change_allowed', true), '') <> 'on'
+     and coalesce(current_setting('akwaone.role_change_allowed', true), '') <> 'on'
      and not public.is_admin() then
     raise exception 'Seul un administrateur peut changer un rôle';
   end if;
@@ -64,7 +64,7 @@ begin
   if auth.uid() is null then
     raise exception 'Connexion requise';
   end if;
-  perform set_config('cheznous.role_change_allowed', 'on', true);
+  perform set_config('akwaone.role_change_allowed', 'on', true);
   update public.profiles set role = 'seller'
     where id = auth.uid() and role = 'buyer';
   select role into resulting_role from public.profiles where id = auth.uid();

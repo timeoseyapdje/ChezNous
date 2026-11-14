@@ -18,7 +18,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Cache lu par la cloche de notifications sur les autres pages.
 function cacheUnread(){
   try{
-    localStorage.setItem('cheznous_messages_v1', JSON.stringify(conversations.filter(c=>c.unread).map(c=>({
+    localStorage.setItem('akwaone_messages_v1', JSON.stringify(conversations.filter(c=>c.unread).map(c=>({
       id:c.id, name:c.name, unread:c.unread, messages:[{text:c.lastBody, time:timeLabel(c.lastAt)}]
     }))));
   }catch(e){}

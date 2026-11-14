@@ -1,4 +1,4 @@
-# Chez Nous — application Next.js
+# AkwaOne — application Next.js
 
 Marketplace de la diaspora africaine au Canada. Ce dépôt est le point de
 départ réel de la plateforme décrite dans le devis technique (Next.js +
@@ -44,7 +44,7 @@ npm run dev
 
 - Pages marketplace, fiche produit, panier, tableau de bord acheteur/vendeur
   et authentification (actuellement seule la page d'accueil est portée
-  depuis la démo statique `chez-nous/`).
+  depuis la démo statique `prototype-static/`).
 - Onboarding Stripe Connect (`/api/connect/onboard`) pour que chaque vendeur
   obtienne un `stripe_account_id` avant de pouvoir recevoir des paiements.
 - Politiques RLS Supabase complètes (insert/update/delete par rôle).
