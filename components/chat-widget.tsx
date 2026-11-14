@@ -8,7 +8,7 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Bonjour, je suis Malik, l'assistant Chez Nous. Posez-moi vos questions sur les commandes, la vente ou la livraison." },
+    { role: "assistant", content: "Bonjour, je suis Malik, l'assistant AkwaOne. Posez-moi vos questions sur les commandes, la vente ou la livraison." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export function ChatWidget() {
               <Image src="/assistant-avatar.svg" alt="" width={32} height={32} className="rounded-full" />
               <div>
                 <div className="text-sm font-semibold leading-none">Malik</div>
-                <div className="mt-0.5 text-[10px] opacity-60">Assistant Chez Nous</div>
+                <div className="mt-0.5 text-[10px] opacity-60">Assistant AkwaOne</div>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="rounded-full bg-white/10 px-2 py-1 text-xs">

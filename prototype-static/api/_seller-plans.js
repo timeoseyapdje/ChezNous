@@ -3,8 +3,8 @@ const { supabaseRest } = require('./_supabase');
 
 // Prix annuels en CAD, fixés côté serveur comme ceux du catalogue.
 const SELLER_PLANS = {
-  pro: { label: 'Formule Pro Chez Nous', price: 129 },
-  premium: { label: 'Formule Premium Chez Nous', price: 299 },
+  pro: { label: 'Formule Pro AkwaOne', price: 129 },
+  premium: { label: 'Formule Premium AkwaOne', price: 299 },
 };
 
 const STATUS_MAP = { active: 'active', trialing: 'active', past_due: 'past_due', unpaid: 'past_due' };

@@ -2,7 +2,7 @@
 // et un accès direct renvoie vers la connexion, qui ramène ensuite à la page demandée.
 const PRIVATE_PAGES = ['mes-commandes.html','messagerie.html','tableau-de-bord.html','profil.html'];
 function isLoggedIn(){
-  try{ return localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){ return false; }
+  try{ return localStorage.getItem('akwaone_logged_in')==='1'; }catch(e){ return false; }
 }
 (function guardPrivatePages(){
   const page = location.pathname.split('/').pop() || 'index.html';
@@ -64,7 +64,7 @@ function isLoggedIn(){
   document.head.appendChild(style);
 })();
 
-// Deux espaces : la boutique (produits de Chez Nous) et la marketplace (vendeurs indépendants).
+// Deux espaces : la boutique (produits d'AkwaOne) et la marketplace (vendeurs indépendants).
 function getBoutiqueListings(){
   return getAllListings().filter(p=>p.channel==='boutique');
 }
@@ -137,10 +137,10 @@ const CUR = {
 };
 
 function getCurrency(){
-  try{ return localStorage.getItem('cheznous_currency') || 'CAD'; }catch(e){ return 'CAD'; }
+  try{ return localStorage.getItem('akwaone_currency') || 'CAD'; }catch(e){ return 'CAD'; }
 }
 function setCurrency(c){
-  try{ localStorage.setItem('cheznous_currency', c); }catch(e){}
+  try{ localStorage.setItem('akwaone_currency', c); }catch(e){}
   window.currency = c;
   if(typeof onCurrencyChange === 'function') onCurrencyChange();
 }
@@ -165,10 +165,10 @@ function renderCurrencyOptions(){
 
 const LANGS = { fr: 'Français', en: 'English' };
 function getLangPersisted(){
-  try{ return localStorage.getItem('cheznous_lang') || 'fr'; }catch(e){ return 'fr'; }
+  try{ return localStorage.getItem('akwaone_lang') || 'fr'; }catch(e){ return 'fr'; }
 }
 function persistLang(l){
-  try{ localStorage.setItem('cheznous_lang', l); }catch(e){}
+  try{ localStorage.setItem('akwaone_lang', l); }catch(e){}
 }
 // Moteur de traduction commun à toutes les pages : chaque nœud texte et attribut visible
 // est traduit via I18N_EN, y compris le contenu injecté après coup (observer).
@@ -302,10 +302,10 @@ function renderLangOptions(){
 }
 
 function getCart(){
-  try{ return JSON.parse(localStorage.getItem('cheznous_cart') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem('akwaone_cart') || '[]'); }catch(e){ return []; }
 }
 function setCart(cart){
-  try{ localStorage.setItem('cheznous_cart', JSON.stringify(cart)); }catch(e){}
+  try{ localStorage.setItem('akwaone_cart', JSON.stringify(cart)); }catch(e){}
 }
 function cartCount(cart){
   return cart.reduce((s,c)=>s+c.qty, 0);
@@ -314,7 +314,7 @@ function cartCount(cart){
 // Site réel : cache des commandes Supabase (« Mes commandes », retour de paiement). Démo : commandes d'exemple locales.
 function getOrders(){
   try{
-    const raw = localStorage.getItem('cheznous_orders');
+    const raw = localStorage.getItem('akwaone_orders');
     if(raw) return JSON.parse(raw);
   }catch(e){}
   if(!IS_DEMO) return [];
@@ -328,7 +328,7 @@ function getOrders(){
   return seed;
 }
 function setOrders(orders){
-  try{ localStorage.setItem('cheznous_orders', JSON.stringify(orders)); }catch(e){}
+  try{ localStorage.setItem('akwaone_orders', JSON.stringify(orders)); }catch(e){}
 }
 function shortDateLabel(daysFromToday){
   return new Date(Date.now() + daysFromToday*86400000).toLocaleDateString('fr-CA',{day:'2-digit',month:'short'});
@@ -347,10 +347,10 @@ function generateReleaseCode(){
   return Math.random().toString(36).slice(2,8).toUpperCase();
 }
 function getDisputes(){
-  try{ return JSON.parse(localStorage.getItem('cheznous_disputes') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem('akwaone_disputes') || '[]'); }catch(e){ return []; }
 }
 function setDisputes(list){
-  try{ localStorage.setItem('cheznous_disputes', JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem('akwaone_disputes', JSON.stringify(list)); }catch(e){}
 }
 function openDispute(orderId, buyerProof){
   const disputes = getDisputes();
@@ -402,7 +402,7 @@ const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506617420156-8e4536971
 const DEFAULT_AVATAR = 'https://i.pravatar.cc/100?img=48';
 // Site réel : annonces lues dans Supabase par auth.js ; gardées en sessionStorage pour l'affichage immédiat de la page suivante.
 let REMOTE_LISTINGS = (()=>{
-  try{ return JSON.parse(sessionStorage.getItem('cheznous_listings_cache') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(sessionStorage.getItem('akwaone_listings_cache') || '[]'); }catch(e){ return []; }
 })();
 function listingFromRow(r){
   return {
@@ -414,11 +414,11 @@ function listingFromRow(r){
 }
 function setRemoteListings(rows){
   REMOTE_LISTINGS = rows.map(listingFromRow);
-  try{ sessionStorage.setItem('cheznous_listings_cache', JSON.stringify(REMOTE_LISTINGS)); }catch(e){}
-  document.dispatchEvent(new CustomEvent('cheznous:listings'));
+  try{ sessionStorage.setItem('akwaone_listings_cache', JSON.stringify(REMOTE_LISTINGS)); }catch(e){}
+  document.dispatchEvent(new CustomEvent('akwaone:listings'));
 }
 function getSellerListings(){
-  try{ return JSON.parse(localStorage.getItem('cheznous_seller_catalog') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem('akwaone_seller_catalog') || '[]'); }catch(e){ return []; }
 }
 // Les annonces publiées depuis le tableau de bord vendeur s'ajoutent au catalogue de démo.
 function getAllListings(){
@@ -426,7 +426,7 @@ function getAllListings(){
   if(!IS_DEMO) return [...CATALOG, ...REMOTE_LISTINGS.filter(p=>p.active)];
   const ids = new Set(CATALOG.map(p=>p.id));
   let boutiqueExtras = [];
-  try{ boutiqueExtras = JSON.parse(localStorage.getItem('cheznous_boutique_catalog') || '[]').filter(p=>p && p.channel==='boutique'); }catch(e){}
+  try{ boutiqueExtras = JSON.parse(localStorage.getItem('akwaone_boutique_catalog') || '[]').filter(p=>p && p.channel==='boutique'); }catch(e){}
   const fromSellers = getSellerListings().filter(p=>p && !ids.has(p.id)).map(p=>({
     tags:[], desc:'', rating:5, reviews:0, plan:'basique', ...p,
     cover: safeImageUrl(p.cover) || DEFAULT_COVER,
@@ -441,10 +441,10 @@ function orderTotal(o){
 const CITIES = ['Toronto','Montréal','Vancouver','Calgary','Ottawa','Québec','Winnipeg','Edmonton'];
 
 function getDeliverCity(){
-  try{ return localStorage.getItem('cheznous_city') || 'Toronto'; }catch(e){ return 'Toronto'; }
+  try{ return localStorage.getItem('akwaone_city') || 'Toronto'; }catch(e){ return 'Toronto'; }
 }
 function setDeliverCity(city){
-  try{ localStorage.setItem('cheznous_city', city); }catch(e){}
+  try{ localStorage.setItem('akwaone_city', city); }catch(e){}
   const label = document.getElementById('deliverCityLabel');
   if(label) label.textContent = city;
   const menu = document.getElementById('deliverMenu');
@@ -453,7 +453,7 @@ function setDeliverCity(city){
   if(cityFilter && typeof filterMarket==='function'){ cityFilter.value = city; filterMarket(); }
 }
 function hasChosenDeliverCity(){
-  try{ return !!localStorage.getItem('cheznous_city'); }catch(e){ return false; }
+  try{ return !!localStorage.getItem('akwaone_city'); }catch(e){ return false; }
 }
 function toggleDeliverMenu(){
   const menu = document.getElementById('deliverMenu');
@@ -480,7 +480,7 @@ function getNotifications(){
     else if(o.status==='en attente') list.push({id:`o${o.id}-attente`, icon:'clock', text:`Commande en attente chez ${o.seller}`, time:o.date});
   });
   try{
-    const convs = JSON.parse(localStorage.getItem('cheznous_messages_v1') || '[]');
+    const convs = JSON.parse(localStorage.getItem('akwaone_messages_v1') || '[]');
     convs.filter(c=>c.unread).forEach(c=>{
       const last = c.messages[c.messages.length-1];
       list.push({id:`m${c.id}-${c.messages.length}`, icon:'message-circle', text:`Nouveau message de ${c.name}`, time:last ? last.time : '', href:`messagerie.html?avec=${encodeURIComponent(c.id)}`});
@@ -489,10 +489,10 @@ function getNotifications(){
   return list;
 }
 function getReadNotifs(){
-  try{ return JSON.parse(localStorage.getItem('cheznous_read_notifs') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem('akwaone_read_notifs') || '[]'); }catch(e){ return []; }
 }
 function setReadNotifs(ids){
-  try{ localStorage.setItem('cheznous_read_notifs', JSON.stringify(ids)); }catch(e){}
+  try{ localStorage.setItem('akwaone_read_notifs', JSON.stringify(ids)); }catch(e){}
 }
 function unreadNotifCount(){
   const read = getReadNotifs();
@@ -646,7 +646,7 @@ function renderSiteHeader(active){
       <a href="index.html" class="flex items-center gap-2 shrink-0">
         <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
         <div class="leading-none">
-          <div class="font-display font-bold text-lg">chez nous</div>
+          <div class="font-display font-bold text-lg">AkwaOne</div>
           <div class="text-[9px] opacity-60 tracking-wider">DIASPORA AFRICAINE • CANADA</div>
         </div>
       </a>
@@ -707,7 +707,7 @@ function renderSiteHeader(active){
             <option value="admin" class="text-ink">Administrateur</option>
           </select>
         </div>
-        ${navLink('devenir-vendeur.html','Vendre sur Chez Nous','vendre')}
+        ${navLink('devenir-vendeur.html','Vendre sur AkwaOne','vendre')}
       </div>
     </div>
   </header>`;
@@ -724,13 +724,13 @@ function goToMarketplaceGlobal(){
 
 function getCurrentUser(){
   try{
-    const u = JSON.parse(localStorage.getItem('cheznous_user'));
+    const u = JSON.parse(localStorage.getItem('akwaone_user'));
     if(u && u.email) return u;
   }catch(e){}
   return null;
 }
 function saveCurrentUser(user){
-  try{ localStorage.setItem('cheznous_user', JSON.stringify(user)); }catch(e){}
+  try{ localStorage.setItem('akwaone_user', JSON.stringify(user)); }catch(e){}
 }
 // Pour une connexion sans nom saisi : « awa.diallo@mail.ca » devient « Awa Diallo ».
 function nameFromEmail(email){
@@ -750,7 +750,7 @@ function updateAccountButtonGlobal(){
   const btn = document.getElementById('accountBtn');
   if(!btn) return;
   let loggedIn = false;
-  try{ loggedIn = localStorage.getItem('cheznous_logged_in')==='1'; }catch(e){}
+  try{ loggedIn = localStorage.getItem('akwaone_logged_in')==='1'; }catch(e){}
   if(loggedIn){
     btn.onclick = toggleAccountMenu;
     btn.setAttribute('aria-haspopup','menu');
@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', setupMobilePrefs);
 
 async function logoutGlobal(everywhere){
   if(typeof signOutEverywhere==='function') await signOutEverywhere(everywhere);
-  try{ ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role','cheznous_orders','cheznous_messages_v1','cheznous_seller_profile','cheznous_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  try{ ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_orders','akwaone_messages_v1','akwaone_seller_profile','akwaone_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   window.location.href = 'index.html';
 }
 
@@ -867,7 +867,7 @@ function renderChatWidget(){
       <img src="${CHAT_AVATAR_URL}" class="w-10 h-10 rounded-full object-cover border-2 border-white" style="object-position:50% 12%">
       <div class="flex-1">
         <div class="font-display font-bold text-sm">Malik</div>
-        <div class="text-[11px] opacity-70">Assistant Chez Nous</div>
+        <div class="text-[11px] opacity-70">Assistant AkwaOne</div>
       </div>
       <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
@@ -891,7 +891,7 @@ function toggleChat(){
   panel.style.display = opening ? 'flex' : 'none';
   if(opening && !chatStarted){
     chatStarted = true;
-    addBotMessage("Bonjour, je suis Malik, l'assistant Chez Nous. Je peux vous guider ou répondre à vos questions sur les commandes, la vente ou la livraison.");
+    addBotMessage("Bonjour, je suis Malik, l'assistant AkwaOne. Je peux vous guider ou répondre à vos questions sur les commandes, la vente ou la livraison.");
     renderChatChips();
   }
   if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -955,33 +955,33 @@ const BOT_INTENTS = [
 const BOT_ANSWERS = {
   fr:{
     hello:"Bonjour ! Comment puis-je vous aider : commander, devenir vendeur, livraison ou paiement ?",
-    sell:"Pour vendre sur Chez Nous, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.",
+    sell:"Pour vendre sur AkwaOne, choisissez une formule : Basique (gratuit, 15% de commission), Pro (129$/an, 10%) ou Premium (299$/an, 6%). Détails sur la page <a href='devenir-vendeur.html' class='underline text-forest'>Devenir vendeur</a>.",
     delivery:"Les délais varient selon le vendeur : 24 à 72h pour la cuisine maison, 3 à 5 jours pour les produits. Voir notre page <a href='livraison.html' class='underline text-forest'>Livraison</a>.",
     returns:"Un service peut être annulé gratuitement jusqu'à 24h avant. Pour les produits, voir notre page <a href='retours-remboursement.html' class='underline text-forest'>Retours & remboursements</a>.",
     payment:"Vos paiements sont retenus de façon sécurisée jusqu'à confirmation de réception avec votre code de livraison. En cas de litige, notre équipe tranche après examen des preuves des deux parties.",
     categories:"Six catégories sont disponibles : Épicerie africaine, Mode & tissus, Beauté & cheveux afro, Artisanat & décoration, Cuisine maison & traiteur, et Services communautaires.",
-    shop:"La <a href='boutique.html' class='underline text-forest'>Boutique Chez Nous</a> regroupe uniquement nos propres produits, expédiés par nous. La <a href='marketplace.html' class='underline text-forest'>Marketplace</a> regroupe ceux des vendeurs indépendants de la diaspora.",
-    order:"Parcourez la <a href='boutique.html' class='underline text-forest'>Boutique Chez Nous</a> (nos produits) ou la <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (vendeurs indépendants), ajoutez un produit au panier, puis finalisez votre achat.",
+    shop:"La <a href='boutique.html' class='underline text-forest'>Boutique AkwaOne</a> regroupe uniquement nos propres produits, expédiés par nous. La <a href='marketplace.html' class='underline text-forest'>Marketplace</a> regroupe ceux des vendeurs indépendants de la diaspora.",
+    order:"Parcourez la <a href='boutique.html' class='underline text-forest'>Boutique AkwaOne</a> (nos produits) ou la <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (vendeurs indépendants), ajoutez un produit au panier, puis finalisez votre achat.",
     account:"Cliquez sur « Se connecter » en haut de la page pour gérer votre profil et vos commandes.",
     reviews:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.",
     privacy:"Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.",
-    contact:"Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@cheznous.ca.",
+    contact:"Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@akwaone.ca.",
     thanks:"Avec plaisir ! N'hésitez pas si vous avez d'autres questions.",
     fallback:"Je ne suis pas certain de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>."
   },
   en:{
     hello:"Hello! How can I help: ordering, becoming a seller, delivery or payment?",
-    sell:"To sell on Chez Nous, pick a plan: Basic (free, 15% commission), Pro ($129/year, 10%) or Premium ($299/year, 6%). Details on the <a href='devenir-vendeur.html' class='underline text-forest'>Become a seller</a> page.",
+    sell:"To sell on AkwaOne, pick a plan: Basic (free, 15% commission), Pro ($129/year, 10%) or Premium ($299/year, 6%). Details on the <a href='devenir-vendeur.html' class='underline text-forest'>Become a seller</a> page.",
     delivery:"Delivery times depend on the seller: 24 to 72h for home cooking, 3 to 5 days for products. See our <a href='livraison.html' class='underline text-forest'>Delivery</a> page.",
     returns:"A service can be cancelled for free up to 24h before. For products, see our <a href='retours-remboursement.html' class='underline text-forest'>Returns & refunds</a> page.",
     payment:"Your payment is held securely until you confirm receipt with your delivery code. In case of a dispute, our team decides after reviewing evidence from both sides.",
     categories:"Six categories are available: African grocery, Fashion & fabrics, Afro beauty & hair, Crafts & decor, Home cooking & catering, and Community services.",
-    shop:"The <a href='boutique.html' class='underline text-forest'>Chez Nous Shop</a> only contains our own products, shipped by us. The <a href='marketplace.html' class='underline text-forest'>Marketplace</a> gathers products from independent diaspora sellers.",
-    order:"Browse the <a href='boutique.html' class='underline text-forest'>Chez Nous Shop</a> (our products) or the <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (independent sellers), add a product to your cart, then check out.",
+    shop:"The <a href='boutique.html' class='underline text-forest'>AkwaOne Shop</a> only contains our own products, shipped by us. The <a href='marketplace.html' class='underline text-forest'>Marketplace</a> gathers products from independent diaspora sellers.",
+    order:"Browse the <a href='boutique.html' class='underline text-forest'>AkwaOne Shop</a> (our products) or the <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (independent sellers), add a product to your cart, then check out.",
     account:"Click « Sign in » at the top of the page to manage your profile and orders.",
     reviews:"Only buyers who actually paid can leave a review, so reviews stay trustworthy.",
     privacy:"Your data is protected under PIPEDA, GDPR and CCPA. Details on our <a href='confidentialite.html' class='underline text-forest'>Privacy</a> page.",
-    contact:"You can reach our team through the <a href='contact.html' class='underline text-forest'>Contact</a> page, or by email at aide@cheznous.ca.",
+    contact:"You can reach our team through the <a href='contact.html' class='underline text-forest'>Contact</a> page, or by email at aide@akwaone.ca.",
     thanks:"You're welcome! Let me know if you have other questions.",
     fallback:"I'm not sure I understand. Try: ordering, becoming a seller, delivery, returns, payment or categories. For a human answer: <a href='contact.html' class='underline text-forest'>contact our team</a>."
   }
@@ -996,7 +996,7 @@ function getBotAnswer(m){
 const ROLE_RANK = {buyer:0, seller:1, admin:2};
 // Rôle attribué par Supabase (mis en cache par assets/auth.js) : la vue choisie ne peut jamais le dépasser.
 function getServerRole(){
-  try{ return localStorage.getItem('cheznous_server_role') || 'buyer'; }catch(e){ return 'buyer'; }
+  try{ return localStorage.getItem('akwaone_server_role') || 'buyer'; }catch(e){ return 'buyer'; }
 }
 // En démo, les trois vues restent accessibles pour la présentation ; sur le site réel, Supabase décide.
 function isRoleAllowed(role, serverRole = getServerRole()){
@@ -1005,7 +1005,7 @@ function isRoleAllowed(role, serverRole = getServerRole()){
 }
 function getRolePersisted(){
   let r = 'buyer';
-  try{ r = localStorage.getItem('cheznous_role') || 'buyer'; }catch(e){}
+  try{ r = localStorage.getItem('akwaone_role') || 'buyer'; }catch(e){}
   return isRoleAllowed(r) ? r : 'buyer';
 }
 function restrictRoleSelect(){
@@ -1015,7 +1015,7 @@ function restrictRoleSelect(){
   sel.value = getRolePersisted();
 }
 function persistRole(r){
-  try{ localStorage.setItem('cheznous_role', r); }catch(e){}
+  try{ localStorage.setItem('akwaone_role', r); }catch(e){}
 }
 
 window.currency = getCurrency();

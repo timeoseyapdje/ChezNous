@@ -1,4 +1,4 @@
--- Chez Nous — commandes enregistrées par le serveur après paiement Stripe.
+-- AkwaOne — commandes enregistrées par le serveur après paiement Stripe.
 -- À exécuter après 0002_auth_roles.sql. Les annonces de démo n'ont pas encore de compte vendeur :
 -- le vendeur est donc gardé par son nom en attendant la migration des annonces.
 

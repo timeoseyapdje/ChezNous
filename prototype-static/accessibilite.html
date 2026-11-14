@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Accessibilité — Chez Nous</title>
+<title>Accessibilité — AkwaOne</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
 <script src="assets/i18n-en.js?v=20261105a"></script>
@@ -28,13 +28,13 @@ body{background:#FFFFFF;color:#131A17}
   <p class="text-sm opacity-60 mt-2">Dernière mise à jour : 21 septembre 2026</p>
 
   <div class="bg-forest/10 border border-forest/30 rounded-2xl p-4 mt-6 text-sm">
-    Chez Nous vise la conformité au niveau AA des Web Content Accessibility Guidelines (WCAG) 2.1, référentiel reconnu en France (RGAA), au Canada (Règlement sur l'accessibilité des Ontariens handicapés — LAPHO/AODA) et aux États-Unis (Americans with Disabilities Act — ADA). Un audit d'accessibilité par un expert indépendant est recommandé avant mise en production.
+    AkwaOne vise la conformité au niveau AA des Web Content Accessibility Guidelines (WCAG) 2.1, référentiel reconnu en France (RGAA), au Canada (Règlement sur l'accessibilité des Ontariens handicapés — LAPHO/AODA) et aux États-Unis (Americans with Disabilities Act — ADA). Un audit d'accessibilité par un expert indépendant est recommandé avant mise en production.
   </div>
 
   <div class="prose prose-sm max-w-none mt-8 space-y-6 text-[15px] leading-relaxed opacity-90">
     <section>
       <h2 class="font-display font-bold text-xl">1. Engagement</h2>
-      <p>Chez Nous s'engage à rendre sa plateforme accessible au plus grand nombre, y compris aux personnes en situation de handicap, conformément aux référentiels applicables dans les territoires desservis (France, Canada, États-Unis).</p>
+      <p>AkwaOne s'engage à rendre sa plateforme accessible au plus grand nombre, y compris aux personnes en situation de handicap, conformément aux référentiels applicables dans les territoires desservis (France, Canada, États-Unis).</p>
     </section>
     <section>
       <h2 class="font-display font-bold text-xl">2. Mesures mises en œuvre</h2>
@@ -51,7 +51,7 @@ body{background:#FFFFFF;color:#131A17}
     </section>
     <section>
       <h2 class="font-display font-bold text-xl">4. Signaler un problème d'accessibilité</h2>
-      <p>Si vous rencontrez une difficulté d'accès à un contenu ou une fonctionnalité, merci de nous contacter à <a href="mailto:accessibilite@cheznous.ca" class="text-forest underline">accessibilite@cheznous.ca</a>. Nous nous engageons à répondre dans un délai raisonnable et à corriger les problèmes signalés.</p>
+      <p>Si vous rencontrez une difficulté d'accès à un contenu ou une fonctionnalité, merci de nous contacter à <a href="mailto:accessibilite@akwaone.ca" class="text-forest underline">accessibilite@akwaone.ca</a>. Nous nous engageons à répondre dans un délai raisonnable et à corriger les problèmes signalés.</p>
     </section>
   </div>
 </main>
@@ -60,13 +60,13 @@ body{background:#FFFFFF;color:#131A17}
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
     <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
-        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">A</span> AkwaOne</div>
         <p class="opacity-60 mt-3 leading-relaxed">Boutique en ligne et marketplace de la diaspora africaine, active partout au Canada.</p>
       </div>
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
-          <li><a href="boutique.html" class="hover:underline">Boutique Chez Nous</a></li>
+          <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
           <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
@@ -88,7 +88,7 @@ body{background:#FFFFFF;color:#131A17}
         </ul>
       </div>
     </div>
-    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 AkwaOne Commerce Inc. Tous droits réservés.</div>
   </div>
 </footer>
 
@@ -110,12 +110,12 @@ renderChatWidget();
 
 lucide.createIcons();
 function setCookieConsent(accepted){
-  try{ localStorage.setItem('cheznous_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
+  try{ localStorage.setItem('akwaone_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
   document.getElementById('cookieBanner').classList.add('hidden');
 }
 (function(){
   let consent = null;
-  try{ consent = localStorage.getItem('cheznous_cookie_consent'); }catch(e){}
+  try{ consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
   if(!consent) document.getElementById('cookieBanner').classList.remove('hidden');
 })();
 </script>

@@ -18,16 +18,16 @@ module.exports = async (req, res) => {
     );
     const what = order
       ? `${escapeHtml(order.seller_name)} — ${escapeHtml((order.items || []).map(i => `${i.name} x${i.qty}`).join(', '))}`
-      : 'Votre prochaine commande Chez Nous';
+      : 'Votre prochaine commande AkwaOne';
     const when = order && order.slot ? escapeHtml(order.slot) : 'dans 24 heures';
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'Chez Nous <aide@cheznous.ca>',
+        from: process.env.EMAIL_FROM || 'AkwaOne <aide@akwaone.ca>',
         to: user.email,
-        subject: 'Test — rappel de votre commande Chez Nous',
+        subject: 'Test — rappel de votre commande AkwaOne',
         html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#131A17">
           <h2 style="color:#146B4F">Rappel : votre commande approche</h2>
           <p>${what}</p>

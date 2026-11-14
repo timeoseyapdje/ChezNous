@@ -1,24 +1,24 @@
 // Deux versions du site sur le même code : la démo (boutiques fictives, paiements Stripe en mode test, données
 // dans le navigateur) et le site réel (uniquement des données réelles, stockées dans Supabase).
 // Navigateur : l'adresse décide (« demo. » ou « -demo » dans le nom d'hôte). Sur localhost, ?mode=demo|real.
-// Serveur (fonctions /api) : seule la variable d'environnement CHEZNOUS_MODE=demo active la démo.
-function detectCheznousMode(){
-  if (typeof window === 'undefined') return process.env.CHEZNOUS_MODE === 'demo' ? 'demo' : 'real';
+// Serveur (fonctions /api) : seule la variable d'environnement AKWAONE_MODE=demo active la démo.
+function detectAkwaoneMode(){
+  if (typeof window === 'undefined') return process.env.AKWAONE_MODE === 'demo' ? 'demo' : 'real';
   const host = location.hostname;
   if (/^demo\.|-demo[.-]/.test(host)) return 'demo';
   if (host === 'localhost' || host === '127.0.0.1') {
     const asked = new URLSearchParams(location.search).get('mode');
     try {
-      if (asked === 'demo' || asked === 'real') localStorage.setItem('cheznous_dev_mode', asked);
-      const mode = localStorage.getItem('cheznous_dev_mode') || 'demo';
-      document.cookie = 'cheznous_dev_mode=' + mode + '; path=/';
+      if (asked === 'demo' || asked === 'real') localStorage.setItem('akwaone_dev_mode', asked);
+      const mode = localStorage.getItem('akwaone_dev_mode') || 'demo';
+      document.cookie = 'akwaone_dev_mode=' + mode + '; path=/';
       return mode;
     } catch (e) { return 'demo'; }
   }
   return 'real';
 }
-const CHEZNOUS_MODE = detectCheznousMode();
-const IS_DEMO = CHEZNOUS_MODE === 'demo';
+const AKWAONE_MODE = detectAkwaoneMode();
+const IS_DEMO = AKWAONE_MODE === 'demo';
 
 const DEMO_CATALOG = [
   {id:1, cat:'epicerie', type:'produit', name:'Panier épicerie ouest-africaine', seller:'Épicerie Le Baobab', city:'Montréal', price:38, rating:4.8, reviews:164, plan:'pro', image:'https://i.pravatar.cc/100?img=15', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Attiéké','Gari','Piment scotch bonnet'], desc:'Produits secs et frais importés : attiéké, gari, igname et piment pour vos plats traditionnels.'},
@@ -33,11 +33,11 @@ const DEMO_CATALOG = [
   {id:10, cat:'cuisine', type:'service', name:'Pondu, fufu & poulet mayo', seller:'Chez Mama Élise', city:'Montréal', price:24, rating:4.9, reviews:187, plan:'pro', image:'https://i.pravatar.cc/100?img=9', cover:'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=800&auto=format&fit=crop', tags:['Congolais','Sans arachide'], desc:"Saveurs de Kinshasa cuisinées maison, commande 24h à l'avance, ramassage à Villeray."},
   {id:11, cat:'services', type:'service', name:"Transfert d'argent vers l'Afrique", seller:'TransferPlus Diaspora', city:'Ottawa', price:5, rating:4.6, reviews:112, plan:'basique', image:'https://i.pravatar.cc/100?img=33', cover:'https://images.unsplash.com/photo-1587906697341-bfbde76785c7?q=80&w=800&auto=format&fit=crop', tags:['Frais réduits','Réseau fiable'], desc:"Envoi d'argent rapide et sécurisé vers l'Afrique de l'Ouest et centrale, frais fixes."},
   {id:12, cat:'services', type:'service', name:'DJ & animation événements', seller:'Ambiance Afrobeat Events', city:'Winnipeg', price:150, rating:4.8, reviews:39, plan:'basique', image:'https://i.pravatar.cc/100?img=51', cover:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop', tags:['Mariages','Afrobeat & Coupé-décalé'], desc:'Animation DJ pour mariages, baptêmes et événements communautaires, sonorisation incluse.'},
-  {id:101, channel:'boutique', cat:'epicerie', type:'produit', name:'Panier essentiels Chez Nous', seller:'Chez Nous', city:'Canada', price:45, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Sélection Chez Nous','Expédié par nous'], desc:"Notre sélection d'essentiels de cuisine africaine, préparée et expédiée directement par Chez Nous."},
-  {id:102, channel:'boutique', cat:'epicerie', type:'produit', name:'Coffret épices Chez Nous', seller:'Chez Nous', city:'Canada', price:24, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', tags:['Épices','Coffret cadeau'], desc:"Un coffret d'épices pour les plats traditionnels, sélectionné par notre équipe."},
-  {id:103, channel:'boutique', cat:'mode', type:'produit', name:'Coupon wax Chez Nous (3 yards)', seller:'Chez Nous', city:'Canada', price:39, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1734868032501-448d1457dc38?q=80&w=800&auto=format&fit=crop', tags:['Wax','Collection Chez Nous'], desc:'Coupon de tissu wax de notre collection, idéal pour la couture et la décoration.'},
-  {id:104, channel:'boutique', cat:'beaute', type:'produit', name:'Beurre de karité Chez Nous (250 g)', seller:'Chez Nous', city:'Canada', price:16, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1702650730093-43cfa3237228?q=80&w=800&auto=format&fit=crop', tags:['Soin naturel','Marque Chez Nous'], desc:'Beurre de karité de notre gamme, pour la peau et les cheveux.'},
-  {id:105, channel:'boutique', cat:'artisanat', type:'produit', name:'Bijoux perlés collection Chez Nous', seller:'Chez Nous', city:'Canada', price:29, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1601387603639-387c75bdcb0d?q=80&w=800&auto=format&fit=crop', tags:['Perles','Collection Chez Nous'], desc:'Une sélection de bijoux perlés de notre collection, expédiés par Chez Nous.'}
+  {id:101, channel:'boutique', cat:'epicerie', type:'produit', name:'Panier essentiels AkwaOne', seller:'AkwaOne', city:'Canada', price:45, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', tags:['Sélection AkwaOne','Expédié par nous'], desc:"Notre sélection d'essentiels de cuisine africaine, préparée et expédiée directement par AkwaOne."},
+  {id:102, channel:'boutique', cat:'epicerie', type:'produit', name:'Coffret épices AkwaOne', seller:'AkwaOne', city:'Canada', price:24, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', tags:['Épices','Coffret cadeau'], desc:"Un coffret d'épices pour les plats traditionnels, sélectionné par notre équipe."},
+  {id:103, channel:'boutique', cat:'mode', type:'produit', name:'Coupon wax AkwaOne (3 yards)', seller:'AkwaOne', city:'Canada', price:39, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1734868032501-448d1457dc38?q=80&w=800&auto=format&fit=crop', tags:['Wax','Collection AkwaOne'], desc:'Coupon de tissu wax de notre collection, idéal pour la couture et la décoration.'},
+  {id:104, channel:'boutique', cat:'beaute', type:'produit', name:'Beurre de karité AkwaOne (250 g)', seller:'AkwaOne', city:'Canada', price:16, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1702650730093-43cfa3237228?q=80&w=800&auto=format&fit=crop', tags:['Soin naturel','Marque AkwaOne'], desc:'Beurre de karité de notre gamme, pour la peau et les cheveux.'},
+  {id:105, channel:'boutique', cat:'artisanat', type:'produit', name:'Bijoux perlés collection AkwaOne', seller:'AkwaOne', city:'Canada', price:29, rating:5.0, reviews:0, plan:'officiel', image:'assets/malik-airpods.jpg', cover:'https://images.unsplash.com/photo-1601387603639-387c75bdcb0d?q=80&w=800&auto=format&fit=crop', tags:['Perles','Collection AkwaOne'], desc:'Une sélection de bijoux perlés de notre collection, expédiés par AkwaOne.'}
 ];
 // Le site réel n'affiche que des annonces réelles : aucune boutique de démo n'y apparaît ni n'y est payable.
 const CATALOG = IS_DEMO ? DEMO_CATALOG : [];

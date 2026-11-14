@@ -18,7 +18,7 @@ export function SiteHeader() {
             C
           </div>
           <div className="leading-none">
-            <div className="font-display text-lg font-bold">chez nous</div>
+            <div className="font-display text-lg font-bold">AkwaOne</div>
             <div className="text-[9px] tracking-wider opacity-60">DIASPORA AFRICAINE • CANADA</div>
           </div>
         </Link>
@@ -52,7 +52,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link href="/devenir-vendeur" className="ml-auto shrink-0 font-semibold hover:opacity-80">
-            Vendre sur Chez Nous
+            Vendre sur AkwaOne
           </Link>
         </div>
       </nav>

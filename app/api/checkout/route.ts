@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         {
           price_data: {
             currency: "cad",
-            product_data: { name: description ?? "Commande Chez Nous" },
+            product_data: { name: description ?? "Commande AkwaOne" },
             unit_amount: amountInCents,
           },
           quantity: 1,

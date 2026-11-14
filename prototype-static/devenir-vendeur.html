@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Devenir vendeur — Chez Nous</title>
+<title>Devenir vendeur — AkwaOne</title>
 <link rel="stylesheet" href="assets/tailwind.css">
 <script src="assets/lucide.min.js"></script>
 <script src="assets/i18n-en.js?v=20261105a"></script>
@@ -26,7 +26,7 @@ body{background:#FFFFFF;color:#131A17}
 <main class="max-w-[1000px] mx-auto px-4 md:px-6 py-12">
   <span class="bg-forest text-white text-xs font-bold tracking-widest px-3 py-1 rounded-full">DEVENIR VENDEUR</span>
   <h1 class="font-display font-bold text-3xl md:text-4xl mt-4">Vendez à la diaspora africaine partout au Canada</h1>
-  <p class="text-[15px] opacity-70 mt-3 max-w-[640px]">Rejoignez les vendeurs indépendants de Chez Nous et proposez vos produits ou services à une communauté qui vous connaît déjà. Système d'abonnement simple, sans engagement.</p>
+  <p class="text-[15px] opacity-70 mt-3 max-w-[640px]">Rejoignez les vendeurs indépendants d'AkwaOne et proposez vos produits ou services à une communauté qui vous connaît déjà. Système d'abonnement simple, sans engagement.</p>
 
   <div class="grid md:grid-cols-3 gap-4 mt-8">
     <div class="bg-white border border-line rounded-2xl p-6 flex flex-col">
@@ -99,7 +99,7 @@ body{background:#FFFFFF;color:#131A17}
       </form>
     </div>
     <div>
-      <h2 class="font-display font-bold text-xl">Pourquoi vendre sur Chez Nous</h2>
+      <h2 class="font-display font-bold text-xl">Pourquoi vendre sur AkwaOne</h2>
       <ul class="mt-4 space-y-3 text-sm opacity-80">
         <li class="flex gap-3"><i data-lucide="users" class="w-5 h-5 text-forest shrink-0"></i> Une audience déjà engagée : la diaspora africaine du Canada</li>
         <li class="flex gap-3"><i data-lucide="credit-card" class="w-5 h-5 text-forest shrink-0"></i> Paiements sécurisés et reçus automatiques via Stripe</li>
@@ -116,13 +116,13 @@ body{background:#FFFFFF;color:#131A17}
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
     <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
-        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">C</span> chez nous</div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><span class="w-8 h-8 bg-forest text-white rounded-lg flex items-center justify-center">A</span> AkwaOne</div>
         <p class="opacity-60 mt-3 leading-relaxed">Boutique en ligne et marketplace de la diaspora africaine, active partout au Canada.</p>
       </div>
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
-          <li><a href="boutique.html" class="hover:underline">Boutique Chez Nous</a></li>
+          <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
           <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
@@ -145,7 +145,7 @@ body{background:#FFFFFF;color:#131A17}
         </ul>
       </div>
     </div>
-    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 Chez Nous Commerce Inc. Tous droits réservés.</div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 AkwaOne Commerce Inc. Tous droits réservés.</div>
   </div>
 </footer>
 
@@ -220,7 +220,7 @@ function selectPaymentMethod(id){ selectedPaymentMethod = id; renderPaymentMetho
 // Le rôle vendeur est accordé par Supabase (fonction become_seller) ; le navigateur ne peut pas se l'attribuer.
 async function setSellerProfile(shopName, plan){
   if(IS_DEMO){
-    try{ localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName, plan})); }catch(e){}
+    try{ localStorage.setItem('akwaone_seller_profile', JSON.stringify({shopName, plan})); }catch(e){}
     persistRole('seller');
     return true;
   }
@@ -235,8 +235,8 @@ async function setSellerProfile(shopName, plan){
     return false;
   }
   try{
-    localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName, plan}));
-    localStorage.setItem('cheznous_server_role', data);
+    localStorage.setItem('akwaone_seller_profile', JSON.stringify({shopName, plan}));
+    localStorage.setItem('akwaone_server_role', data);
   }catch(e){}
   persistRole('seller');
   return true;
@@ -300,7 +300,7 @@ async function handlePlanReturn(){
     if(!res.ok) throw new Error(data.error || 'Vérification du paiement impossible.');
     if(!data.paid){ showToast('Paiement en cours de confirmation. Votre formule sera activée dès réception.','info'); return; }
     const label = data.plan==='premium' ? 'Premium' : 'Pro';
-    try{ localStorage.setItem('cheznous_seller_profile', JSON.stringify({shopName: data.shop || 'Ma Boutique', plan: data.plan})); }catch(e){}
+    try{ localStorage.setItem('akwaone_seller_profile', JSON.stringify({shopName: data.shop || 'Ma Boutique', plan: data.plan})); }catch(e){}
     if(!IS_DEMO){
       const profile = await fetchServerProfile();
       if(profile) applyProfileCache(profile);
@@ -344,12 +344,12 @@ function showToast(msg,type='success'){
 }
 
 function setCookieConsent(accepted){
-  try{ localStorage.setItem('cheznous_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
+  try{ localStorage.setItem('akwaone_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
   document.getElementById('cookieBanner').classList.add('hidden');
 }
 (function(){
   let consent = null;
-  try{ consent = localStorage.getItem('cheznous_cookie_consent'); }catch(e){}
+  try{ consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
   if(!consent) document.getElementById('cookieBanner').classList.remove('hidden');
 })();
 </script>

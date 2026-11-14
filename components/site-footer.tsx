@@ -6,8 +6,8 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-10 text-sm md:grid-cols-4 md:px-6">
         <div>
           <div className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest text-white">C</span>
-            chez nous
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest text-white">A</span>
+            AkwaOne
           </div>
           <p className="mt-3 leading-relaxed opacity-60">
             Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.
@@ -35,7 +35,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="mx-auto max-w-[1280px] border-t border-line px-4 py-6 text-xs opacity-50 md:px-6">
-        © {new Date().getFullYear()} Chez Nous Commerce Inc.
+        © {new Date().getFullYear()} AkwaOne Commerce Inc.
       </div>
     </footer>
   );

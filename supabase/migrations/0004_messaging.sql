@@ -1,4 +1,4 @@
--- Chez Nous — messagerie entre membres, stockée dans Supabase.
+-- AkwaOne — messagerie entre membres, stockée dans Supabase.
 -- À exécuter après 0003_orders.sql.
 
 alter table public.messages add column if not exists read_at timestamptz;

@@ -24,19 +24,19 @@ function applyProfileCache(profile){
   const sameUser = known.email && known.email.toLowerCase()===profile.email.toLowerCase();
   if(!sameUser){
     // Autre compte sur le même navigateur : rien de l'ancien compte ne doit rester affiché.
-    try{ ['cheznous_orders','cheznous_messages_v1','cheznous_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    try{ ['akwaone_orders','akwaone_messages_v1','akwaone_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   }
   saveCurrentUser({ ...(sameUser ? known : {}), name: profile.name, email: profile.email });
   try{
-    localStorage.setItem('cheznous_logged_in','1');
-    localStorage.setItem('cheznous_server_role', profile.role);
+    localStorage.setItem('akwaone_logged_in','1');
+    localStorage.setItem('akwaone_server_role', profile.role);
   }catch(e){}
   if(!isRoleAllowed(getRolePersisted(), profile.role)) persistRole('buyer');
 }
 
 function clearSessionCache(){
   try{
-    ['cheznous_logged_in','cheznous_user','cheznous_server_role','cheznous_role','cheznous_messages_v1','cheznous_orders'].forEach(k=>localStorage.removeItem(k));
+    ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_messages_v1','akwaone_orders'].forEach(k=>localStorage.removeItem(k));
   }catch(e){}
 }
 
@@ -66,12 +66,12 @@ const authReady = (async ()=>{
   catch(e){ return { offline:true, profile:null }; }
   if(profile) applyProfileCache(profile); else clearSessionCache();
   let reloaded = false;
-  try{ reloaded = sessionStorage.getItem('cheznous_auth_reload')==='1'; }catch(e){}
+  try{ reloaded = sessionStorage.getItem('akwaone_auth_reload')==='1'; }catch(e){}
   if(before !== authStateSignature() && !reloaded){
-    try{ sessionStorage.setItem('cheznous_auth_reload','1'); }catch(e){}
+    try{ sessionStorage.setItem('akwaone_auth_reload','1'); }catch(e){}
     location.reload();
   } else {
-    try{ sessionStorage.removeItem('cheznous_auth_reload'); }catch(e){}
+    try{ sessionStorage.removeItem('akwaone_auth_reload'); }catch(e){}
   }
   if(profile) syncUnreadMessages();
   return { offline:false, profile };
@@ -95,7 +95,7 @@ async function syncUnreadMessages(){
   try{
     const { data, error } = await sb.rpc('my_conversations');
     if(error) return;
-    localStorage.setItem('cheznous_messages_v1', JSON.stringify(data.filter(r=>Number(r.unread)>0).map(r=>({
+    localStorage.setItem('akwaone_messages_v1', JSON.stringify(data.filter(r=>Number(r.unread)>0).map(r=>({
       id:r.partner_id, name:r.partner_name, unread:Number(r.unread), messages:[{text:r.last_body, time:''}]
     }))));
     if(typeof refreshNotifBadge==='function') refreshNotifBadge();

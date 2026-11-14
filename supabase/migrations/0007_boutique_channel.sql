@@ -1,4 +1,4 @@
--- Chez Nous — deux espaces : la boutique (produits de Chez Nous) et la marketplace (vendeurs indépendants).
+-- AkwaOne — deux espaces : la boutique (produits d'AkwaOne) et la marketplace (vendeurs indépendants).
 -- À exécuter après 0006_listings.sql dans l'éditeur SQL Supabase.
 
 alter table public.listings add column if not exists channel text not null default 'marketplace';

@@ -1,6 +1,6 @@
 // Messagerie de la démo : conversations fictives gardées dans ce navigateur (aucun envoi réel).
 document.getElementById('newChatForm').style.display = 'none';
-const STORE_KEY = 'cheznous_messages_v1';
+const STORE_KEY = 'akwaone_messages_v1';
 const DEFAULT_CONVERSATIONS = [
   {id:'natural-roots', name:'Natural Roots Hair Studio', unread:1, messages:[
     {from:'them', text:"Vos tresses sont prévues pour 3h, box braids mi-longues c'est bien ça ?", time:'10:40'},

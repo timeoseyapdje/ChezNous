@@ -1,4 +1,4 @@
--- Chez Nous — abonnements vendeur (formules Pro et Premium) payés par Stripe.
+-- AkwaOne — abonnements vendeur (formules Pro et Premium) payés par Stripe.
 -- À exécuter après 0004_messaging.sql.
 
 -- Table séparée de profiles : un propriétaire peut modifier son profil, il ne doit jamais pouvoir s'attribuer une formule.
