@@ -12,7 +12,7 @@ function isLoggedIn(){
   }
   const style = document.createElement('style');
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
-  const overlays = ['#akwaNotice','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu','#prefsMenu'];
+  const overlays = ['#confirmModal','#akwaNotice','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu','#prefsMenu'];
   style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #malikBtn, body:has(${o}:not(.hidden)) #malikBox`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
@@ -892,7 +892,50 @@ function togglePrefsMenu(){
 }
 document.addEventListener('DOMContentLoaded', setupMobilePrefs);
 
+// Fenêtre de confirmation du site (remplace confirm() du navigateur). Renvoie une promesse : true si l'action est confirmée.
+function confirmDialog({ title, message, confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false, icon = 'help-circle' }){
+  return new Promise(resolve=>{
+    const prev = document.activeElement;
+    const wrap = document.createElement('div');
+    wrap.id = 'confirmModal';
+    wrap.className = 'fixed inset-0 flex items-center justify-center p-4';
+    wrap.style.zIndex = '90';
+    wrap.setAttribute('role','dialog');
+    wrap.setAttribute('aria-modal','true');
+    wrap.innerHTML = `
+      <div data-close class="absolute inset-0" style="background:rgba(0,0,0,.5)"></div>
+      <div class="relative bg-white text-ink rounded-2xl shadow-2xl w-full p-6" style="max-width:400px">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center ${danger ? 'bg-red-50 text-red-600' : 'bg-sand'}"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+        <h2 id="confirmTitle" class="font-display font-bold text-xl mt-4">${escapeHtmlGlobal(title)}</h2>
+        ${message ? `<p class="text-sm opacity-70 mt-2 leading-relaxed">${escapeHtmlGlobal(message)}</p>` : ''}
+        <div class="flex gap-2 mt-6">
+          <button data-close class="flex-1 border border-line rounded-full py-2.5 text-sm font-semibold hover:bg-sand">${escapeHtmlGlobal(cancelLabel)}</button>
+          <button data-ok class="flex-1 rounded-full py-2.5 text-sm font-bold text-white ${danger ? 'bg-red-600 hover:brightness-110' : 'bg-forest hover:brightness-110'}">${escapeHtmlGlobal(confirmLabel)}</button>
+        </div>
+      </div>`;
+    wrap.setAttribute('aria-labelledby','confirmTitle');
+    const close = (ok)=>{ document.removeEventListener('keydown', onKey); wrap.remove(); if(prev && prev.focus) prev.focus(); resolve(ok); };
+    const onKey = (e)=>{ if(e.key==='Escape') close(false); };
+    wrap.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click', ()=>close(false)));
+    wrap.querySelector('[data-ok]').addEventListener('click', ()=>close(true));
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(wrap);
+    if(typeof lucide !== 'undefined') lucide.createIcons({ root: wrap });
+    wrap.querySelector('[data-ok]').focus();
+  });
+}
+
 async function logoutGlobal(everywhere){
+  const ok = await confirmDialog(everywhere ? {
+    title: 'Se déconnecter de tous les appareils ?',
+    message: 'Vous serez déconnecté ici et sur tous vos autres appareils (téléphone, tablette, ordinateur). Il faudra vous reconnecter partout.',
+    confirmLabel: 'Tout déconnecter', danger: true, icon: 'log-out'
+  } : {
+    title: 'Se déconnecter ?',
+    message: 'Vous devrez saisir à nouveau vos identifiants pour accéder à votre compte, vos commandes et vos messages.',
+    confirmLabel: 'Se déconnecter', icon: 'log-out'
+  });
+  if(!ok) return;
   if(typeof signOutEverywhere==='function') await signOutEverywhere(everywhere);
   try{ ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_orders','akwaone_messages_v1','akwaone_seller_profile','akwaone_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   window.location.href = 'index.html';
