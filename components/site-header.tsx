@@ -15,7 +15,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 py-3 md:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white font-display font-black text-ink">
-            C
+            A
           </div>
           <div className="leading-none">
             <div className="font-display text-lg font-bold">AkwaOne</div>

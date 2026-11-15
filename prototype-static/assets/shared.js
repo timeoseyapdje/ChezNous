@@ -644,7 +644,7 @@ function renderSiteHeader(active){
   <header class="bg-ink text-white">
     <div class="max-w-[1400px] mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
       <a href="index.html" class="flex items-center gap-2 shrink-0">
-        <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
+        <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">A</div>
         <div class="leading-none">
           <div class="font-display font-bold text-lg">AkwaOne</div>
           <div class="text-[9px] opacity-60 tracking-wider">DIASPORA AFRICAINE • CANADA</div>
