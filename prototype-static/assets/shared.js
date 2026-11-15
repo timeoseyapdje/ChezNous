@@ -396,7 +396,75 @@ function safeUrl(url){
 }
 // Image fournie par un vendeur : https uniquement, une adresse http serait bloquée sur un site https.
 function safeImageUrl(url){
-  return /^(https:\/\/|assets\/)/i.test(String(url||'')) ? String(url) : '';
+  return /^(https:\/\/|assets\/|data:image\/(jpeg|png|webp);base64,)/i.test(String(url||'')) ? String(url) : '';
+}
+
+// Photo déposée par le vendeur : redimensionnée et recompressée en JPEG dans le navigateur (photo plus légère, sans données EXIF).
+const LISTING_IMAGE_TYPES = ['image/jpeg','image/png','image/webp'];
+const LISTING_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+function checkListingImage(file){
+  if(!file) return '';
+  if(!LISTING_IMAGE_TYPES.includes(file.type)) return 'Format non pris en charge : choisissez une photo JPG, PNG ou WebP.';
+  if(file.size > LISTING_IMAGE_MAX_BYTES) return 'Photo trop lourde (10 Mo maximum).';
+  return '';
+}
+function shrinkImage(file, maxSide, quality){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b=> b ? resolve({ blob: b, canvas }) : reject(new Error('Photo illisible.')), 'image/jpeg', quality);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Photo illisible.')); };
+    img.src = url;
+  });
+}
+// Démo : la photo reste dans le navigateur (format data:, plus petite). Site réel : déposée dans Supabase Storage.
+async function uploadListingImage(file){
+  const problem = checkListingImage(file);
+  if(problem) throw new Error(problem);
+  if(IS_DEMO){
+    const { canvas } = await shrinkImage(file, 800, 0.72);
+    return canvas.toDataURL('image/jpeg', 0.72);
+  }
+  if(typeof sb === 'undefined' || !sb) throw new Error('Connexion requise pour déposer une photo.');
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) throw new Error('Connexion requise pour déposer une photo.');
+  const { blob } = await shrinkImage(file, 1600, 0.85);
+  const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const { error } = await sb.storage.from('listing-images').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+  if(error) throw new Error("La photo n'a pas pu être envoyée. Vérifiez que la migration 0009 (photos des annonces) a été exécutée dans Supabase.");
+  return sb.storage.from('listing-images').getPublicUrl(path).data.publicUrl;
+}
+// Zone de dépôt : aperçu immédiat de la photo choisie ou glissée.
+function previewListingImage(input){
+  const zone = input.closest('[data-photo-zone]');
+  const preview = zone.querySelector('img');
+  const label = zone.querySelector('[data-photo-label]');
+  const file = input.files && input.files[0];
+  const problem = checkListingImage(file);
+  if(problem){ input.value=''; showToast(problem,'error'); }
+  if(!file || problem){ preview.classList.add('hidden'); preview.removeAttribute('src'); label.textContent = label.dataset.empty; return; }
+  if(preview.dataset.url) URL.revokeObjectURL(preview.dataset.url);
+  preview.dataset.url = URL.createObjectURL(file);
+  preview.src = preview.dataset.url;
+  preview.classList.remove('hidden');
+  label.textContent = file.name;
+}
+function resetListingImage(id){
+  const input = document.getElementById(id);
+  if(!input) return;
+  input.value = '';
+  previewListingImage(input);
 }
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop';
 const DEFAULT_AVATAR = 'https://i.pravatar.cc/100?img=48';

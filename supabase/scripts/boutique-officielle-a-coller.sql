@@ -1,4 +1,4 @@
--- AkwaOne — À COLLER EN UNE FOIS dans l'éditeur SQL Supabase : migration 0008 puis script du compte boutique.
+-- AkwaOne — À COLLER EN UNE FOIS dans l'éditeur SQL Supabase : migrations 0008 et 0009, puis script du compte boutique.
 -- Le compte boutique@akwaone.ca existe déjà : pas besoin de mot de passe, il est conservé.
 
 -- ===== 1. Migration 0008 : boutique officielle =====
@@ -48,7 +48,37 @@ create policy "Sellers update their listings" on public.listings
     and (public.is_admin() or (channel = 'boutique') = public.is_official_shop())
   );
 
--- ===== 2. Compte boutique@akwaone.ca : vendeur + boutique officielle + Premium =====
+-- ===== 2. Migration 0009 : photos des annonces (Supabase Storage) =====
+-- AkwaOne — photos des annonces déposées depuis le tableau de bord (Supabase Storage).
+-- À exécuter après 0008_official_shop.sql dans l'éditeur SQL Supabase.
+
+-- Bucket public en lecture (les photos s'affichent sur le site), 5 Mo maximum, images uniquement.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('listing-images', 'listing-images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- Dépôt : un vendeur connecté écrit uniquement dans son propre dossier (<son id>/fichier.jpg).
+drop policy if exists "Sellers upload listing images" on storage.objects;
+create policy "Sellers upload listing images" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'listing-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_seller()
+  );
+
+-- Suppression : chacun ne retire que ses propres photos ; un administrateur peut tout retirer.
+drop policy if exists "Sellers delete their listing images" on storage.objects;
+create policy "Sellers delete their listing images" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'listing-images'
+    and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+  );
+-- Pas de politique select : les photos se lisent par leur adresse publique, sans pouvoir lister le dossier des autres.
+
+-- ===== 3. Compte boutique@akwaone.ca : vendeur + boutique officielle + Premium =====
 -- AkwaOne — compte officiel de la boutique AkwaOne, avec la formule vendeur Premium offerte (sans Stripe).
 -- Remplacez le mot de passe ci-dessous, puis exécutez ce script dans l'éditeur SQL Supabase.
 -- À exécuter après la migration 0008_official_shop.sql.

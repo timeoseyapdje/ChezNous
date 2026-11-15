@@ -84,7 +84,12 @@ body{background:#FFFFFF;color:#131A17}
               <option value="service">Service</option>
             </select>
           </div>
-          <input id="itemCover" placeholder="URL de la photo en https (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+          <label data-photo-zone class="relative flex items-center gap-3 w-full border-2 border-dashed border-line rounded-xl px-3 py-3 bg-white cursor-pointer hover:border-forest">
+            <input id="itemCover" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewListingImage(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <img class="hidden w-14 h-14 rounded-lg object-cover shrink-0" alt="">
+            <span class="w-10 h-10 rounded-full bg-sand flex items-center justify-center shrink-0"><i data-lucide="image-plus" class="w-5 h-5"></i></span>
+            <span class="text-sm min-w-0"><span data-photo-label data-empty="Déposer une photo (optionnel)" class="font-semibold block truncate">Déposer une photo (optionnel)</span><span class="text-xs opacity-60">Cliquez ou glissez une image — JPG, PNG ou WebP, 10 Mo max</span></span>
+          </label>
           <textarea id="itemDesc" maxlength="2000" placeholder="Description (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none h-20"></textarea>
           <div class="flex gap-2">
             <button onclick="addSellerItem()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier l'annonce</button>
@@ -153,7 +158,12 @@ body{background:#FFFFFF;color:#131A17}
           <input id="bPrice" type="number" min="0" step="0.01" placeholder="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
         </div>
         <select id="bCat" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white"></select>
-        <input id="bCover" placeholder="URL de la photo (https, optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none">
+        <label data-photo-zone class="relative flex items-center gap-3 w-full border-2 border-dashed border-line rounded-xl px-3 py-3 bg-white cursor-pointer hover:border-forest">
+            <input id="bCover" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewListingImage(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <img class="hidden w-14 h-14 rounded-lg object-cover shrink-0" alt="">
+            <span class="w-10 h-10 rounded-full bg-sand flex items-center justify-center shrink-0"><i data-lucide="image-plus" class="w-5 h-5"></i></span>
+            <span class="text-sm min-w-0"><span data-photo-label data-empty="Déposer une photo (optionnel)" class="font-semibold block truncate">Déposer une photo (optionnel)</span><span class="text-xs opacity-60">Cliquez ou glissez une image — JPG, PNG ou WebP, 10 Mo max</span></span>
+          </label>
         <textarea id="bDesc" placeholder="Description" maxlength="2000" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none h-20"></textarea>
         <div class="flex gap-2">
           <button onclick="addBoutiqueProduct()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier dans la boutique</button>
@@ -370,9 +380,13 @@ async function addSellerItem(){
   const price = Math.round(parseFloat(document.getElementById('itemPrice').value)*100)/100;
   const desc = document.getElementById('itemDesc').value.trim();
   if(!name || !price || price<=0 || price>100000){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
-  const cover = document.getElementById('itemCover').value.trim();
-  if(cover && !safeImageUrl(cover)){ showToast("L'adresse de l'image doit commencer par https://",'error'); return; }
   if(containsProhibited(name) || containsProhibited(desc)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
+  const photo = document.getElementById('itemCover').files[0];
+  let cover = '';
+  if(photo){
+    try{ showToast('Envoi de la photo…','info'); cover = await uploadListingImage(photo); }
+    catch(err){ showToast(esc(err.message),'error'); return; }
+  }
   const profile = getSellerProfile();
   const item = {
     cat: document.getElementById('itemCat').value,
@@ -396,7 +410,8 @@ async function addSellerItem(){
     if(error){ showToast("L'annonce n'a pas pu être publiée. Réessayez dans un instant.",'error'); return; }
     await Promise.all([loadSellerData(), loadRemoteListings()]);
   }
-  ['itemName','itemPrice','itemCover','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  ['itemName','itemPrice','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  resetListingImage('itemCover');
   toggleAddItemForm();
   renderSellerView();
   showToast(sellerRemote.official
@@ -489,11 +504,15 @@ async function addBoutiqueProduct(){
   const name = document.getElementById('bName').value.trim();
   const price = parseFloat(document.getElementById('bPrice').value);
   const cat = document.getElementById('bCat').value;
-  const cover = document.getElementById('bCover').value.trim();
   const desc = document.getElementById('bDesc').value.trim();
   if(!name || !price || price<=0){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
   if(containsProhibited(name) || containsProhibited(desc)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
-  if(cover && !/^https:\/\//i.test(cover)){ showToast("La photo doit être une adresse https.",'error'); return; }
+  const photo = document.getElementById('bCover').files[0];
+  let cover = '';
+  if(photo){
+    try{ showToast('Envoi de la photo…','info'); cover = await uploadListingImage(photo); }
+    catch(err){ showToast(esc(err.message),'error'); return; }
+  }
   if(IS_DEMO){
     const extras = getBoutiqueDemoExtras();
     extras.push({ id: Date.now(), channel:'boutique', cat, type:'produit', name, price, desc, seller:'AkwaOne', city:'Canada', rating:5, reviews:0, plan:'officiel', tags:[], image:'assets/malik-airpods.jpg', cover: cover || DEFAULT_COVER });
@@ -506,7 +525,8 @@ async function addBoutiqueProduct(){
     if(error){ showToast("Le produit n'a pas pu être publié. Vérifiez que la migration 0007 (canal boutique) a été exécutée dans Supabase.",'error'); return; }
     await loadRemoteListings();
   }
-  ['bName','bPrice','bCover','bDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  ['bName','bPrice','bDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  resetListingImage('bCover');
   toggleBoutiqueForm();
   renderAdminBoutique();
   showToast("Produit publié dans la <a href='boutique.html' class='underline'>Boutique AkwaOne</a>.",'success');
