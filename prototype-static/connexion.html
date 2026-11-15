@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Se connecter — AkwaOne</title>
-<link rel="stylesheet" href="assets/tailwind.css?v=20261115c">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261115d">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261115c"></script>
-<script src="assets/catalog.js?v=20261115c"></script>
-<script src="assets/shared.js?v=20261115c"></script>
+<script src="assets/i18n-en.js?v=20261115d"></script>
+<script src="assets/catalog.js?v=20261115d"></script>
+<script src="assets/shared.js?v=20261115d"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261115c"></script>
-<script src="assets/passkey.js?v=20261115c"></script>
+<script src="assets/auth.js?v=20261115d"></script>
+<script src="assets/passkey.js?v=20261115d"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -323,14 +323,29 @@ authReady.then(r=>{
   else if(r && r.profile) window.location.replace(returnTarget());
 });
 if(!IS_DEMO && !passkeysSupported()) document.getElementById('passkeyLogin').remove();
-// Google et Facebook ne sont pas activés dans Supabase : le site réel ne propose que le courriel.
-if(!IS_DEMO){
-  document.getElementById('oauthBlock').remove();
-  document.getElementById('oauthNote').remove();
+// Google et Facebook : connexion OAuth gérée par Supabase (fournisseurs à activer dans Supabase → Authentication → Providers).
+if(!IS_DEMO) document.getElementById('oauthNote').remove();
+async function oauthSignIn(provider){
+  const label = provider==='google' ? 'Google' : 'Facebook';
+  if(IS_DEMO){ showToast(`Version démo : la connexion ${label} n'est pas disponible.`, 'info'); return; }
+  if(!sb) return;
+  const { error } = await sb.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: new URL('connexion.html?retour=' + encodeURIComponent(returnTarget()), location.href).href,
+      scopes: provider==='facebook' ? 'email public_profile' : undefined
+    }
+  });
+  if(error) showFormMessage('loginError', `La connexion ${label} n'est pas disponible pour le moment.`);
 }
-function oauthSignIn(provider){
-  showToast(`Version démo : la connexion ${provider==='google'?'Google':'Facebook'} n'est pas disponible.`, 'info');
-}
+// Retour de Google ou Facebook avec une erreur (accès refusé, fournisseur non activé…).
+(function showOauthError(){
+  const params = new URLSearchParams(location.search + '&' + location.hash.replace(/^#/, ''));
+  const err = params.get('error_description') || params.get('error');
+  if(!err) return;
+  const refused = /access_denied|denied|cancel/i.test(err);
+  showFormMessage('loginError', refused ? 'Connexion annulée.' : 'La connexion avec ce compte a échoué. Réessayez ou utilisez votre courriel.');
+})();
 function showToast(msg, type='info'){
   const c = document.getElementById('toasts');
   const el = document.createElement('div');
