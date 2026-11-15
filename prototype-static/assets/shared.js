@@ -854,7 +854,7 @@ function toggleAccountMenu(){
         <div class="text-xs opacity-60 truncate">${escapeHtmlGlobal([user.email, ROLE_NAMES[role]].filter(Boolean).join(' • '))}</div>
       </div>
     </div>
-    ${item('profil.html','user','Mon profil')}
+    ${item('profil.html','settings','Paramètres')}
     ${item('mes-commandes.html','package','Mes commandes')}
     ${item('messagerie.html','message-square','Messagerie')}
     ${role==='seller' || role==='admin' ? item('tableau-de-bord.html','layout-dashboard','Tableau de bord') : item('devenir-vendeur.html','store','Ouvrir ma boutique')}
