@@ -114,7 +114,7 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </footer>
 
-<div id="cookieBanner" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
+<div id="akwaNotice" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
   <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
     <p class="text-xs md:text-sm opacity-80 flex-1">Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre consentement, des cookies de mesure d'audience et de publicité. <a href="cookies.html" class="underline">En savoir plus</a>.</p>
     <div class="flex gap-2 shrink-0">
@@ -133,12 +133,12 @@ renderChatWidget();
 lucide.createIcons();
 function setCookieConsent(accepted){
   try{ localStorage.setItem('akwaone_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
-  document.getElementById('cookieBanner').classList.add('hidden');
+  document.getElementById('akwaNotice').classList.add('hidden');
 }
 (function(){
   let consent = null;
   try{ consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
-  if(!consent) document.getElementById('cookieBanner').classList.remove('hidden');
+  if(!consent) document.getElementById('akwaNotice').classList.remove('hidden');
 })();
 </script>
 </body>
