@@ -11,7 +11,10 @@ async function fetchServerProfile(){
   if(!session) return null;
   const { data, error } = await sb.from('profiles').select('full_name, role').eq('id', session.user.id).maybeSingle();
   if(error) console.warn('profil Supabase :', error.message);
+  // Boutique officielle AkwaOne : compte vendeur unique, sans mode acheteur.
+  const shop = await sb.from('official_shops').select('seller_id').eq('seller_id', session.user.id).maybeSingle();
   return {
+    officialShop: !!(shop && shop.data),
     id: session.user.id,
     email: session.user.email,
     name: (data && data.full_name) || (session.user.user_metadata && session.user.user_metadata.full_name) || nameFromEmail(session.user.email),
@@ -30,13 +33,15 @@ function applyProfileCache(profile){
   try{
     localStorage.setItem('akwaone_logged_in','1');
     localStorage.setItem('akwaone_server_role', profile.role);
+    if(profile.officialShop) localStorage.setItem('akwaone_official_shop','1'); else localStorage.removeItem('akwaone_official_shop');
   }catch(e){}
-  if(!isRoleAllowed(getRolePersisted(), profile.role)) persistRole('buyer');
+  if(profile.officialShop) persistRole('seller');
+  else if(!isRoleAllowed(getRolePersisted(), profile.role)) persistRole('buyer');
 }
 
 function clearSessionCache(){
   try{
-    ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_messages_v1','akwaone_orders'].forEach(k=>localStorage.removeItem(k));
+    ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_official_shop','akwaone_messages_v1','akwaone_orders'].forEach(k=>localStorage.removeItem(k));
   }catch(e){}
 }
 
