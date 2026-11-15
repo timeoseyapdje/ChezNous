@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mon profil — AkwaOne</title>
-<link rel="stylesheet" href="assets/tailwind.css?v=20261115a">
+<title>Paramètres — AkwaOne</title>
+<link rel="stylesheet" href="assets/tailwind.css?v=20261115b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261115a"></script>
-<script src="assets/catalog.js?v=20261115a"></script>
-<script src="assets/shared.js?v=20261115a"></script>
+<script src="assets/i18n-en.js?v=20261115b"></script>
+<script src="assets/catalog.js?v=20261115b"></script>
+<script src="assets/shared.js?v=20261115b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261115a"></script>
-<script src="assets/passkey.js?v=20261115a"></script>
+<script src="assets/auth.js?v=20261115b"></script>
+<script src="assets/passkey.js?v=20261115b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -22,23 +22,46 @@ body{background:#FFFFFF;color:#131A17}
 .form-msg{font-size:13px;border-radius:12px;padding:10px 12px;margin-top:12px}
 .form-msg.ok{background:rgba(20,107,79,.1);color:#146B4F}
 .form-msg.err{background:#FEF2F2;color:#B91C1C}
+.settings-layout{display:grid;gap:1.5rem}
+.settings-nav{display:flex;gap:4px;overflow-x:auto;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+.settings-nav::-webkit-scrollbar{display:none}
+.settings-tab{display:flex;align-items:center;gap:10px;white-space:nowrap;font-size:14px;font-weight:500;padding:8px 12px;border-radius:10px;color:#131A17;opacity:.65;text-align:left}
+.settings-tab:hover{background:#F6F3EE;opacity:1}
+.settings-tab.active{background:#F6F3EE;opacity:1;font-weight:700}
+@media (min-width:768px){
+  .settings-layout{grid-template-columns:220px minmax(0,1fr);gap:2.5rem}
+  .settings-nav{flex-direction:column;overflow:visible;margin:0;padding:0;position:sticky;top:24px;align-self:start}
+}
 </style>
 </head>
 <body class="font-sans antialiased">
 
 <div id="siteHeaderMount"></div>
 
-<main class="max-w-[900px] mx-auto px-4 md:px-6 py-10" style="padding-bottom:7rem">
+<main class="max-w-[1100px] mx-auto px-4 md:px-6 py-10" style="padding-bottom:7rem">
   <div class="flex items-center gap-4">
-    <span id="profileAvatar" class="w-16 h-16 rounded-full bg-forest text-white text-xl font-bold flex items-center justify-center shrink-0"></span>
+    <span id="profileAvatar" class="w-14 h-14 rounded-full bg-forest text-white text-lg font-bold flex items-center justify-center shrink-0"></span>
     <div class="min-w-0">
-      <h1 class="font-display font-bold text-2xl md:text-3xl">Mon profil</h1>
+      <h1 class="font-display font-bold text-2xl md:text-3xl">Paramètres</h1>
       <p id="profileSummary" class="text-sm opacity-60 mt-1 truncate"></p>
     </div>
   </div>
 
-  <div class="grid md:grid-cols-2 gap-4 mt-8">
-    <form id="identityForm" onsubmit="return saveIdentity(event)" class="bg-white border border-line rounded-2xl p-6">
+  <div class="settings-layout mt-8">
+    <nav id="settingsNav" class="settings-nav" aria-label="Sections des paramètres">
+      <button type="button" data-tab="compte" onclick="showTab('compte')" class="settings-tab"><i data-lucide="user" class="w-4 h-4 shrink-0"></i><span>Compte</span></button>
+      <button type="button" data-tab="connexion" onclick="showTab('connexion')" class="settings-tab"><i data-lucide="lock" class="w-4 h-4 shrink-0"></i><span>Courriel et mot de passe</span></button>
+      <button type="button" data-tab="securite" onclick="showTab('securite')" class="settings-tab"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i><span>Sécurité</span></button>
+      <button type="button" data-tab="notifications" onclick="showTab('notifications')" class="settings-tab"><i data-lucide="bell" class="w-4 h-4 shrink-0"></i><span>Notifications</span></button>
+      <button type="button" data-tab="paiements" onclick="showTab('paiements')" class="settings-tab"><i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i><span>Paiements</span></button>
+      <button type="button" data-tab="session" onclick="showTab('session')" class="settings-tab"><i data-lucide="log-out" class="w-4 h-4 shrink-0"></i><span>Session</span></button>
+    </nav>
+    <div class="min-w-0">
+      <section id="tab-compte" data-panel="compte" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Compte</h2>
+        <p class="text-sm opacity-60 mt-1">Votre nom, votre téléphone, votre ville et votre activité sur AkwaOne.</p>
+        <div class="space-y-4 mt-6">
+<form id="identityForm" onsubmit="return saveIdentity(event)" class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i> Informations personnelles</h2>
       <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOM COMPLET</label>
       <input id="fullName" required maxlength="80" class="field" autocomplete="name">
@@ -49,17 +72,28 @@ body{background:#FFFFFF;color:#131A17}
       <button id="identitySubmit" type="submit" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer</button>
       <div id="identityMsg" class="form-msg hidden"></div>
     </form>
-
-    <div class="space-y-4">
-      <form id="emailForm" onsubmit="return saveEmail(event)" class="bg-white border border-line rounded-2xl p-6">
+<div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="store" class="w-5 h-5"></i> Mon activité</h2>
+      <div id="activityBox" class="text-sm mt-4 space-y-2"></div>
+      <div class="grid grid-cols-2 gap-2 mt-5 text-sm">
+        <a href="mes-commandes.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
+        <a href="messagerie.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="message-square" class="w-4 h-4"></i> Messagerie</a>
+      </div>
+    </div>
+        </div>
+      </section>
+      <section id="tab-connexion" data-panel="connexion" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Courriel et mot de passe</h2>
+        <p class="text-sm opacity-60 mt-1">L'adresse et le mot de passe qui servent à vous connecter.</p>
+        <div class="space-y-4 mt-6">
+<form id="emailForm" onsubmit="return saveEmail(event)" class="bg-white border border-line rounded-2xl p-6">
         <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5"></i> Courriel</h2>
         <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">ADRESSE DE CONNEXION</label>
         <input id="email" type="email" required maxlength="200" class="field" autocomplete="email">
         <button id="emailSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer de courriel</button>
         <div id="emailMsg" class="form-msg hidden"></div>
       </form>
-
-      <form id="passwordForm" onsubmit="return savePassword(event)" class="bg-white border border-line rounded-2xl p-6">
+<form id="passwordForm" onsubmit="return savePassword(event)" class="bg-white border border-line rounded-2xl p-6">
         <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Mot de passe</h2>
         <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOUVEAU MOT DE PASSE</label>
         <input id="newPassword" type="password" required minlength="8" class="field" autocomplete="new-password" placeholder="8 caractères minimum">
@@ -68,36 +102,13 @@ body{background:#FFFFFF;color:#131A17}
         <button id="passwordSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer le mot de passe</button>
         <div id="passwordMsg" class="form-msg hidden"></div>
       </form>
-    </div>
-  </div>
-
-  <div class="grid md:grid-cols-2 gap-4 mt-4">
-    <div class="bg-white border border-line rounded-2xl p-6">
-      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</h2>
-      <label class="flex items-start gap-3 mt-4 text-sm cursor-pointer">
-        <input id="notifEmail" type="checkbox" class="mt-1">
-        <span>Courriels de suivi : confirmation, annulation et rappel 24 h avant chaque rendez-vous.</span>
-      </label>
-      <label class="flex items-start gap-3 mt-3 text-sm cursor-pointer">
-        <input id="notifSms" type="checkbox" class="mt-1">
-        <span>Rappels par SMS (numéro de téléphone requis).</span>
-      </label>
-      <button id="notifSubmit" onclick="saveNotifications()" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer mes préférences</button>
-      <div id="notifMsg" class="form-msg hidden"></div>
-    </div>
-
-    <div class="bg-white border border-line rounded-2xl p-6">
-      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="store" class="w-5 h-5"></i> Mon activité</h2>
-      <div id="activityBox" class="text-sm mt-4 space-y-2"></div>
-      <div class="grid grid-cols-2 gap-2 mt-5 text-sm">
-        <a href="mes-commandes.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
-        <a href="messagerie.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="message-square" class="w-4 h-4"></i> Messagerie</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid md:grid-cols-2 gap-4 mt-4">
-    <div class="bg-white border border-line rounded-2xl p-6">
+        </div>
+      </section>
+      <section id="tab-securite" data-panel="securite" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Sécurité</h2>
+        <p class="text-sm opacity-60 mt-1">Double authentification et connexion sans mot de passe.</p>
+        <div class="space-y-4 mt-6">
+<div class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5"></i> Double authentification (A2F)</h2>
       <p class="text-sm opacity-70 mt-2">À chaque connexion, un code à 6 chiffres de votre application d'authentification (Google Authenticator, Authy, 1Password…) est demandé en plus du mot de passe.</p>
       <div id="mfaStatus" class="text-sm font-semibold mt-4">Chargement…</div>
@@ -115,35 +126,59 @@ body{background:#FFFFFF;color:#131A17}
       <button id="mfaToggleBtn" onclick="toggleMfa()" class="hidden w-full mt-4 rounded-full py-2.5 text-sm font-bold"></button>
       <div id="mfaMsg" class="form-msg hidden"></div>
     </div>
-
-    <div class="bg-white border border-line rounded-2xl p-6">
+<div class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5"></i> Clés d'accès</h2>
       <p class="text-sm opacity-70 mt-2">Connectez-vous sans mot de passe avec l'empreinte digitale, le visage ou le code de votre appareil (Face ID, Touch ID, Windows Hello, Android).</p>
       <div id="passkeyList" class="mt-4 space-y-2 text-sm"></div>
       <button id="passkeyCreateBtn" onclick="addPasskey()" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Créer une clé d'accès</button>
       <div id="passkeyMsg" class="form-msg hidden"></div>
     </div>
-  </div>
-
-  <div id="paiements" class="grid md:grid-cols-2 gap-4 mt-4">
-    <div id="buyerPayBox" class="bg-white border border-line rounded-2xl p-6">
+        </div>
+      </section>
+      <section id="tab-notifications" data-panel="notifications" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Notifications</h2>
+        <p class="text-sm opacity-60 mt-1">Choisissez comment AkwaOne vous tient informé.</p>
+        <div class="space-y-4 mt-6">
+<div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</h2>
+      <label class="flex items-start gap-3 mt-4 text-sm cursor-pointer">
+        <input id="notifEmail" type="checkbox" class="mt-1">
+        <span>Courriels de suivi : confirmation, annulation et rappel 24 h avant chaque rendez-vous.</span>
+      </label>
+      <label class="flex items-start gap-3 mt-3 text-sm cursor-pointer">
+        <input id="notifSms" type="checkbox" class="mt-1">
+        <span>Rappels par SMS (numéro de téléphone requis).</span>
+      </label>
+      <button id="notifSubmit" onclick="saveNotifications()" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer mes préférences</button>
+      <div id="notifMsg" class="form-msg hidden"></div>
+    </div>
+        </div>
+      </section>
+      <section id="tab-paiements" data-panel="paiements" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Paiements</h2>
+        <p class="text-sm opacity-60 mt-1">Vos moyens de paiement et, pour les vendeurs, le compte qui reçoit vos ventes.</p>
+        <div class="space-y-4 mt-6">
+<div id="buyerPayBox" class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i> Mes moyens de paiement</h2>
       <p class="text-sm opacity-70 mt-2">Enregistrez une carte pour payer plus vite. Elle est conservée par Stripe : AkwaOne ne voit jamais votre numéro de carte.</p>
       <div id="payMethods" class="mt-4 space-y-2 text-sm"></div>
       <button id="addMethodBtn" onclick="addPaymentMethod()" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter une carte</button>
       <div id="payMsg" class="form-msg hidden"></div>
     </div>
-
-    <div id="sellerPayBox" class="hidden bg-white border border-line rounded-2xl p-6">
+<div id="sellerPayBox" class="hidden bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="landmark" class="w-5 h-5"></i> Coordonnées bancaires (versements)</h2>
       <p class="text-sm opacity-70 mt-2">Le compte bancaire où vous recevez l'argent de vos ventes. Vos coordonnées sont saisies et protégées chez Stripe, notre partenaire de paiement.</p>
       <div id="payoutStatus" class="mt-4 text-sm"></div>
       <button id="payoutBtn" onclick="openPayouts()" class="w-full mt-4 bg-forest text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="landmark" class="w-4 h-4"></i> Ajouter mes coordonnées bancaires</button>
       <div id="payoutMsg" class="form-msg hidden"></div>
     </div>
-  </div>
-
-  <div class="bg-white border border-line rounded-2xl p-6 mt-4">
+        </div>
+      </section>
+      <section id="tab-session" data-panel="session" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Session</h2>
+        <p class="text-sm opacity-60 mt-1">Déconnexion et suppression du compte.</p>
+        <div class="space-y-4 mt-6">
+<div class="bg-white border border-line rounded-2xl p-6">
     <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="log-out" class="w-5 h-5"></i> Session et compte</h2>
     <div class="flex flex-wrap gap-2 mt-4">
       <button onclick="logoutGlobal()" class="bg-ink text-white rounded-full px-5 py-2.5 text-sm font-bold">Se déconnecter</button>
@@ -153,6 +188,10 @@ body{background:#FFFFFF;color:#131A17}
       <div class="font-semibold text-sm">Supprimer mon compte</div>
       <p class="text-sm opacity-60 mt-1">Votre demande est transmise à notre responsable de la protection des données, qui supprime votre compte et vos données personnelles, à l'exception de ce que la loi nous oblige à conserver (factures et paiements).</p>
       <a id="deleteAccountLink" href="mailto:dpo@akwaone.ca" class="inline-flex items-center gap-2 mt-3 text-sm font-semibold text-red-600 hover:underline"><i data-lucide="trash-2" class="w-4 h-4"></i> Demander la suppression de mon compte</a>
+    </div>
+  </div>
+        </div>
+      </section>
     </div>
   </div>
 </main>
@@ -194,6 +233,19 @@ document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('');
 initSiteHeader('');
 renderChatWidget();
 lucide.createIcons();
+
+// Onglets des paramètres (barre latérale) : l'onglet ouvert suit l'adresse (#securite, #paiements…).
+const SETTINGS_TABS = ['compte','connexion','securite','notifications','paiements','session'];
+function showTab(tab, keepHash){
+  if(!SETTINGS_TABS.includes(tab)) tab = 'compte';
+  document.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('hidden', p.dataset.panel!==tab));
+  document.querySelectorAll('[data-tab]').forEach(b=>{ const on = b.dataset.tab===tab; b.classList.toggle('active', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  if(!keepHash) history.replaceState(null, '', location.pathname + location.search + '#' + tab);
+  const active = document.querySelector(`[data-tab="${tab}"]`);
+  if(active && window.innerWidth < 768) active.scrollIntoView({ block:'nearest', inline:'center' });
+}
+showTab((location.hash || '#compte').slice(1), true);
+window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1), true));
 
 const PLAN_NAMES = {basique:'Basique (gratuite)', pro:'Pro — 129 $/an', premium:'Premium — 299 $/an'};
 let me = null;
