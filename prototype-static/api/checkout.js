@@ -1,5 +1,5 @@
 const { IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send } = require('./_stripe');
-const { requireUser } = require('./_supabase');
+const { requireUser, supabaseRest } = require('./_supabase');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'Méthode non autorisée' });
@@ -36,8 +36,16 @@ module.exports = async (req, res) => {
       });
     }
 
+    // Cartes enregistrées dans Mon profil : proposées directement au paiement.
+    let customer;
+    if (user) {
+      const rows = await supabaseRest('GET', `payment_accounts?user_id=eq.${user.id}&select=stripe_customer_id`).catch(() => null);
+      customer = (rows && rows[0] && rows[0].stripe_customer_id) || undefined;
+    }
+
     const session = await stripeRequest('POST', '/checkout/sessions', {
       mode: 'payment',
+      customer,
       line_items: lineItems,
       // Moyens choisis dans le dashboard Stripe. Sans conversion de devise, tout reste en CAD et Stripe ne propose
       // que les moyens canadiens (carte, Apple Pay, Google Pay, Link, Klarna, Afterpay, Affirm dès 50 $, prélèvement DPA).
@@ -48,7 +56,7 @@ module.exports = async (req, res) => {
           mandate_options: { payment_schedule: 'sporadic', transaction_type: 'personal' },
         },
       },
-      customer_email: user ? user.email : undefined,
+      customer_email: !customer && user ? user.email : undefined,
       client_reference_id: user ? user.id : undefined,
       locale: body.lang === 'en' ? 'en' : 'fr',
       success_url: `${origin}/mes-commandes.html?paiement=ok&session_id={CHECKOUT_SESSION_ID}`,

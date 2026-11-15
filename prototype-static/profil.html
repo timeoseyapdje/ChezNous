@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon profil — AkwaOne</title>
-<link rel="stylesheet" href="assets/tailwind.css">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261115a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261105a"></script>
-<script src="assets/catalog.js?v=20261105a"></script>
-<script src="assets/shared.js?v=20261105a"></script>
+<script src="assets/i18n-en.js?v=20261115a"></script>
+<script src="assets/catalog.js?v=20261115a"></script>
+<script src="assets/shared.js?v=20261115a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261105a"></script>
+<script src="assets/auth.js?v=20261115a"></script>
+<script src="assets/passkey.js?v=20261115a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -92,6 +93,53 @@ body{background:#FFFFFF;color:#131A17}
         <a href="mes-commandes.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="package" class="w-4 h-4"></i> Mes commandes</a>
         <a href="messagerie.html" class="flex items-center justify-center gap-2 bg-sand rounded-full py-2.5 font-semibold"><i data-lucide="message-square" class="w-4 h-4"></i> Messagerie</a>
       </div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mt-4">
+    <div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5"></i> Double authentification (A2F)</h2>
+      <p class="text-sm opacity-70 mt-2">À chaque connexion, un code à 6 chiffres de votre application d'authentification (Google Authenticator, Authy, 1Password…) est demandé en plus du mot de passe.</p>
+      <div id="mfaStatus" class="text-sm font-semibold mt-4">Chargement…</div>
+      <div id="mfaEnroll" class="hidden mt-4 bg-sand rounded-2xl p-4 space-y-3">
+        <p class="text-sm">1. Scannez ce QR code avec votre application d'authentification.</p>
+        <div class="flex justify-center"><img id="mfaQr" class="w-44 h-44 bg-white rounded-xl p-2" alt="QR code A2F"></div>
+        <p class="text-xs opacity-70 break-all">Ou saisissez cette clé : <span id="mfaSecret" class="font-mono font-semibold"></span></p>
+        <p class="text-sm">2. Saisissez le code affiché pour confirmer.</p>
+        <input id="mfaEnrollCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="field text-center text-xl tracking-[0.4em] font-mono" placeholder="000000">
+        <div class="flex gap-2">
+          <button id="mfaConfirmBtn" onclick="confirmMfa()" class="flex-1 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Activer l'A2F</button>
+          <button onclick="cancelMfaEnroll()" class="text-sm font-semibold px-4 py-2.5 rounded-full border border-line">Annuler</button>
+        </div>
+      </div>
+      <button id="mfaToggleBtn" onclick="toggleMfa()" class="hidden w-full mt-4 rounded-full py-2.5 text-sm font-bold"></button>
+      <div id="mfaMsg" class="form-msg hidden"></div>
+    </div>
+
+    <div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5"></i> Clés d'accès</h2>
+      <p class="text-sm opacity-70 mt-2">Connectez-vous sans mot de passe avec l'empreinte digitale, le visage ou le code de votre appareil (Face ID, Touch ID, Windows Hello, Android).</p>
+      <div id="passkeyList" class="mt-4 space-y-2 text-sm"></div>
+      <button id="passkeyCreateBtn" onclick="addPasskey()" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Créer une clé d'accès</button>
+      <div id="passkeyMsg" class="form-msg hidden"></div>
+    </div>
+  </div>
+
+  <div id="paiements" class="grid md:grid-cols-2 gap-4 mt-4">
+    <div id="buyerPayBox" class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i> Mes moyens de paiement</h2>
+      <p class="text-sm opacity-70 mt-2">Enregistrez une carte pour payer plus vite. Elle est conservée par Stripe : AkwaOne ne voit jamais votre numéro de carte.</p>
+      <div id="payMethods" class="mt-4 space-y-2 text-sm"></div>
+      <button id="addMethodBtn" onclick="addPaymentMethod()" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter une carte</button>
+      <div id="payMsg" class="form-msg hidden"></div>
+    </div>
+
+    <div id="sellerPayBox" class="hidden bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="landmark" class="w-5 h-5"></i> Coordonnées bancaires (versements)</h2>
+      <p class="text-sm opacity-70 mt-2">Le compte bancaire où vous recevez l'argent de vos ventes. Vos coordonnées sont saisies et protégées chez Stripe, notre partenaire de paiement.</p>
+      <div id="payoutStatus" class="mt-4 text-sm"></div>
+      <button id="payoutBtn" onclick="openPayouts()" class="w-full mt-4 bg-forest text-white rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="landmark" class="w-4 h-4"></i> Ajouter mes coordonnées bancaires</button>
+      <div id="payoutMsg" class="form-msg hidden"></div>
     </div>
   </div>
 
@@ -224,6 +272,180 @@ async function loadProfile(){
   if(IS_DEMO) document.getElementById('logoutAllBtn').classList.add('hidden');
   renderHeaderCard();
   renderActivity(plan);
+  loadMfa();
+  loadPasskeys();
+  loadPayments();
+}
+
+// ----- Double authentification (TOTP Supabase) -----
+let mfaFactor = null, mfaPendingId = null;
+async function loadMfa(){
+  const btn = document.getElementById('mfaToggleBtn');
+  if(IS_DEMO){ document.getElementById('mfaStatus').textContent = 'Disponible sur le site réel.'; return; }
+  const { data, error } = await sb.auth.mfa.listFactors();
+  if(error){ document.getElementById('mfaStatus').textContent = 'Statut indisponible pour le moment.'; return; }
+  mfaFactor = (data.totp || []).find(f=>f.status==='verified') || null;
+  document.getElementById('mfaStatus').innerHTML = mfaFactor
+    ? '<span class="text-forest">✓ Activée</span> sur votre compte'
+    : '<span class="opacity-60">Désactivée</span>';
+  btn.textContent = mfaFactor ? "Désactiver l'A2F" : "Activer l'A2F";
+  btn.className = 'w-full mt-4 rounded-full py-2.5 text-sm font-bold ' + (mfaFactor ? 'border border-line hover:bg-sand' : 'bg-forest text-white');
+  btn.classList.remove('hidden');
+}
+async function toggleMfa(){
+  if(mfaFactor){
+    if(!confirm("Désactiver la double authentification ? Votre compte sera protégé uniquement par le mot de passe.")) return;
+    setBusy('mfaToggleBtn', true);
+    const { error } = await sb.auth.mfa.unenroll({ factorId: mfaFactor.id });
+    setBusy('mfaToggleBtn', false);
+    if(error){ showMsg('mfaMsg', "Impossible de désactiver l'A2F. Reconnectez-vous avec votre code puis réessayez.", false); return; }
+    showMsg('mfaMsg', 'Double authentification désactivée.', true);
+    return loadMfa();
+  }
+  setBusy('mfaToggleBtn', true);
+  // Une inscription commencée puis abandonnée bloquerait la suivante : on la retire d'abord.
+  const { data: list } = await sb.auth.mfa.listFactors();
+  for(const f of ((list && list.all) || []).filter(f=>f.factor_type==='totp' && f.status!=='verified')) await sb.auth.mfa.unenroll({ factorId: f.id });
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'AkwaOne ' + new Date().toISOString().slice(0,10) });
+  setBusy('mfaToggleBtn', false);
+  if(error){ showMsg('mfaMsg', "L'A2F n'a pas pu être activée pour le moment.", false); return; }
+  mfaPendingId = data.id;
+  document.getElementById('mfaQr').src = data.totp.qr_code;
+  document.getElementById('mfaSecret').textContent = data.totp.secret;
+  document.getElementById('mfaEnroll').classList.remove('hidden');
+  document.getElementById('mfaToggleBtn').classList.add('hidden');
+  document.getElementById('mfaEnrollCode').focus();
+}
+async function confirmMfa(){
+  const code = document.getElementById('mfaEnrollCode').value.trim();
+  if(!/^[0-9]{6}$/.test(code)){ showMsg('mfaMsg', 'Saisissez le code à 6 chiffres.', false); return; }
+  setBusy('mfaConfirmBtn', true);
+  const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: mfaPendingId, code });
+  setBusy('mfaConfirmBtn', false);
+  if(error){ showMsg('mfaMsg', 'Code incorrect ou expiré. Réessayez.', false); return; }
+  mfaPendingId = null;
+  document.getElementById('mfaEnroll').classList.add('hidden');
+  document.getElementById('mfaEnrollCode').value = '';
+  showMsg('mfaMsg', 'Double authentification activée. Le code sera demandé à chaque connexion.', true);
+  loadMfa();
+}
+async function cancelMfaEnroll(){
+  if(mfaPendingId) await sb.auth.mfa.unenroll({ factorId: mfaPendingId });
+  mfaPendingId = null;
+  document.getElementById('mfaEnroll').classList.add('hidden');
+  loadMfa();
+}
+
+// ----- Clés d'accès -----
+async function loadPasskeys(){
+  const box = document.getElementById('passkeyList');
+  if(IS_DEMO){ box.innerHTML = '<p class="opacity-60">Disponible sur le site réel.</p>'; document.getElementById('passkeyCreateBtn').classList.add('hidden'); return; }
+  if(!passkeysSupported()){ box.innerHTML = "<p class=\"opacity-60\">Ce navigateur ne prend pas en charge les clés d'accès.</p>"; document.getElementById('passkeyCreateBtn').classList.add('hidden'); return; }
+  const { data, error } = await sb.from('passkeys').select('id, name, created_at, last_used_at').order('created_at', { ascending:false });
+  if(error){ box.innerHTML = '<p class="opacity-60">Liste indisponible pour le moment.</p>'; return; }
+  const day = d=> d ? new Date(d).toLocaleDateString('fr-CA', { day:'numeric', month:'short', year:'numeric' }) : 'jamais';
+  box.innerHTML = data.length ? data.map(k=>`
+    <div class="flex items-center gap-3 border border-line rounded-xl p-3">
+      <i data-lucide="key-round" class="w-4 h-4 shrink-0"></i>
+      <div class="flex-1 min-w-0"><div class="font-semibold truncate">${escapeHtmlGlobal(k.name || "Clé d'accès")}</div><div class="text-xs opacity-60">Créée le ${day(k.created_at)} • utilisée : ${day(k.last_used_at)}</div></div>
+      <button onclick="removePasskey('${k.id}')" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0" aria-label="Supprimer la clé"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>`).join('') : "<p class=\"opacity-60\">Aucune clé d'accès pour le moment.</p>";
+  lucide.createIcons({ root: box });
+}
+async function addPasskey(){
+  const guess = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone / iPad' : /Android/.test(navigator.userAgent) ? 'Android' : /Mac/.test(navigator.userAgent) ? 'Mac' : /Windows/.test(navigator.userAgent) ? 'Windows' : 'Mon appareil';
+  const name = prompt("Nom de cette clé d'accès (pour la reconnaître) :", guess);
+  if(name === null) return;
+  setBusy('passkeyCreateBtn', true);
+  try{
+    if(await createPasskey(name)){ showMsg('passkeyMsg', "Clé d'accès créée. Vous pouvez maintenant vous connecter sans mot de passe.", true); loadPasskeys(); }
+  }catch(err){ showMsg('passkeyMsg', err.message, false); }
+  finally{ setBusy('passkeyCreateBtn', false); }
+}
+async function removePasskey(id){
+  if(!confirm("Supprimer cette clé d'accès ? Vous ne pourrez plus l'utiliser pour vous connecter.")) return;
+  const { error } = await sb.from('passkeys').delete().eq('id', id);
+  if(error){ showMsg('passkeyMsg', "La clé n'a pas pu être supprimée.", false); return; }
+  showMsg('passkeyMsg', "Clé d'accès supprimée. Pensez aussi à la retirer des réglages de votre appareil.", true);
+  loadPasskeys();
+}
+
+// ----- Paiements (Stripe) -----
+async function paymentsApi(action, payload){
+  const res = await fetch('api/payments', { method:'POST', headers:{ 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ action, ...(payload||{}) }) });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Service de paiement indisponible pour le moment.');
+  return data;
+}
+const BRAND_NAMES = { visa:'Visa', mastercard:'Mastercard', amex:'American Express', discover:'Discover', unionpay:'UnionPay', jcb:'JCB', diners:'Diners Club' };
+async function loadPayments(){
+  const seller = me.role==='seller' || me.role==='admin';
+  document.getElementById('sellerPayBox').classList.toggle('hidden', !seller);
+  // Le compte de la Boutique AkwaOne n'achète pas : pas de carte enregistrée.
+  document.getElementById('buyerPayBox').classList.toggle('hidden', isOfficialShop());
+  if(IS_DEMO){
+    document.getElementById('payMethods').innerHTML = '<p class="opacity-60">Disponible sur le site réel.</p>';
+    document.getElementById('payoutStatus').innerHTML = '<p class="opacity-60">Disponible sur le site réel.</p>';
+    ['addMethodBtn','payoutBtn'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    return;
+  }
+  const params = new URLSearchParams(location.search);
+  try{
+    if(params.get('moyen')==='ok' && params.get('session_id')){
+      await paymentsApi('confirm-method', { sessionId: params.get('session_id') });
+      showMsg('payMsg', 'Carte enregistrée.', true);
+    }
+    if(params.get('versements')==='ok') showMsg('payoutMsg', 'Merci ! Stripe vérifie vos informations, cela peut prendre quelques minutes.', true);
+    if(params.has('moyen') || params.has('versements')) history.replaceState(null, '', 'profil.html#paiements');
+    const st = await paymentsApi('status');
+    renderPayMethods(st.methods || []);
+    renderPayouts(st.payouts);
+  }catch(err){
+    document.getElementById('payMethods').innerHTML = `<p class="opacity-60">${escapeHtmlGlobal(err.message)}</p>`;
+    document.getElementById('payoutStatus').innerHTML = `<p class="opacity-60">${escapeHtmlGlobal(err.message)}</p>`;
+  }
+}
+function renderPayMethods(methods){
+  const box = document.getElementById('payMethods');
+  box.innerHTML = methods.length ? methods.map(m=>`
+    <div class="flex items-center gap-3 border border-line rounded-xl p-3">
+      <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
+      <div class="flex-1"><div class="font-semibold">${escapeHtmlGlobal(BRAND_NAMES[m.brand] || m.brand || 'Carte')} •••• ${escapeHtmlGlobal(m.last4 || '')}</div><div class="text-xs opacity-60">Expire ${String(m.expMonth).padStart(2,'0')}/${m.expYear}</div></div>
+      <button onclick="removePaymentMethod('${escapeHtmlGlobal(m.id)}')" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0" aria-label="Retirer la carte"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>`).join('') : '<p class="opacity-60">Aucune carte enregistrée.</p>';
+  lucide.createIcons({ root: box });
+}
+function renderPayouts(p){
+  const box = document.getElementById('payoutStatus');
+  const btn = document.getElementById('payoutBtn');
+  if(!p){
+    box.innerHTML = '<p class="opacity-60">Aucun compte bancaire enregistré : ajoutez-le pour recevoir vos paiements.</p>';
+    btn.lastChild.textContent = ' Ajouter mes coordonnées bancaires';
+    return;
+  }
+  const bank = p.bank ? `${escapeHtmlGlobal(p.bank.name || 'Compte bancaire')} •••• ${escapeHtmlGlobal(p.bank.last4 || '')}` : 'Compte bancaire non renseigné';
+  box.innerHTML = `
+    <div class="flex justify-between gap-3"><span class="opacity-60">Compte</span><span class="font-semibold">${bank}</span></div>
+    <div class="flex justify-between gap-3 mt-1"><span class="opacity-60">Versements</span><span class="font-semibold ${p.payoutsEnabled ? 'text-forest' : 'text-amber-600'}">${p.payoutsEnabled ? '✓ Actifs' : (p.detailsSubmitted ? 'En vérification par Stripe' : 'Informations à compléter')}</span></div>`;
+  btn.lastChild.textContent = p.detailsSubmitted ? ' Modifier mes coordonnées bancaires' : ' Compléter mes coordonnées bancaires';
+  btn.dataset.mode = p.detailsSubmitted ? 'dashboard' : 'onboard';
+}
+async function addPaymentMethod(){
+  setBusy('addMethodBtn', true);
+  try{ const { url } = await paymentsApi('add-method'); location.href = url; }
+  catch(err){ showMsg('payMsg', err.message, false); setBusy('addMethodBtn', false); }
+}
+async function removePaymentMethod(id){
+  if(!confirm('Retirer cette carte ?')) return;
+  try{ await paymentsApi('remove-method', { id }); showMsg('payMsg', 'Carte retirée.', true); loadPayments(); }
+  catch(err){ showMsg('payMsg', err.message, false); }
+}
+async function openPayouts(){
+  setBusy('payoutBtn', true);
+  try{
+    const { url } = await paymentsApi(document.getElementById('payoutBtn').dataset.mode === 'dashboard' ? 'connect-dashboard' : 'connect-onboard');
+    location.href = url;
+  }catch(err){ showMsg('payoutMsg', err.message, false); setBusy('payoutBtn', false); }
 }
 
 async function saveIdentity(e){
