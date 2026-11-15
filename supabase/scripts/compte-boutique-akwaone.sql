@@ -1,7 +1,8 @@
 -- AkwaOne — compte officiel de la boutique AkwaOne, avec la formule vendeur Premium offerte (sans Stripe).
 -- Remplacez le mot de passe ci-dessous, puis exécutez ce script dans l'éditeur SQL Supabase.
+-- À exécuter après la migration 0008_official_shop.sql.
 -- Le script crée le compte s'il n'existe pas encore (adresse déjà confirmée, connexion immédiate possible),
--- le passe administrateur et lui attribue la formule Premium. Il est idempotent : le relancer ne crée pas de doublon
+-- le passe vendeur, le désigne boutique officielle et lui attribue la formule Premium. Il est idempotent : le relancer ne crée pas de doublon
 -- et ne change pas le mot de passe d'un compte déjà créé.
 -- Ne commitez jamais ce fichier avec le vrai mot de passe.
 
@@ -49,11 +50,14 @@ begin
   values (boutique_id, 'Boutique AkwaOne', 'buyer')
   on conflict (id) do nothing;
 
-  -- Administrateur : seul ce rôle publie les produits de la Boutique AkwaOne (channel = 'boutique').
-  -- Il peut aussi basculer sur la vue Vendeur depuis le sélecteur de rôle du tableau de bord.
+  -- Vendeur, sans aucun droit d'administration (un compte passé admin par l'ancienne version du script redevient vendeur).
   update public.profiles
-     set role = 'admin', full_name = coalesce(full_name, 'Boutique AkwaOne')
+     set role = 'seller', full_name = coalesce(full_name, 'Boutique AkwaOne')
    where id = boutique_id;
+
+  -- Boutique officielle : ses annonces vont dans la Boutique AkwaOne, jamais dans la marketplace.
+  insert into public.official_shops (seller_id) values (boutique_id)
+  on conflict (seller_id) do nothing;
 
   -- Formule Premium active, sans abonnement Stripe ni date de fin : elle n'expire pas et n'est jamais facturée.
   insert into public.seller_plans (seller_id, plan, shop_name, status, stripe_customer_id, stripe_subscription_id, stripe_session_id, current_period_end, updated_at)
@@ -62,6 +66,6 @@ begin
      set plan = 'premium', shop_name = 'Boutique AkwaOne', status = 'active',
          stripe_subscription_id = null, current_period_end = null, updated_at = now();
 
-  raise notice 'Compte % : administrateur + formule Premium offerte.', boutique_email;
+  raise notice 'Compte % : vendeur, boutique officielle AkwaOne, formule Premium offerte.', boutique_email;
 end;
 $$;

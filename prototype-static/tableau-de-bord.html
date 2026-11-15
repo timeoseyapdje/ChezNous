@@ -41,6 +41,7 @@ body{background:#FFFFFF;color:#131A17}
       <div>
         <h1 class="font-display font-bold text-2xl md:text-3xl flex items-center gap-2"><i data-lucide="store" class="w-6 h-6"></i> Tableau de bord vendeur</h1>
         <p class="text-sm opacity-60 mt-1">Gérez votre catalogue, votre abonnement et suivez vos ventes.</p>
+        <p id="officialShopBadge" class="hidden mt-2 inline-flex items-center gap-1 text-xs font-bold bg-forest text-white rounded-full px-3 py-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Boutique officielle AkwaOne : vos annonces sont publiées dans la <a href="boutique.html" class="underline">Boutique</a></p>
       </div>
       <button onclick="changeRoleGlobal('buyer')" class="text-xs font-semibold border border-line rounded-full px-4 py-2 hover:bg-sand">Repasser en mode Acheteur</button>
     </div>
@@ -229,7 +230,7 @@ const esc = escapeHtmlGlobal;
 
 // Démo : boutique et annonces dans ce navigateur. Site réel : annonces, formule et commandes lues dans Supabase.
 let sellerUserId = null;
-let sellerRemote = { catalog: [], orders: [], plan: null };
+let sellerRemote = { catalog: [], orders: [], plan: null, official: false };
 const DB_ORDER_STATUS = {en_attente:'en attente', confirmee:'confirmée', terminee:'terminée', annulee:'annulée', remboursee:'annulée'};
 
 function getSellerProfile(){
@@ -267,10 +268,12 @@ function getSellerOrders(){
 }
 async function loadSellerData(){
   if(IS_DEMO || !sb || !sellerUserId) return;
-  const [listings, orders, plan] = await Promise.all([
+  const [listings, orders, plan, official] = await Promise.all([
     sb.from('listings').select(LISTING_COLUMNS).eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false }),
     sb.from('orders').select('order_number, items, slot, details, amount_cad, status, escrow_status, paid_at').eq('seller_id', sellerUserId).order('created_at', { ascending:false }),
-    sb.from('seller_plans').select('plan, shop_name, status').eq('seller_id', sellerUserId).maybeSingle()
+    sb.from('seller_plans').select('plan, shop_name, status').eq('seller_id', sellerUserId).maybeSingle(),
+    // Boutique officielle : ce compte vendeur publie dans la Boutique AkwaOne au lieu de la marketplace.
+    sb.from('official_shops').select('seller_id').eq('seller_id', sellerUserId).maybeSingle()
   ]);
   if(listings.error || orders.error) showToast('Impossible de charger vos données vendeur pour le moment.','error');
   sellerRemote.catalog = (listings.data || []).map(listingFromRow);
@@ -284,6 +287,7 @@ async function loadSellerData(){
     total: Number(r.amount_cad), price: Number(r.amount_cad)
   }));
   sellerRemote.plan = plan.data && plan.data.status==='active' ? plan.data.plan : null;
+  sellerRemote.official = !!(official && official.data);
   if(plan.data && plan.data.shop_name && !localStorage.getItem('akwaone_seller_profile')){
     try{ localStorage.setItem('akwaone_seller_profile', JSON.stringify({shopName: plan.data.shop_name, plan: plan.data.plan})); }catch(e){}
   }
@@ -295,6 +299,8 @@ function renderSellerView(){
   const profile = getSellerProfile();
   const planLabels = {basique:'Basique — gratuite',pro:'Pro — 129$/an',premium:'Premium — 299$/an'};
   document.getElementById('sellerPlanLabel').textContent = planLabels[profile.plan] || 'Basique';
+  const officialBadge = document.getElementById('officialShopBadge');
+  if(officialBadge) officialBadge.classList.toggle('hidden', !sellerRemote.official);
 
   const orders = getSellerOrders();
   const active = orders.filter(o=>o.status!=='terminée' && o.status!=='annulée');
@@ -381,9 +387,11 @@ async function addSellerItem(){
     catalog.push({ id: Date.now(), ...item, rating: 0, reviews: 0, image: DEFAULT_AVATAR, tags: [] });
     setSellerCatalog(catalog);
   } else {
+    const official = sellerRemote.official;
     const { error } = await sb.from('listings').insert({
-      seller_id: sellerUserId, seller_name: item.seller.slice(0,80), type: item.type, category: item.cat,
-      name: item.name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: item.price, cover_url: cover || null, city: item.city
+      seller_id: sellerUserId, seller_name: official ? 'AkwaOne' : item.seller.slice(0,80), type: item.type, category: item.cat,
+      channel: official ? 'boutique' : 'marketplace',
+      name: item.name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: item.price, cover_url: cover || null, city: official ? 'Canada' : item.city
     });
     if(error){ showToast("L'annonce n'a pas pu être publiée. Réessayez dans un instant.",'error'); return; }
     await Promise.all([loadSellerData(), loadRemoteListings()]);
@@ -391,7 +399,9 @@ async function addSellerItem(){
   ['itemName','itemPrice','itemCover','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
   toggleAddItemForm();
   renderSellerView();
-  showToast("Annonce publiée : elle est visible sur la <a href='marketplace.html' class='underline'>marketplace</a>.",'success');
+  showToast(sellerRemote.official
+    ? "Produit publié dans la <a href='boutique.html' class='underline'>Boutique AkwaOne</a>."
+    : "Annonce publiée : elle est visible sur la <a href='marketplace.html' class='underline'>marketplace</a>.",'success');
 }
 async function removeSellerItem(i){
   const catalog = getSellerCatalog();
