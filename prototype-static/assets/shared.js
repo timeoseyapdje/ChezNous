@@ -12,8 +12,8 @@ function isLoggedIn(){
   }
   const style = document.createElement('style');
   // Malik reste caché tant que le bandeau cookies ou une fenêtre est ouvert, sinon il les recouvre sur mobile.
-  const overlays = ['#cookieBanner','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu','#prefsMenu'];
-  style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #chatLauncher, body:has(${o}:not(.hidden)) #chatPanel`).join(',') + '{display:none !important}';
+  const overlays = ['#akwaNotice','#cartModal','#stripeModal','#bookingModal','#profileModal','#orderModal','#notifMenu','#deliverMenu','#accountMenu','#prefsMenu'];
+  style.textContent = overlays.map(o=>`body:has(${o}:not(.hidden)) #malikBtn, body:has(${o}:not(.hidden)) #malikBox`).join(',') + '{display:none !important}';
   // Menus déroulants de l'en-tête partagé (notifications, ville) : défini ici pour que toutes les pages l'aient.
   style.textContent += '.dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:8px;z-index:50}';
   // Téléphone et petite tablette : en-tête sur deux rangées (logo + icônes, puis recherche) au lieu de quatre.
@@ -34,8 +34,8 @@ function isLoggedIn(){
     .acct-text{display:none}
     .acct-icon{display:block}
     #prefsBtn,#accountBtn,#notifBtn,#cartLauncher{min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}
-    #chatLauncher{width:48px !important;height:48px !important;bottom:16px !important;right:12px !important}
-    #chatPanel{bottom:72px !important;right:8px !important;left:8px !important;width:auto !important;max-width:none !important;max-height:calc(100dvh - 96px) !important}
+    #malikBtn{width:48px !important;height:48px !important;bottom:16px !important;right:12px !important}
+    #malikBox{bottom:72px !important;right:8px !important;left:8px !important;width:auto !important;max-width:none !important;max-height:calc(100dvh - 96px) !important}
     #toasts{left:12px !important;right:72px !important}
     #cartCount{top:2px !important;right:0 !important}
     #notifBadge{top:6px !important;right:6px !important}
@@ -530,7 +530,7 @@ function toggleNotifMenu(){
 }
 
 document.addEventListener('keydown', function(e){
-  if(e.key==='Enter' && e.target && e.target.id==='chatInput') sendChat();
+  if(e.key==='Enter' && e.target && e.target.id==='malikInput') sendChat();
 });
 // composedPath() garde le chemin du clic même si l'élément cliqué a été remplacé entre-temps (icônes redessinées).
 document.addEventListener('click', function(e){
@@ -644,7 +644,7 @@ function renderSiteHeader(active){
   <header class="bg-ink text-white">
     <div class="max-w-[1400px] mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
       <a href="index.html" class="flex items-center gap-2 shrink-0">
-        <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">C</div>
+        <div class="w-9 h-9 rounded-lg bg-white text-ink flex items-center justify-center font-display font-black">A</div>
         <div class="leading-none">
           <div class="font-display font-bold text-lg">AkwaOne</div>
           <div class="text-[9px] opacity-60 tracking-wider">DIASPORA AFRICAINE • CANADA</div>
@@ -856,13 +856,13 @@ const CHAT_AVATAR_URL = 'assets/malik-airpods.jpg';
 const CHAT_AVATAR_GUIDE_URL = 'assets/malik-classic.jpg';
 
 function renderChatWidget(){
-  if(document.getElementById('chatLauncher')) return;
+  if(document.getElementById('malikBtn')) return;
   const div = document.createElement('div');
   div.innerHTML = `
-  <button id="chatLauncher" onclick="toggleChat()" class="fixed z-[65] rounded-full shadow-xl border-none p-0 overflow-hidden" style="bottom:96px;right:20px;width:60px;height:60px;background:#146B4F" title="Discuter avec Malik">
+  <button id="malikBtn" onclick="toggleChat()" class="fixed z-[65] rounded-full shadow-xl border-none p-0 overflow-hidden" style="bottom:96px;right:20px;width:60px;height:60px;background:#146B4F" title="Discuter avec Malik">
     <img src="${CHAT_AVATAR_URL}" class="w-full h-full object-cover" style="object-position:50% 12%">
   </button>
-  <div id="chatPanel" class="fixed z-[70] bg-white rounded-2xl shadow-2xl flex-col overflow-hidden hidden" style="bottom:164px;right:20px;width:360px;max-width:92vw;height:500px;max-height:70vh">
+  <div id="malikBox" class="fixed z-[70] bg-white rounded-2xl shadow-2xl flex-col overflow-hidden hidden" style="bottom:164px;right:20px;width:360px;max-width:92vw;height:500px;max-height:70vh">
     <div class="bg-forest text-white p-4 flex items-center gap-3 shrink-0">
       <img src="${CHAT_AVATAR_URL}" class="w-10 h-10 rounded-full object-cover border-2 border-white" style="object-position:50% 12%">
       <div class="flex-1">
@@ -871,10 +871,10 @@ function renderChatWidget(){
       </div>
       <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
-    <div id="chatChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
+    <div id="malikMsgs" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+    <div id="malikChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
     <div class="p-3 border-t border-line flex gap-2 shrink-0">
-      <input id="chatInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
+      <input id="malikInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
       <button onclick="sendChat()" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
     </div>
   </div>`;
@@ -885,7 +885,7 @@ function renderChatWidget(){
 let chatStarted = false;
 function toggleChat(){
   renderChatWidget();
-  const panel = document.getElementById('chatPanel');
+  const panel = document.getElementById('malikBox');
   const opening = panel.classList.contains('hidden');
   panel.classList.toggle('hidden');
   panel.style.display = opening ? 'flex' : 'none';
@@ -897,7 +897,7 @@ function toggleChat(){
   if(typeof lucide !== 'undefined') lucide.createIcons();
 }
 function addBotMessage(html){
-  const box = document.getElementById('chatMessages');
+  const box = document.getElementById('malikMsgs');
   const el = document.createElement('div');
   el.className = 'bg-sand text-ink rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[82%] leading-relaxed';
   el.innerHTML = html;
@@ -905,7 +905,7 @@ function addBotMessage(html){
   box.scrollTop = box.scrollHeight;
 }
 function addUserMessage(text){
-  const box = document.getElementById('chatMessages');
+  const box = document.getElementById('malikMsgs');
   const el = document.createElement('div');
   el.className = 'bg-ink text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[82%] ml-auto leading-relaxed';
   el.textContent = text;
@@ -914,11 +914,11 @@ function addUserMessage(text){
 }
 function renderChatChips(){
   const chips = ['Comment commander ?','Devenir vendeur','Livraison & retours','Visite guidée'];
-  document.getElementById('chatChips').innerHTML = chips.map(c=>`<button class="border border-line rounded-full px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand whitespace-nowrap shrink-0" onclick="askChip(this.textContent)">${c}</button>`).join('');
+  document.getElementById('malikChips').innerHTML = chips.map(c=>`<button class="border border-line rounded-full px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand whitespace-nowrap shrink-0" onclick="askChip(this.textContent)">${c}</button>`).join('');
 }
 function askChip(text){ handleUserInput(text); }
 function sendChat(){
-  const input = document.getElementById('chatInput');
+  const input = document.getElementById('malikInput');
   const text = input.value.trim();
   if(!text) return;
   input.value = '';
