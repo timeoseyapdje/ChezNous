@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /tableau-de-bord.html
+Disallow: /profil.html
+Disallow: /messagerie.html
+Disallow: /mes-commandes.html
+
+Sitemap: https://www.akwaone.ca/sitemap.xml

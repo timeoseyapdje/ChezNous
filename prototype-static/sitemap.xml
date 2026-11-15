@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.akwaone.ca/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.akwaone.ca/a-propos.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/accessibilite.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/boutique.html</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.akwaone.ca/cgu-cgv.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/charte-communaute.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/comment-ca-marche.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/confidentialite.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/contact.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/cookies.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/devenir-vendeur.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.akwaone.ca/faq.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/livraison.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/marketplace.html</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.akwaone.ca/mentions-legales.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.akwaone.ca/retours-remboursement.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+</urlset>
