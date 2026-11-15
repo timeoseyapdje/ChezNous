@@ -43,7 +43,7 @@ body{background:#FFFFFF;color:#131A17}
         <p class="text-sm opacity-60 mt-1">Gérez votre catalogue, votre abonnement et suivez vos ventes.</p>
         <p id="officialShopBadge" class="hidden mt-2 inline-flex items-center gap-1 text-xs font-bold bg-forest text-white rounded-full px-3 py-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Boutique officielle AkwaOne : vos annonces sont publiées dans la <a href="boutique.html" class="underline">Boutique</a></p>
       </div>
-      <button onclick="changeRoleGlobal('buyer')" class="text-xs font-semibold border border-line rounded-full px-4 py-2 hover:bg-sand">Repasser en mode Acheteur</button>
+      <button onclick="changeRoleGlobal('buyer')" class="buyer-only text-xs font-semibold border border-line rounded-full px-4 py-2 hover:bg-sand">Repasser en mode Acheteur</button>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
@@ -298,6 +298,11 @@ async function loadSellerData(){
   }));
   sellerRemote.plan = plan.data && plan.data.status==='active' ? plan.data.plan : null;
   sellerRemote.official = !!(official && official.data);
+  if(sellerRemote.official){
+    document.querySelector('#sellerView h1').lastChild.textContent = ' Boutique AkwaOne';
+    const planLink = document.querySelector('#sellerPlanLabel + a');
+    if(planLink) planLink.classList.add('hidden');
+  }
   if(plan.data && plan.data.shop_name && !localStorage.getItem('akwaone_seller_profile')){
     try{ localStorage.setItem('akwaone_seller_profile', JSON.stringify({shopName: plan.data.shop_name, plan: plan.data.plan})); }catch(e){}
   }

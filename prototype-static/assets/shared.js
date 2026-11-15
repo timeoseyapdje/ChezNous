@@ -61,6 +61,10 @@ function isLoggedIn(){
     const nav = PRIVATE_PAGES.map(p=>`header a[href^="${p}"], #mobileMenu a[href^="${p}"], footer a[href^="${p}"]`).join(',');
     style.textContent += `${nav}, header div:has(> #roleSelect){display:none !important}`;
   }
+  // Boutique AkwaOne : ni sélecteur de rôle, ni panier, ni liens réservés aux acheteurs ou aux futurs vendeurs.
+  if(isOfficialShop()){
+    style.textContent += `header div:has(> #roleSelect), #cartLauncher, a[href^="mes-commandes.html"], a[href^="devenir-vendeur.html"], .buyer-only{display:none !important}`;
+  }
   document.head.appendChild(style);
 })();
 
@@ -895,6 +899,7 @@ async function logoutGlobal(everywhere){
 }
 
 function changeRoleGlobal(role){
+  if(isOfficialShop()) role = 'seller';
   if(!isRoleAllowed(role)) role = 'buyer';
   persistRole(role);
   if(role==='admin' || role==='seller'){
@@ -1067,11 +1072,17 @@ function getServerRole(){
   try{ return localStorage.getItem('akwaone_server_role') || 'buyer'; }catch(e){ return 'buyer'; }
 }
 // En démo, les trois vues restent accessibles pour la présentation ; sur le site réel, Supabase décide.
+function isOfficialShop(){
+  try{ return !IS_DEMO && localStorage.getItem('akwaone_official_shop')==='1'; }catch(e){ return false; }
+}
 function isRoleAllowed(role, serverRole = getServerRole()){
   if(IS_DEMO) return role in ROLE_RANK;
+  // Le compte de la Boutique AkwaOne n'a qu'une vue : vendeur.
+  if(isOfficialShop()) return role === 'seller';
   return role in ROLE_RANK && ROLE_RANK[role] <= (ROLE_RANK[serverRole] ?? 0);
 }
 function getRolePersisted(){
+  if(isOfficialShop()) return 'seller';
   let r = 'buyer';
   try{ r = localStorage.getItem('akwaone_role') || 'buyer'; }catch(e){}
   return isRoleAllowed(r) ? r : 'buyer';
