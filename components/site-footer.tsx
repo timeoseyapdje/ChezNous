@@ -35,7 +35,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="mx-auto max-w-[1280px] border-t border-line px-4 py-6 text-xs opacity-50 md:px-6">
-        © {new Date().getFullYear()} AkwaOne Commerce Inc.
+        © {new Date().getFullYear()} AJ Cleaning
       </div>
     </footer>
   );
