@@ -1,7 +1,7 @@
--- AkwaOne — À COLLER EN UNE FOIS dans l'éditeur SQL Supabase : migrations 0008 et 0009, puis script du compte boutique.
--- Le compte boutique@akwaone.ca existe déjà : pas besoin de mot de passe, il est conservé.
+-- AkwaOne — À COLLER EN UNE FOIS dans l'éditeur SQL Supabase : migrations 0008 à 0011, puis script du compte boutique.
+-- Tout est rejouable sans risque. Le compte boutique@akwaone.ca existe déjà : son mot de passe est conservé.
 
--- ===== 1. Migration 0008 : boutique officielle =====
+-- ===== Migration 0008_official_shop =====
 -- AkwaOne — boutique officielle : un compte vendeur (pas administrateur) dont les annonces vont dans la Boutique AkwaOne.
 -- À exécuter après 0007_boutique_channel.sql dans l'éditeur SQL Supabase.
 
@@ -48,7 +48,7 @@ create policy "Sellers update their listings" on public.listings
     and (public.is_admin() or (channel = 'boutique') = public.is_official_shop())
   );
 
--- ===== 2. Migration 0009 : photos des annonces (Supabase Storage) =====
+-- ===== Migration 0009_listing_images =====
 -- AkwaOne — photos des annonces déposées depuis le tableau de bord (Supabase Storage).
 -- À exécuter après 0008_official_shop.sql dans l'éditeur SQL Supabase.
 
@@ -78,7 +78,59 @@ create policy "Sellers delete their listing images" on storage.objects
   );
 -- Pas de politique select : les photos se lisent par leur adresse publique, sans pouvoir lister le dossier des autres.
 
--- ===== 3. Compte boutique@akwaone.ca : vendeur + boutique officielle + Premium =====
+-- ===== Migration 0010_passkeys =====
+-- AkwaOne — clés d'accès (passkeys / WebAuthn) pour se connecter sans mot de passe.
+-- À exécuter après 0009_listing_images.sql dans l'éditeur SQL Supabase.
+
+create table if not exists public.passkeys (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  credential_id text not null unique,          -- identifiant de la clé (base64url)
+  public_key text not null,                    -- clé publique SPKI (base64url) ; la clé privée ne quitte jamais l'appareil
+  algorithm integer not null,                  -- -7 ES256, -257 RS256, -8 Ed25519
+  sign_count bigint not null default 0,
+  transports text[] not null default '{}',
+  name text,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz
+);
+create index if not exists passkeys_user_idx on public.passkeys (user_id);
+
+alter table public.passkeys enable row level security;
+
+-- Chacun voit et supprime ses propres clés. Ajout et connexion passent uniquement par le serveur (api/passkey.js).
+drop policy if exists "Users read their passkeys" on public.passkeys;
+create policy "Users read their passkeys" on public.passkeys
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users delete their passkeys" on public.passkeys;
+create policy "Users delete their passkeys" on public.passkeys
+  for delete using (auth.uid() = user_id);
+
+revoke insert, update on public.passkeys from anon, authenticated;
+grant select (id, name, created_at, last_used_at, transports), delete on public.passkeys to authenticated;
+
+-- ===== Migration 0011_payment_accounts =====
+-- AkwaOne — comptes de paiement Stripe : moyens de paiement enregistrés (acheteurs) et versements (vendeurs).
+-- À exécuter après 0010_passkeys.sql dans l'éditeur SQL Supabase.
+-- Aucune donnée de carte ni coordonnée bancaire n'est stockée ici : elles restent chez Stripe.
+-- On ne garde que les identifiants Stripe du client (cus_…) et du compte de versement (acct_…).
+
+create table if not exists public.payment_accounts (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  stripe_customer_id text unique,
+  stripe_account_id text unique,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.payment_accounts enable row level security;
+
+drop policy if exists "Users read their payment account" on public.payment_accounts;
+create policy "Users read their payment account" on public.payment_accounts
+  for select using (auth.uid() = user_id);
+-- Pas de politique insert/update/delete : seul le serveur (api/payments.js, clé service_role) écrit.
+
+-- ===== Compte boutique@akwaone.ca : vendeur + boutique officielle + Premium =====
 -- AkwaOne — compte officiel de la boutique AkwaOne, avec la formule vendeur Premium offerte (sans Stripe).
 -- Remplacez le mot de passe ci-dessous, puis exécutez ce script dans l'éditeur SQL Supabase.
 -- À exécuter après la migration 0008_official_shop.sql.

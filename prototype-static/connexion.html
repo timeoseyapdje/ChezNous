@@ -11,6 +11,7 @@
 <script src="assets/shared.js?v=20261115a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
 <script src="assets/auth.js?v=20261115a"></script>
+<script src="assets/passkey.js?v=20261115a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -54,10 +55,20 @@ body{background:#131A17;color:#131A17}
       </div>
       <div id="loginError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
       <button id="loginSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Se connecter</button>
+      <button id="passkeyLogin" type="button" onclick="loginWithPasskey()" class="w-full border border-white/25 hover:bg-white/10 rounded-full py-3 font-bold flex items-center justify-center gap-2"><i data-lucide="key-round" class="w-4 h-4"></i> Se connecter avec une clé d'accès</button>
       <div class="flex items-center justify-between text-xs opacity-60">
         <label class="flex items-center gap-2"><input type="checkbox" checked> Rester connecté</label>
         <a href="#" onclick="showForgot(); return false;" class="hover:underline">Mot de passe oublié ?</a>
       </div>
+    </form>
+
+    <form id="mfaForm" onsubmit="return submitMfa(event)" class="space-y-4 hidden">
+      <h1 class="font-display font-bold text-2xl">Double authentification</h1>
+      <p class="text-sm opacity-70">Saisissez le code à 6 chiffres affiché par votre application d'authentification (Google Authenticator, Authy, 1Password…).</p>
+      <input id="mfaCode" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-3 text-center text-2xl tracking-[0.5em] font-mono outline-none focus:border-forest" placeholder="000000">
+      <div id="mfaError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
+      <button id="mfaSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Valider</button>
+      <button type="button" onclick="cancelMfa()" class="w-full text-xs opacity-60 hover:underline">Annuler et se déconnecter</button>
     </form>
 
     <form id="forgotForm" onsubmit="return submitForgot(event)" class="space-y-4 hidden">
@@ -140,6 +151,7 @@ function setAuthTab(tab){
   document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
   document.getElementById('signupForm').classList.toggle('hidden', isLogin);
   document.getElementById('forgotForm').classList.add('hidden');
+  document.getElementById('mfaForm').classList.add('hidden');
 }
 function showForgot(){
   document.getElementById('loginForm').classList.add('hidden');
@@ -171,7 +183,53 @@ function showFormMessage(id, msg){
   el.textContent = msg;
   el.classList.toggle('hidden', !msg);
 }
-async function finishSignIn(){
+// A2F : si le compte a une application d'authentification, un code est demandé avant d'ouvrir la session.
+async function needsMfa(){
+  if(!sb) return false;
+  const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  return !!(data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2');
+}
+function showMfaStep(){
+  ['loginForm','signupForm','forgotForm'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('mfaForm').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('mfaCode').focus(), 50);
+}
+async function submitMfa(e){
+  e.preventDefault();
+  setBusy('mfaSubmit', true);
+  try{
+    const { data: factors, error: listErr } = await sb.auth.mfa.listFactors();
+    if(listErr) throw listErr;
+    const totp = (factors.totp || []).find(f=>f.status==='verified');
+    if(!totp) throw new Error('Aucune application d\'authentification active.');
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: totp.id, code: document.getElementById('mfaCode').value.trim() });
+    if(error) throw new Error('Code incorrect ou expiré. Réessayez.');
+    document.getElementById('mfaForm').classList.add('hidden');
+    await finishSignIn(true);
+  }catch(err){
+    showFormMessage('mfaError', err.message);
+  }finally{
+    setBusy('mfaSubmit', false);
+  }
+  return false;
+}
+async function cancelMfa(){
+  await signOutEverywhere(false);
+  location.href = 'connexion.html';
+}
+async function loginWithPasskey(){
+  if(IS_DEMO){ showToast("Version démo : les clés d'accès sont disponibles sur le site réel.", 'info'); return; }
+  setBusy('passkeyLogin', true);
+  try{
+    if(await signInWithPasskey()) await finishSignIn();
+  }catch(err){
+    showFormMessage('loginError', err.message);
+  }finally{
+    setBusy('passkeyLogin', false);
+  }
+}
+async function finishSignIn(mfaDone){
+  if(!mfaDone && await needsMfa()){ showMfaStep(); return; }
   const profile = await fetchServerProfile();
   if(profile) applyProfileCache(profile);
   document.getElementById('loginForm').classList.add('hidden');
@@ -260,7 +318,11 @@ async function submitForgot(e){
   return false;
 }
 // Déjà connecté (ou retour du lien de confirmation) : on renvoie directement vers la page demandée.
-authReady.then(r=>{ if(r && r.profile) window.location.replace(returnTarget()); });
+authReady.then(r=>{
+  if(r && r.mfaPending) showMfaStep();
+  else if(r && r.profile) window.location.replace(returnTarget());
+});
+if(!IS_DEMO && !passkeysSupported()) document.getElementById('passkeyLogin').remove();
 // Google et Facebook ne sont pas activés dans Supabase : le site réel ne propose que le courriel.
 if(!IS_DEMO){
   document.getElementById('oauthBlock').remove();

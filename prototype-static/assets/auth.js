@@ -69,6 +69,16 @@ const authReady = (async ()=>{
   let profile;
   try{ profile = await fetchServerProfile(); }
   catch(e){ return { offline:true, profile:null }; }
+  // A2F activée mais code pas encore saisi : la session reste incomplète tant que le code n'est pas validé.
+  if(profile){
+    let pending = false;
+    try{ const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); pending = !!(data && data.nextLevel==='aal2' && data.currentLevel!=='aal2'); }catch(e){}
+    if(pending){
+      const page = location.pathname.split('/').pop() || 'index.html';
+      if(page !== 'connexion.html') location.replace('connexion.html?retour=' + encodeURIComponent(page + location.search));
+      return { offline:false, profile:null, mfaPending:true };
+    }
+  }
   if(profile) applyProfileCache(profile); else clearSessionCache();
   let reloaded = false;
   try{ reloaded = sessionStorage.getItem('akwaone_auth_reload')==='1'; }catch(e){}

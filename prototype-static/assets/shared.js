@@ -1098,3 +1098,33 @@ function persistRole(r){
 }
 
 window.currency = getCurrency();
+
+// Afficher / masquer le mot de passe : un bouton œil est ajouté à chaque champ mot de passe du site.
+function enhancePasswordFields(root){
+  (root || document).querySelectorAll('input[type="password"]:not([data-pw-toggle])').forEach(input=>{
+    input.setAttribute('data-pw-toggle','');
+    const wrap = document.createElement('div');
+    wrap.className = 'relative';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    input.style.paddingRight = '2.75rem';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.right = '0.5rem';
+    btn.className = 'absolute top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full opacity-60 hover:opacity-100';
+    btn.style.marginTop = getComputedStyle(input).marginTop === '0px' ? '0' : `calc(${getComputedStyle(input).marginTop} / 2)`;
+    btn.setAttribute('aria-label','Afficher le mot de passe');
+    const eye = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const eyeOff = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.4 10.4 0 0 1 12 19c-6.4 0-10-7-10-7a18.5 18.5 0 0 1 5.1-5.9"/><path d="M9.9 4.2A9.6 9.6 0 0 1 12 4c6.4 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2"/><path d="M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M2 2l20 20"/></svg>';
+    btn.innerHTML = eye;
+    btn.addEventListener('click', ()=>{
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? eyeOff : eye;
+      btn.setAttribute('aria-label', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    });
+    wrap.appendChild(btn);
+  });
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ()=>enhancePasswordFields());
+else enhancePasswordFields();

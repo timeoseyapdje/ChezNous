@@ -73,6 +73,7 @@ body{background:#FFFFFF;color:#131A17}
           <button onclick="toggleAddItemForm()" class="bg-forest text-white text-xs font-bold px-4 py-2 rounded-full hover:brightness-110 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une annonce</button>
         </div>
         <div id="addItemForm" class="hidden mt-4 bg-sand rounded-2xl p-4 space-y-3">
+          <div id="itemFormTitle" class="font-semibold text-sm">Nouvelle annonce</div>
           <div class="grid md:grid-cols-2 gap-3">
             <input id="itemName" placeholder="Nom du produit ou service" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
             <input id="itemPrice" type="number" min="0" placeholder="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
@@ -90,9 +91,10 @@ body{background:#FFFFFF;color:#131A17}
             <span class="w-10 h-10 rounded-full bg-sand flex items-center justify-center shrink-0"><i data-lucide="image-plus" class="w-5 h-5"></i></span>
             <span class="text-sm min-w-0"><span data-photo-label data-empty="Déposer une photo (optionnel)" class="font-semibold block truncate">Déposer une photo (optionnel)</span><span class="text-xs opacity-60">Cliquez ou glissez une image — JPG, PNG ou WebP, 10 Mo max</span></span>
           </label>
+          <div id="itemCurrentPhoto" class="hidden flex items-center gap-2 text-xs opacity-70"><img class="w-10 h-10 rounded-lg object-cover" alt=""> Photo actuelle — déposez-en une autre pour la remplacer</div>
           <textarea id="itemDesc" maxlength="2000" placeholder="Description (optionnel)" class="w-full border border-line rounded-xl px-3 py-2 text-sm outline-none h-20"></textarea>
           <div class="flex gap-2">
-            <button onclick="addSellerItem()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier l'annonce</button>
+            <button id="itemSubmit" onclick="addSellerItem()" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Publier l'annonce</button>
             <button onclick="toggleAddItemForm()" class="text-sm font-semibold px-4 py-2 rounded-full border border-line">Annuler</button>
           </div>
         </div>
@@ -338,6 +340,7 @@ function renderSellerView(){
         <div class="font-semibold text-sm truncate">${esc(p.name)}</div>
         <div class="text-xs opacity-60">${fmt(p.price)} • ${p.type==='produit'?'Produit':'Service'}${p.reviews?` • <i data-lucide="star" class="w-3 h-3 inline fill-gold text-gold"></i> ${p.rating} (${p.reviews})`:''}</div>
       </div>
+      <button onclick="editSellerItem(${i})" aria-label="Modifier l'annonce" class="w-8 h-8 rounded-full bg-sand hover:bg-white border border-transparent hover:border-line flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-4 h-4"></i></button>
       <button onclick="removeSellerItem(${i})" aria-label="Supprimer l'annonce" class="w-8 h-8 rounded-full bg-sand hover:bg-red-50 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune annonce publiée. Ajoutez votre premier produit ou service.</div>`;
@@ -379,7 +382,41 @@ async function tryReleaseEscrow(orderId){
     showToast(esc(err.message),'error');
   }
 }
-function toggleAddItemForm(){ document.getElementById('addItemForm').classList.toggle('hidden'); }
+// Modification : le même formulaire sert à créer et à modifier une annonce.
+let editingItem = null;
+function setItemFormMode(item){
+  editingItem = item;
+  document.getElementById('itemSubmit').textContent = item ? 'Enregistrer les modifications' : "Publier l'annonce";
+  document.getElementById('itemFormTitle').textContent = item ? "Modifier l'annonce" : 'Nouvelle annonce';
+  const current = document.getElementById('itemCurrentPhoto');
+  current.classList.toggle('hidden', !(item && item.cover));
+  if(item && item.cover) current.querySelector('img').src = safeImageUrl(item.cover) || DEFAULT_COVER;
+}
+function toggleAddItemForm(){
+  const form = document.getElementById('addItemForm');
+  const opening = form.classList.contains('hidden');
+  if(opening || editingItem){
+    ['itemName','itemPrice','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+    resetListingImage('itemCover');
+    setItemFormMode(null);
+  }
+  form.classList.toggle('hidden', !opening);
+}
+function editSellerItem(i){
+  const item = getSellerCatalog()[i];
+  if(!item) return;
+  const form = document.getElementById('addItemForm');
+  form.classList.remove('hidden');
+  document.getElementById('itemName').value = item.name || '';
+  document.getElementById('itemPrice').value = item.price || '';
+  document.getElementById('itemDesc').value = item.desc || '';
+  if(item.cat) document.getElementById('itemCat').value = item.cat;
+  if(item.type) document.getElementById('itemType').value = item.type;
+  resetListingImage('itemCover');
+  setItemFormMode(item);
+  form.scrollIntoView({ behavior:'smooth', block:'center' });
+  lucide.createIcons();
+}
 async function addSellerItem(){
   const name = document.getElementById('itemName').value.trim();
   const price = Math.round(parseFloat(document.getElementById('itemPrice').value)*100)/100;
@@ -392,6 +429,7 @@ async function addSellerItem(){
     try{ showToast('Envoi de la photo…','info'); cover = await uploadListingImage(photo); }
     catch(err){ showToast(esc(err.message),'error'); return; }
   }
+  if(editingItem){ await saveEditedItem(editingItem, name, price, desc, cover); return; }
   const profile = getSellerProfile();
   const item = {
     cat: document.getElementById('itemCat').value,
@@ -422,6 +460,26 @@ async function addSellerItem(){
   showToast(sellerRemote.official
     ? "Produit publié dans la <a href='boutique.html' class='underline'>Boutique AkwaOne</a>."
     : "Annonce publiée : elle est visible sur la <a href='marketplace.html' class='underline'>marketplace</a>.",'success');
+}
+async function saveEditedItem(item, name, price, desc, cover){
+  const cat = document.getElementById('itemCat').value;
+  const type = document.getElementById('itemType').value;
+  if(IS_DEMO){
+    const catalog = getSellerCatalog();
+    const idx = catalog.findIndex(p=>String(p.id)===String(item.id));
+    if(idx<0){ showToast("Cette annonce n'existe plus.",'error'); return; }
+    catalog[idx] = { ...catalog[idx], name, price, desc, cat, type, cover: cover || catalog[idx].cover };
+    setSellerCatalog(catalog);
+  } else {
+    const changes = { name: name.slice(0,120), price_cad: price, description: desc.slice(0,2000) || null, category: cat, type };
+    if(cover) changes.cover_url = cover;
+    const { error } = await sb.from('listings').update(changes).eq('id', item.id).eq('seller_id', sellerUserId);
+    if(error){ showToast("L'annonce n'a pas pu être modifiée. Réessayez dans un instant.",'error'); return; }
+    await Promise.all([loadSellerData(), loadRemoteListings()]);
+  }
+  toggleAddItemForm();
+  renderSellerView();
+  showToast('Annonce modifiée.','success');
 }
 async function removeSellerItem(i){
   const catalog = getSellerCatalog();
