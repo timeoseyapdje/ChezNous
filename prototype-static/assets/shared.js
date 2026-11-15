@@ -65,6 +65,10 @@ function isLoggedIn(){
   if(isOfficialShop()){
     style.textContent += `header div:has(> #roleSelect), #cartLauncher, a[href^="mes-commandes.html"], a[href^="devenir-vendeur.html"], .buyer-only{display:none !important}`;
   }
+  style.textContent += siteThemeCss(getSiteTheme());
+  // Annonces des vendeurs Premium : bordure et bouton à la couleur choisie par le vendeur.
+  style.textContent += '.shop-themed{border:2px solid var(--shop-accent) !important}.shop-themed .bg-forest{background-color:var(--shop-accent) !important}';
+  style.id = 'akwaBaseStyle';
   document.head.appendChild(style);
 })();
 
@@ -481,6 +485,7 @@ function listingFromRow(r){
     id: r.id, sellerId: r.seller_id, channel: r.channel==='boutique' ? 'boutique' : 'marketplace', cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
     seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: 0, reviews: 0, plan: 'basique',
     active: r.active !== false, createdAt: r.created_at,
+    accent: /^#[0-9a-f]{6}$/i.test(r.shop_accent || '') ? r.shop_accent : '',
     cover: safeImageUrl(r.cover_url) || DEFAULT_COVER, image: DEFAULT_AVATAR
   };
 }
@@ -828,7 +833,9 @@ function updateAccountButtonGlobal(){
     btn.setAttribute('aria-haspopup','menu');
     const first = userFirstName(getCurrentUser());
     btn.setAttribute('aria-label','Mon compte');
-    btn.innerHTML = `<span class="acct-text"><div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div></span><i data-lucide="circle-user" class="acct-icon w-6 h-6"></i>`;
+    const u = getCurrentUser();
+    const icon = u && safeImageUrl(u.avatar) ? `<img src="${escapeHtmlGlobal(u.avatar)}" alt="" class="acct-icon w-7 h-7 rounded-full object-cover">` : '<i data-lucide="circle-user" class="acct-icon w-6 h-6"></i>';
+    btn.innerHTML = `<span class="acct-text"><div class="text-[10px]">${first ? 'Bonjour, ' + escapeHtmlGlobal(first) : 'Bonjour'}</div><div class="font-semibold">Comptes & Commandes</div></span>${icon}`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.setAttribute('aria-label','Se connecter');
@@ -848,7 +855,7 @@ function toggleAccountMenu(){
   const item = (href, icon, label)=>`<a href="${href}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-sand text-ink text-sm"><i data-lucide="${icon}" class="w-4 h-4"></i> ${label}</a>`;
   menu.innerHTML = `
     <div class="flex items-center gap-3 px-3 py-2 border-b border-line mb-1">
-      <span class="w-10 h-10 rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0">${escapeHtmlGlobal(userInitials(user) || '?')}</span>
+      ${avatarHtml(user, 'w-10 h-10')}
       <div class="min-w-0 text-ink">
         <div class="font-semibold text-sm truncate">${escapeHtmlGlobal(user.name)}</div>
         <div class="text-xs opacity-60 truncate">${escapeHtmlGlobal([user.email, ROLE_NAMES[role]].filter(Boolean).join(' • '))}</div>
@@ -1171,3 +1178,78 @@ function enhancePasswordFields(root){
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ()=>enhancePasswordFields());
 else enhancePasswordFields();
+
+
+// ----- Thèmes Premium -----
+// Thème du site choisi par un vendeur Premium pour lui-même : couleur principale et mode clair ou sombre.
+const THEME_ACCENTS = ['#146B4F','#1D4ED8','#7C3AED','#DB2777','#DC2626','#EA580C','#CA8A04','#0F766E','#131A17'];
+function getSiteTheme(){
+  try{ const t = JSON.parse(localStorage.getItem('akwaone_site_theme') || 'null'); return t && typeof t === 'object' ? t : null; }catch(e){ return null; }
+}
+function saveSiteTheme(theme){
+  try{
+    if(theme && (theme.site_accent || theme.site_mode==='dark')) localStorage.setItem('akwaone_site_theme', JSON.stringify({ site_accent: theme.site_accent || null, site_mode: theme.site_mode || 'light', shop_accent: theme.shop_accent || null }));
+    else localStorage.removeItem('akwaone_site_theme');
+  }catch(e){}
+}
+function hexToRgb(hex){ const n = parseInt(hex.slice(1), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function siteThemeCss(t){
+  if(!t) return '';
+  let css = '';
+  if(/^#[0-9a-f]{6}$/i.test(t.site_accent || '')){
+    const [r,g,b] = hexToRgb(t.site_accent);
+    const dark = `rgb(${Math.round(r*.7)} ${Math.round(g*.7)} ${Math.round(b*.7)})`;
+    css += `.bg-forest{background-color:rgb(${r} ${g} ${b}) !important}.text-forest{color:rgb(${r} ${g} ${b}) !important}.border-forest,.focus\\:border-forest:focus{border-color:rgb(${r} ${g} ${b}) !important}
+.hover\\:bg-forest:hover{background-color:rgb(${r} ${g} ${b}) !important}.hover\\:border-forest:hover{border-color:rgb(${r} ${g} ${b}) !important}
+.bg-forest\\/10{background-color:rgba(${r},${g},${b},.1) !important}.bg-forest\\/15{background-color:rgba(${r},${g},${b},.15) !important}
+.bg-forestDark{background-color:${dark} !important}header .bg-forestDark,header+div .bg-forestDark{background-color:${dark} !important}`;
+  }
+  if(t.site_mode === 'dark'){
+    css += `body{background:#0F1412 !important;color:#E8ECEA !important}
+.bg-white{background-color:#171E1B !important}.bg-sand{background-color:#1F2824 !important}.text-ink{color:#E8ECEA !important}
+.border-line{border-color:#2B3631 !important}.hover\\:bg-sand:hover{background-color:#26302B !important}
+input,select,textarea,.field{background-color:#1A221F !important;color:#E8ECEA !important;border-color:#2B3631 !important}
+.dropdown-panel{background:#171E1B !important;color:#E8ECEA}footer{background:#0F1412 !important}
+.settings-tab{color:#E8ECEA !important}.settings-tab.active,.settings-tab:hover,.theme-mode.on{background:#26302B !important;border-color:#E8ECEA !important}
+.swatch{box-shadow:inset 0 0 0 2px #171E1B !important}.swatch.on{border-color:#E8ECEA !important}`;
+  }
+  return css;
+}
+// Aperçu immédiat (Paramètres → Thème) sans recharger la page.
+function previewSiteTheme(t){
+  let el = document.getElementById('akwaThemePreview');
+  if(!el){ el = document.createElement('style'); el.id = 'akwaThemePreview'; document.head.appendChild(el); }
+  const base = document.getElementById('akwaBaseStyle');
+  if(base) base.textContent = base.textContent.replace(siteThemeCss(getSiteTheme()), '');
+  el.textContent = siteThemeCss(t);
+}
+// Cartes d'annonces : classe et style à ajouter quand le vendeur Premium a choisi une couleur.
+function shopThemeClass(p){ return p && p.accent ? ' shop-themed' : ''; }
+function shopThemeStyle(p){ return p && p.accent ? ` style="--shop-accent:${p.accent}"` : ''; }
+
+// ----- Photo de profil -----
+function avatarHtml(user, sizeClass){
+  const url = user && safeImageUrl(user.avatar);
+  return url
+    ? `<img src="${escapeHtmlGlobal(url)}" alt="" class="${sizeClass} rounded-full object-cover shrink-0">`
+    : `<span class="${sizeClass} rounded-full bg-forest text-white font-bold flex items-center justify-center shrink-0">${escapeHtmlGlobal(userInitials(user) || '?')}</span>`;
+}
+// Démo : photo gardée dans le navigateur. Site réel : déposée dans Supabase Storage (bucket avatars) puis enregistrée sur le profil.
+async function uploadAvatar(file){
+  const problem = checkListingImage(file);
+  if(problem) throw new Error(problem);
+  if(IS_DEMO){
+    const { canvas } = await shrinkImage(file, 256, 0.8);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  }
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) throw new Error('Connexion requise.');
+  const { blob } = await shrinkImage(file, 512, 0.85);
+  const path = `${user.id}/${Date.now()}.jpg`;
+  const { error } = await sb.storage.from('avatars').upload(path, blob, { contentType:'image/jpeg', cacheControl:'31536000', upsert:false });
+  if(error) throw new Error("La photo n'a pas pu être envoyée. Vérifiez que la migration 0012 a été exécutée dans Supabase.");
+  const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  const { error: upErr } = await sb.from('profiles').update({ avatar_url: url }).eq('id', user.id);
+  if(upErr) throw new Error("La photo n'a pas pu être enregistrée sur votre profil.");
+  return url;
+}

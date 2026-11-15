@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AkwaOne — Boutique et marketplace de la diaspora africaine au Canada</title>
-<link rel="stylesheet" href="assets/tailwind.css?v=20261115d">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261115e">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261115d"></script>
-<script src="assets/catalog.js?v=20261115d"></script>
-<script src="assets/shared.js?v=20261115d"></script>
+<script src="assets/i18n-en.js?v=20261115e"></script>
+<script src="assets/catalog.js?v=20261115e"></script>
+<script src="assets/shared.js?v=20261115e"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261115d"></script>
+<script src="assets/auth.js?v=20261115e"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -320,7 +320,9 @@ function updateAccountButton(){
     btn.onclick = toggleAccountMenu;
     btn.setAttribute('aria-label', lang==='fr'?'Mon compte':'My account');
     const first = userFirstName(getCurrentUser());
-    btn.innerHTML = `<span class="acct-text"><div class="text-[10px]">${i18n[lang].greeting}${first ? ', ' + escapeHtmlGlobal(first) : ''}</div><div class="font-semibold">${i18n[lang].accountOrders}</div></span><i data-lucide="circle-user" class="acct-icon w-6 h-6"></i>`;
+    const u = getCurrentUser();
+    const icon = u && safeImageUrl(u.avatar) ? `<img src="${escapeHtmlGlobal(u.avatar)}" alt="" class="acct-icon w-7 h-7 rounded-full object-cover">` : '<i data-lucide="circle-user" class="acct-icon w-6 h-6"></i>';
+    btn.innerHTML = `<span class="acct-text"><div class="text-[10px]">${i18n[lang].greeting}${first ? ', ' + escapeHtmlGlobal(first) : ''}</div><div class="font-semibold">${i18n[lang].accountOrders}</div></span>${icon}`;
   } else {
     btn.onclick = ()=>{ window.location.href='connexion.html'; };
     btn.setAttribute('aria-label', lang==='fr'?'Se connecter':'Sign in');
@@ -445,7 +447,7 @@ function renderFeatured(){
   }
   const e = escapeHtmlGlobal;
   document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
-    <a href="marketplace.html?produit=${encodeURIComponent(p.id)}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block">
+    <a href="marketplace.html?produit=${encodeURIComponent(p.id)}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block${shopThemeClass(p)}"${shopThemeStyle(p)}>
       <div class="relative h-[160px] overflow-hidden">
         <img src="${e(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
