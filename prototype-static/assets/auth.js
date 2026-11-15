@@ -9,11 +9,20 @@ async function fetchServerProfile(){
   if(!sb) throw new Error('Supabase indisponible');
   const { data:{ session } } = await sb.auth.getSession();
   if(!session) return null;
-  const { data, error } = await sb.from('profiles').select('full_name, role').eq('id', session.user.id).maybeSingle();
+  const { data, error } = await sb.from('profiles').select('full_name, role, avatar_url').eq('id', session.user.id).maybeSingle();
   if(error) console.warn('profil Supabase :', error.message);
   // Boutique officielle AkwaOne : compte vendeur unique, sans mode acheteur.
-  const shop = await sb.from('official_shops').select('seller_id').eq('seller_id', session.user.id).maybeSingle();
+  // Thème Premium : appliqué seulement tant que la formule Premium est active.
+  const [shop, theme, plan] = await Promise.all([
+    sb.from('official_shops').select('seller_id').eq('seller_id', session.user.id).maybeSingle(),
+    sb.from('premium_themes').select('site_accent, site_mode, shop_accent').eq('seller_id', session.user.id).maybeSingle(),
+    sb.from('seller_plans').select('plan, status').eq('seller_id', session.user.id).maybeSingle()
+  ]);
+  const premium = !!(plan && plan.data && plan.data.plan==='premium' && plan.data.status==='active');
   return {
+    avatar: (data && safeImageUrl(data.avatar_url)) || '',
+    premium,
+    theme: premium && theme && theme.data ? theme.data : null,
     officialShop: !!(shop && shop.data),
     id: session.user.id,
     email: session.user.email,
@@ -29,7 +38,8 @@ function applyProfileCache(profile){
     // Autre compte sur le même navigateur : rien de l'ancien compte ne doit rester affiché.
     try{ ['akwaone_orders','akwaone_messages_v1','akwaone_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   }
-  saveCurrentUser({ ...(sameUser ? known : {}), name: profile.name, email: profile.email });
+  saveCurrentUser({ ...(sameUser ? known : {}), name: profile.name, email: profile.email, avatar: profile.avatar || '' });
+  saveSiteTheme(profile.theme);
   try{
     localStorage.setItem('akwaone_logged_in','1');
     localStorage.setItem('akwaone_server_role', profile.role);
@@ -41,7 +51,7 @@ function applyProfileCache(profile){
 
 function clearSessionCache(){
   try{
-    ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_official_shop','akwaone_messages_v1','akwaone_orders'].forEach(k=>localStorage.removeItem(k));
+    ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_official_shop','akwaone_site_theme','akwaone_messages_v1','akwaone_orders'].forEach(k=>localStorage.removeItem(k));
   }catch(e){}
 }
 
@@ -100,7 +110,16 @@ async function loadRemoteListings(){
   try{
     let res = await sb.from('listings').select(LISTING_COLUMNS + ', channel').eq('active', true).order('created_at', { ascending:false }).limit(500);
     if(res.error) res = await sb.from('listings').select(LISTING_COLUMNS).eq('active', true).order('created_at', { ascending:false }).limit(500);
-    if(!res.error && res.data) setRemoteListings(res.data);
+    if(!res.error && res.data){
+      // Couleur choisie par les vendeurs Premium pour leurs annonces.
+      const ids = [...new Set(res.data.map(r=>r.seller_id).filter(Boolean))];
+      if(ids.length){
+        const themes = await sb.from('premium_themes').select('seller_id, shop_accent').in('seller_id', ids);
+        const accents = Object.fromEntries(((themes && themes.data) || []).map(t=>[t.seller_id, t.shop_accent]));
+        res.data.forEach(r=>{ r.shop_accent = accents[r.seller_id] || null; });
+      }
+      setRemoteListings(res.data);
+    }
   }catch(e){}
 }
 loadRemoteListings();

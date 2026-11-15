@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paramètres — AkwaOne</title>
-<link rel="stylesheet" href="assets/tailwind.css?v=20261115d">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261115e">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261115d"></script>
-<script src="assets/catalog.js?v=20261115d"></script>
-<script src="assets/shared.js?v=20261115d"></script>
+<script src="assets/i18n-en.js?v=20261115e"></script>
+<script src="assets/catalog.js?v=20261115e"></script>
+<script src="assets/shared.js?v=20261115e"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261115d"></script>
-<script src="assets/passkey.js?v=20261115d"></script>
+<script src="assets/auth.js?v=20261115e"></script>
+<script src="assets/passkey.js?v=20261115e"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -28,6 +28,9 @@ body{background:#FFFFFF;color:#131A17}
 .settings-tab{display:flex;align-items:center;gap:10px;white-space:nowrap;font-size:14px;font-weight:500;padding:8px 12px;border-radius:10px;color:#131A17;opacity:.65;text-align:left}
 .settings-tab:hover{background:#F6F3EE;opacity:1}
 .settings-tab.active{background:#F6F3EE;opacity:1;font-weight:700}
+.swatch{width:32px;height:32px;border-radius:999px;border:2px solid transparent;box-shadow:inset 0 0 0 2px #fff}
+.swatch.on{border-color:#131A17}
+.theme-mode.on{border-color:#131A17;background:#F6F3EE}
 @media (min-width:768px){
   .settings-layout{grid-template-columns:220px minmax(0,1fr);gap:2.5rem}
   .settings-nav{flex-direction:column;overflow:visible;margin:0;padding:0;position:sticky;top:24px;align-self:start}
@@ -54,6 +57,7 @@ body{background:#FFFFFF;color:#131A17}
       <button type="button" data-tab="securite" onclick="showTab('securite')" class="settings-tab"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i><span>Sécurité</span></button>
       <button type="button" data-tab="notifications" onclick="showTab('notifications')" class="settings-tab"><i data-lucide="bell" class="w-4 h-4 shrink-0"></i><span>Notifications</span></button>
       <button type="button" data-tab="paiements" onclick="showTab('paiements')" class="settings-tab"><i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i><span>Paiements</span></button>
+      <button type="button" data-tab="theme" onclick="showTab('theme')" class="settings-tab"><i data-lucide="palette" class="w-4 h-4 shrink-0"></i><span>Thème</span></button>
       <button type="button" data-tab="session" onclick="showTab('session')" class="settings-tab"><i data-lucide="log-out" class="w-4 h-4 shrink-0"></i><span>Session</span></button>
     </nav>
     <div class="min-w-0">
@@ -61,6 +65,21 @@ body{background:#FFFFFF;color:#131A17}
         <h2 class="font-display font-bold text-2xl">Compte</h2>
         <p class="text-sm opacity-60 mt-1">Votre nom, votre téléphone, votre ville et votre activité sur AkwaOne.</p>
         <div class="space-y-4 mt-6">
+    <div class="bg-white border border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="image" class="w-5 h-5"></i> Photo de profil</h2>
+      <div class="flex items-center gap-4 mt-4">
+        <div id="avatarPreview" class="shrink-0"></div>
+        <div class="flex flex-wrap gap-2">
+          <label class="bg-ink text-white rounded-full px-5 py-2.5 text-sm font-bold cursor-pointer">
+            <input id="avatarInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="changeAvatar(this)">
+            Changer la photo
+          </label>
+          <button id="avatarRemoveBtn" onclick="removeAvatar()" class="hidden border border-line rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-sand">Retirer</button>
+        </div>
+      </div>
+      <p class="text-xs opacity-60 mt-3">JPG, PNG ou WebP. La photo est recadrée et allégée automatiquement.</p>
+      <div id="avatarMsg" class="form-msg hidden"></div>
+    </div>
 <form id="identityForm" onsubmit="return saveIdentity(event)" class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i> Informations personnelles</h2>
       <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOM COMPLET</label>
@@ -174,6 +193,46 @@ body{background:#FFFFFF;color:#131A17}
     </div>
         </div>
       </section>
+      <section id="tab-theme" data-panel="theme" class="hidden">
+        <h2 class="font-display font-bold text-2xl">Thème</h2>
+        <p class="text-sm opacity-60 mt-1">Personnalisez l'apparence du site et de vos annonces. Réservé à la formule Premium.</p>
+        <div class="space-y-4 mt-6">
+          <div id="themeLocked" class="hidden bg-white border border-line rounded-2xl p-6">
+            <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Disponible avec la formule Premium</h2>
+            <p class="text-sm opacity-70 mt-2">Avec la formule Premium, choisissez la couleur et le mode (clair ou sombre) du site pour vous, et une couleur pour vos annonces, visible par tous les visiteurs.</p>
+            <a href="devenir-vendeur.html" class="inline-flex items-center gap-2 mt-4 bg-forest text-white rounded-full px-5 py-2.5 text-sm font-bold">Passer à la formule Premium <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+          </div>
+          <div id="themeEditor" class="hidden space-y-4">
+            <div class="bg-white border border-line rounded-2xl p-6">
+              <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="monitor" class="w-5 h-5"></i> Apparence du site (pour vous)</h2>
+              <p class="text-sm opacity-60 mt-1">Seul vous voyez ce thème quand vous êtes connecté.</p>
+              <div class="text-xs font-bold tracking-widest opacity-60 mt-4">COULEUR PRINCIPALE</div>
+              <div id="siteAccentSwatches" class="flex flex-wrap items-center gap-2 mt-2"></div>
+              <div class="text-xs font-bold tracking-widest opacity-60 mt-5">MODE</div>
+              <div class="flex gap-2 mt-2">
+                <button type="button" data-mode="light" onclick="setThemeMode('light')" class="theme-mode flex-1 border border-line rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2"><i data-lucide="sun" class="w-4 h-4"></i> Clair</button>
+                <button type="button" data-mode="dark" onclick="setThemeMode('dark')" class="theme-mode flex-1 border border-line rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2"><i data-lucide="moon" class="w-4 h-4"></i> Sombre</button>
+              </div>
+            </div>
+            <div class="bg-white border border-line rounded-2xl p-6">
+              <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="store" class="w-5 h-5"></i> Thème de vos annonces (visible par tous)</h2>
+              <p class="text-sm opacity-60 mt-1">Vos annonces sur la marketplace et l'accueil prennent cette couleur : bordure et bouton.</p>
+              <div id="shopAccentSwatches" class="flex flex-wrap items-center gap-2 mt-4"></div>
+              <div class="mt-4" style="max-width:260px">
+                <div id="shopPreviewCard" class="bg-white rounded-xl border border-line overflow-hidden">
+                  <div class="h-20 bg-sand flex items-center justify-center text-xs opacity-60">Aperçu de votre annonce</div>
+                  <div class="p-3"><div class="font-semibold text-sm">Votre produit</div><div class="mt-3 bg-forest text-white rounded-full py-1.5 text-xs font-bold text-center">Voir le produit</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="themeSaveBtn" onclick="saveTheme()" class="bg-forest text-white rounded-full px-6 py-2.5 text-sm font-bold">Enregistrer le thème</button>
+              <button onclick="resetTheme()" class="border border-line rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-sand">Revenir au thème AkwaOne</button>
+            </div>
+            <div id="themeMsg" class="form-msg hidden"></div>
+          </div>
+        </div>
+      </section>
       <section id="tab-session" data-panel="session" class="hidden">
         <h2 class="font-display font-bold text-2xl">Session</h2>
         <p class="text-sm opacity-60 mt-1">Déconnexion et suppression du compte.</p>
@@ -235,7 +294,7 @@ renderChatWidget();
 lucide.createIcons();
 
 // Onglets des paramètres (barre latérale) : l'onglet ouvert suit l'adresse (#securite, #paiements…).
-const SETTINGS_TABS = ['compte','connexion','securite','notifications','paiements','session'];
+const SETTINGS_TABS = ['compte','connexion','securite','notifications','paiements','theme','session'];
 function showTab(tab, keepHash){
   if(!SETTINGS_TABS.includes(tab)) tab = 'compte';
   document.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('hidden', p.dataset.panel!==tab));
@@ -274,7 +333,7 @@ function authErrorText(err){
 
 function renderHeaderCard(){
   const user = getCurrentUser() || { name:'', email:'' };
-  document.getElementById('profileAvatar').textContent = userInitials(user) || '?';
+  renderAvatar();
   document.getElementById('profileSummary').textContent = [user.email, ROLE_NAMES[me.role] || 'Acheteur'].filter(Boolean).join(' • ');
 }
 function renderActivity(plan){
@@ -327,6 +386,95 @@ async function loadProfile(){
   loadMfa();
   loadPasskeys();
   loadPayments();
+  loadTheme(plan);
+}
+
+// ----- Photo de profil -----
+function renderAvatar(){
+  const user = getCurrentUser() || {};
+  const url = safeImageUrl(user.avatar);
+  const head = document.getElementById('profileAvatar');
+  head.innerHTML = url ? `<img src="${escapeHtmlGlobal(url)}" alt="" class="w-full h-full rounded-full object-cover">` : escapeHtmlGlobal(userInitials(user) || '?');
+  document.getElementById('avatarPreview').innerHTML = avatarHtml(user, 'w-20 h-20 text-2xl');
+  document.getElementById('avatarRemoveBtn').classList.toggle('hidden', !url);
+  if(typeof updateAccountButtonGlobal === 'function') updateAccountButtonGlobal();
+}
+async function changeAvatar(input){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  try{
+    showMsg('avatarMsg', 'Envoi de la photo…', true);
+    const url = await uploadAvatar(file);
+    saveCurrentUser({ ...(getCurrentUser() || {}), avatar: url });
+    renderAvatar();
+    showMsg('avatarMsg', 'Photo de profil mise à jour.', true);
+  }catch(err){ showMsg('avatarMsg', err.message, false); }
+}
+async function removeAvatar(){
+  if(!await confirmDialog({ title:'Retirer votre photo de profil ?', message:'Vos initiales s\'afficheront à la place.', confirmLabel:'Retirer', icon:'image-off' })) return;
+  if(!IS_DEMO){
+    const { error } = await sb.from('profiles').update({ avatar_url: null }).eq('id', me.id);
+    if(error){ showMsg('avatarMsg', "La photo n'a pas pu être retirée.", false); return; }
+  }
+  saveCurrentUser({ ...(getCurrentUser() || {}), avatar: '' });
+  renderAvatar();
+  showMsg('avatarMsg', 'Photo retirée.', true);
+}
+
+// ----- Thème (formule Premium) -----
+let themeDraft = { site_accent: null, site_mode: 'light', shop_accent: null };
+function isPremiumPlan(plan){
+  if(IS_DEMO){ try{ return (JSON.parse(readLocal('akwaone_seller_profile') || 'null') || {}).plan === 'premium'; }catch(e){ return false; } }
+  return plan === 'premium';
+}
+function swatchesHtml(field){
+  const current = themeDraft[field];
+  return THEME_ACCENTS.map(c=>`<button type="button" class="swatch ${current===c?'on':''}" style="background:${c}" aria-label="Couleur ${c}" onclick="pickAccent('${field}','${c}')"></button>`).join('')
+    + `<label class="swatch flex items-center justify-center cursor-pointer ${current && !THEME_ACCENTS.includes(current) ? 'on' : ''}" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)" title="Couleur personnalisée"><input type="color" class="opacity-0" style="width:0;height:0" value="${current || '#146B4F'}" onchange="pickAccent('${field}', this.value)"></label>`;
+}
+function renderThemeEditor(){
+  document.getElementById('siteAccentSwatches').innerHTML = swatchesHtml('site_accent');
+  document.getElementById('shopAccentSwatches').innerHTML = swatchesHtml('shop_accent');
+  document.querySelectorAll('.theme-mode').forEach(b=>b.classList.toggle('on', b.dataset.mode===themeDraft.site_mode));
+  const card = document.getElementById('shopPreviewCard');
+  card.className = 'bg-white rounded-xl border border-line overflow-hidden' + (themeDraft.shop_accent ? ' shop-themed' : '');
+  card.style.setProperty('--shop-accent', themeDraft.shop_accent || '');
+  previewSiteTheme(themeDraft);
+}
+function pickAccent(field, color){ themeDraft[field] = color.toUpperCase(); renderThemeEditor(); }
+function setThemeMode(mode){ themeDraft.site_mode = mode; renderThemeEditor(); }
+async function loadTheme(plan){
+  const premium = isPremiumPlan(plan);
+  document.getElementById('themeLocked').classList.toggle('hidden', premium);
+  document.getElementById('themeEditor').classList.toggle('hidden', !premium);
+  if(!premium) return;
+  const saved = getSiteTheme();
+  if(saved) themeDraft = { site_accent: saved.site_accent || null, site_mode: saved.site_mode || 'light', shop_accent: saved.shop_accent || null };
+  if(!IS_DEMO && me.id){
+    const { data } = await sb.from('premium_themes').select('site_accent, site_mode, shop_accent').eq('seller_id', me.id).maybeSingle();
+    if(data) themeDraft = { site_accent: data.site_accent, site_mode: data.site_mode || 'light', shop_accent: data.shop_accent };
+  }
+  renderThemeEditor();
+}
+async function saveTheme(){
+  setBusy('themeSaveBtn', true);
+  try{
+    if(!IS_DEMO){
+      const { error } = await sb.from('premium_themes').upsert({ seller_id: me.id, ...themeDraft, updated_at: new Date().toISOString() });
+      if(error) throw new Error("Le thème n'a pas pu être enregistré. Vérifiez que votre formule Premium est active.");
+    }
+    saveSiteTheme(themeDraft);
+    showMsg('themeMsg', 'Thème enregistré. Il s\'applique sur tout le site.', true);
+  }catch(err){ showMsg('themeMsg', err.message, false); }
+  finally{ setBusy('themeSaveBtn', false); }
+}
+async function resetTheme(){
+  themeDraft = { site_accent: null, site_mode: 'light', shop_accent: null };
+  renderThemeEditor();
+  if(!IS_DEMO) await sb.from('premium_themes').delete().eq('seller_id', me.id);
+  saveSiteTheme(null);
+  showMsg('themeMsg', 'Thème AkwaOne rétabli.', true);
 }
 
 // ----- Double authentification (TOTP Supabase) -----
