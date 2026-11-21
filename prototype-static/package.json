@@ -1,0 +1,8 @@
+{
+  "name": "akwaone-site",
+  "private": true,
+  "description": "Site AkwaOne (pages statiques + fonctions /api sur Vercel)",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.12.0"
+  }
+}
