@@ -1257,7 +1257,7 @@ async function uploadAvatar(file){
 // ----- Google AdSense -----
 // Identifiant éditeur AdSense (ca-pub-…) : à renseigner une fois le compte AdSense créé, avec le fichier /ads.txt.
 // Tant qu'il est vide, aucun script publicitaire n'est chargé.
-const ADSENSE_CLIENT = 'ca-pub-2952261428752027';
+const ADSENSE_CLIENT = 'ca-pub-8942815586687518';
 // Pas de publicité sur les pages de compte, de paiement et de messagerie, ni sur la démo.
 const NO_ADS_PAGES = ['connexion.html','reinitialiser-mot-de-passe.html','profil.html','mes-commandes.html','messagerie.html','tableau-de-bord.html'];
 function loadAdSense(){
