@@ -1014,7 +1014,7 @@ function toggleChat(){
   panel.style.display = opening ? 'flex' : 'none';
   if(opening && !chatStarted){
     chatStarted = true;
-    addBotMessage("Bonjour, je suis Malik, l'assistant AkwaOne. Je peux vous guider ou répondre à vos questions sur les commandes, la vente ou la livraison.");
+    addBotMessage("Bonjour, je suis Malik, l'assistant AkwaOne. Posez-moi votre question : commande, paiement, livraison, retour, compte ou vente, je vous guide.");
     renderChatChips();
   }
   if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -1058,7 +1058,57 @@ function handleUserInput(text){
     setTimeout(()=>{ addBotMessage("La visite guidée est disponible sur la page d'accueil. <a href='index.html' class='underline text-forest'>Retourner à l'accueil</a>"); }, 400);
     return;
   }
-  setTimeout(()=>{ addBotMessage(getBotAnswer(m)); }, 400);
+  askMalik(text, m);
+}
+
+// ----- Malik IA (Claude, via api/malik) -----
+// Historique de la conversation (texte brut) envoyé au serveur ; les réponses toutes faites restent en secours.
+const malikHistory = [];
+let malikBusy = false;
+// Rendu sûr : texte échappé, puis liens Markdown limités aux pages du site, au courriel et à l'ancre interne, et **gras**.
+function renderMalikText(text){
+  let h = escapeHtmlGlobal(text);
+  h = h.replace(/\[([^\]]{1,80})\]\(([a-z0-9-]+\.html(?:#[a-z0-9-]+)?)\)/gi, '<a href="$2" class="underline text-forest">$1</a>');
+  h = h.replace(/\b([a-z0-9._-]+@akwaone\.ca)\b/gi, '<a href="mailto:$1" class="underline text-forest">$1</a>');
+  h = h.replace(/\*\*([^*]{1,120})\*\*/g, '<strong>$1</strong>');
+  return h.replace(/\n/g, '<br>');
+}
+function showMalikTyping(on){
+  const box = document.getElementById('malikMsgs');
+  let el = document.getElementById('malikTyping');
+  if(on && !el){
+    el = document.createElement('div');
+    el.id = 'malikTyping';
+    el.className = 'bg-sand text-ink rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[82%] opacity-70';
+    el.textContent = 'Malik écrit…';
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  } else if(!on && el){ el.remove(); }
+}
+async function askMalik(text, lower){
+  if(malikBusy) return;
+  malikBusy = true;
+  malikHistory.push({ role:'user', content:text });
+  showMalikTyping(true);
+  try{
+    const res = await fetch('api/malik', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ messages: malikHistory.slice(-12) })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.reply) throw new Error(data.error || 'indisponible');
+    malikHistory.push({ role:'assistant', content:data.reply });
+    showMalikTyping(false);
+    addBotMessage(renderMalikText(data.reply));
+  }catch(err){
+    // IA indisponible (clé absente, limite atteinte, réseau) : réponse toute faite.
+    malikHistory.pop();
+    showMalikTyping(false);
+    addBotMessage(getBotAnswer(lower));
+  }finally{
+    malikBusy = false;
+  }
 }
 const BOT_INTENTS = [
   {key:'hello', re:/bonjour|salut|^hello|^hi\b|^hey\b|coucou/},
