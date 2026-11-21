@@ -1253,3 +1253,29 @@ async function uploadAvatar(file){
   if(upErr) throw new Error("La photo n'a pas pu être enregistrée sur votre profil.");
   return url;
 }
+
+// ----- Google AdSense -----
+// Identifiant éditeur AdSense (ca-pub-…) : à renseigner une fois le compte AdSense créé, avec le fichier /ads.txt.
+// Tant qu'il est vide, aucun script publicitaire n'est chargé.
+const ADSENSE_CLIENT = '';
+// Pas de publicité sur les pages de compte, de paiement et de messagerie, ni sur la démo.
+const NO_ADS_PAGES = ['connexion.html','reinitialiser-mot-de-passe.html','profil.html','mes-commandes.html','messagerie.html','tableau-de-bord.html'];
+function loadAdSense(){
+  if(!ADSENSE_CLIENT || IS_DEMO || window.__akwaAdsLoaded) return;
+  const page = location.pathname.split('/').pop() || 'index.html';
+  if(NO_ADS_PAGES.includes(page)) return;
+  let consent = null;
+  try{ consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
+  if(!consent) return; // on attend le choix dans le bandeau cookies
+  window.__akwaAdsLoaded = true;
+  window.adsbygoogle = window.adsbygoogle || [];
+  // Cookies publicitaires refusés : annonces non personnalisées uniquement.
+  if(consent !== 'accepted') window.adsbygoogle.requestNonPersonalizedAds = 1;
+  const s = document.createElement('script');
+  s.async = true;
+  s.crossOrigin = 'anonymous';
+  s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(ADSENSE_CLIENT);
+  document.head.appendChild(s);
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadAdSense);
+else loadAdSense();
