@@ -1270,7 +1270,10 @@ function loadAdSense(){
   window.__akwaAdsLoaded = true;
   window.adsbygoogle = window.adsbygoogle || [];
   // Cookies publicitaires refusés : annonces non personnalisées uniquement.
-  if(consent !== 'accepted') window.adsbygoogle.requestNonPersonalizedAds = 1;
+  window.adsbygoogle.requestNonPersonalizedAds = consent === 'accepted' ? 0 : 1;
+  // Le script est déjà dans le <head> des pages publiques (validation AdSense) : on lève simplement la pause.
+  window.adsbygoogle.pauseAdRequests = 0;
+  if(document.querySelector('script[src*="adsbygoogle.js"]')) return;
   const s = document.createElement('script');
   s.async = true;
   s.crossOrigin = 'anonymous';
