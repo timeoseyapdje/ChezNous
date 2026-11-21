@@ -6,7 +6,8 @@ const Anthropic = sdk.default || sdk;
 // Malik : assistant IA du service client AkwaOne (Claude). POST { messages: [{ role, content }], lang }
 // La clé ANTHROPIC_API_KEY reste côté serveur. Sans clé, l'API répond 503 et le site retombe sur ses réponses toutes faites.
 
-const MODEL = 'claude-opus-5-5';
+// Modèle le moins cher : n'est appelé que pour les questions que les réponses toutes faites ne couvrent pas.
+const MODEL = 'claude-haiku-5-5';
 const MAX_TURNS = 12;          // derniers messages envoyés au modèle
 const MAX_CHARS = 1200;        // longueur maximale d'un message
 const RATE_LIMIT = 20;         // messages par visiteur…
@@ -119,14 +120,11 @@ module.exports = async (req, res) => {
 
   const client = new Anthropic();
   try {
-    const response = await client.beta.messages.create({
+    const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2048,
-      // Questions courantes du service client : effort bas, réponses rapides.
+      // Questions courantes du service client : effort bas, réponses rapides et peu coûteuses.
       output_config: { effort: 'low' },
-      // Si Claude Opus 5.5 décline une demande, l'API la relance sur un modèle de secours adapté.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
       system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages,
     });

@@ -1058,7 +1058,22 @@ function handleUserInput(text){
     setTimeout(()=>{ addBotMessage("La visite guidée est disponible sur la page d'accueil. <a href='index.html' class='underline text-forest'>Retourner à l'accueil</a>"); }, 400);
     return;
   }
+  // Réponse toute faite d'abord (gratuite) ; l'IA n'est appelée que si aucune ne correspond.
+  const intent = matchBotIntent(m);
+  if(intent){
+    const answer = getBotAnswer(m);
+    malikHistory.push({ role:'user', content:text }, { role:'assistant', content:answer.replace(/<[^>]+>/g, '') });
+    setTimeout(()=>{ addBotMessage(answer); }, 400);
+    return;
+  }
   askMalik(text, m);
+}
+// Une réponse toute faite seulement pour une question courte et générale ; un vrai problème décrit part à l'IA.
+const MALIK_PROBLEM_RE = /probl|souci|pas re[çc]u|jamais re[çc]u|pas arriv|bloqu|erreur|bug|marche pas|fonctionne pas|impossible|n'arrive pas|arnaque|fraud|vol[ée]|urgent|toujours pas|pourquoi|not received|doesn'?t work|not working|error|stuck|scam|why/;
+function matchBotIntent(m){
+  const words = m.split(/\s+/).filter(Boolean).length;
+  if(words > 8 || MALIK_PROBLEM_RE.test(m)) return null;
+  return BOT_INTENTS.find(i=>i.re.test(m)) || null;
 }
 
 // ----- Malik IA (Claude, via api/malik) -----
