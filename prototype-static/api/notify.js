@@ -7,9 +7,40 @@ const { retryPendingPayouts } = require('./_payouts');
 //  POST { action: 'message', messageId }   prévient le destinataire d'un nouveau message (s'il a accepté les courriels)
 //  GET  (tâche planifiée Vercel, chaque jour) rappels 24 h avant les réservations + réessai des versements aux vendeurs
 //       Vercel envoie « Authorization: Bearer CRON_SECRET » : variable CRON_SECRET à définir dans Vercel.
+//  POST ?relais=1                          relais du suivi des erreurs (Sentry) par le domaine du site, pour que
+//                                          les bloqueurs de publicité ne coupent pas les rapports d'erreur.
+
+// Seul le projet Sentry d'AkwaOne est accepté par le relais.
+const SENTRY_HOST = 'o4512476959735808.ingest.us.sentry.io';
+const SENTRY_PROJECT = '4512477670014976';
+
+async function readRawBody(req) {
+  if (typeof req.body === 'string') return req.body;
+  if (Buffer.isBuffer(req.body)) return req.body.toString('utf8');
+  if (req.body && typeof req.body === 'object') return null; // déjà converti en JSON : pas une enveloppe Sentry
+  let raw = '';
+  for await (const chunk of req) { raw += chunk; if (raw.length > 1024 * 1024) break; }
+  return raw;
+}
+
+async function relayErrors(req, res) {
+  const raw = await readRawBody(req);
+  if (!raw || raw.length > 1024 * 1024) return send(res, 400, { error: 'Enveloppe invalide' });
+  let header;
+  try { header = JSON.parse(raw.slice(0, raw.indexOf('\n'))); } catch (e) { return send(res, 400, { error: 'Enveloppe invalide' }); }
+  let dsn;
+  try { dsn = new URL(header.dsn); } catch (e) { return send(res, 400, { error: 'DSN invalide' }); }
+  if (dsn.hostname !== SENTRY_HOST || dsn.pathname.replace(/\//g, '') !== SENTRY_PROJECT) return send(res, 403, { error: 'Projet non autorisé' });
+  const r = await fetch(`https://${SENTRY_HOST}/api/${SENTRY_PROJECT}/envelope/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-sentry-envelope' }, body: raw,
+  });
+  res.statusCode = r.status;
+  res.end();
+}
 
 module.exports = async (req, res) => {
   try {
+    if (req.method === 'POST' && /[?&]relais=1/.test(req.url || '')) return await relayErrors(req, res);
     if (req.method === 'GET') return send(res, 200, await dailyJob(req));
     if (req.method !== 'POST') return send(res, 405, { error: 'Méthode non autorisée' });
     const body = await readJson(req).catch(() => ({}));
