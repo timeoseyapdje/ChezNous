@@ -26,13 +26,13 @@
 <meta name="twitter:title" content="Marketplace — AkwaOne">
 <meta name="twitter:description" content="Achetez auprès des vendeurs indépendants de la diaspora africaine au Canada : épicerie, mode et tissus, beauté et cheveux afro, artisanat, traiteurs et services.">
 <meta name="twitter:image" content="https://www.akwaone.ca/assets/logos/akwaone-og.png">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -69,15 +69,15 @@ body{background:#FFFFFF;color:#131A17}
     </div>
 
     <div class="flex-1 min-w-[220px] flex bg-white rounded-md overflow-hidden">
-      <input id="heroSearch" oninput="filterMarket()" placeholder="Rechercher un produit, un plat, un service..." class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
-      <button onclick="filterMarket()" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
+      <input id="heroSearch" oninput="filterMarket()" placeholder="Rechercher sur AkwaOne…" aria-label="Rechercher un produit, un plat, un service" class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
+      <button onclick="filterMarket()" aria-label="Rechercher" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
         <i data-lucide="search" class="w-4 h-4"></i>
       </button>
     </div>
 
     <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
-      <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
-      <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
+      <select id="currencySelect" onchange="setCurrency(this.value)" aria-label="Devise" class="bg-transparent text-xs font-medium outline-none cursor-pointer" style="max-width:170px"></select>
+      <select id="langSelect" aria-label="Langue" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
       <div class="relative">
         <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
         <div id="accountMenu" class="dropdown-panel hidden"></div>
@@ -107,13 +107,13 @@ body{background:#FFFFFF;color:#131A17}
       <div id="navCategoryLinks" class="hidden xl:flex items-center gap-5"></div>
       <div class="hidden md:flex items-center gap-2 ml-auto shrink-0">
         <span class="text-[10px] font-semibold opacity-60">RÔLE</span>
-        <select id="roleSelect" onchange="changeRole(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
+        <select id="roleSelect" aria-label="Rôle" onchange="changeRole(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
           <option value="buyer" class="text-ink">Acheteur</option>
           <option value="seller" class="text-ink">Vendeur</option>
           <option value="admin" class="text-ink">Administrateur</option>
         </select>
       </div>
-      <a href="devenir-vendeur.html" class="shrink-0 font-semibold hover:opacity-80">Vendre sur AkwaOne</a>
+      <a href="devenir-vendeur.html" class="shrink-0 font-semibold hover:opacity-80"><span class="md:hidden">Vendre</span><span class="hidden md:inline">Vendre sur AkwaOne</span></a>
     </div>
   </div>
 </header>
@@ -129,21 +129,30 @@ body{background:#FFFFFF;color:#131A17}
           <button onclick="setMarketTab('all')" id="tabAll" class="marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white">Tout</button>
           <button onclick="setMarketTab('produit')" id="tabProduit" class="marketTab px-5 py-2 rounded-full text-sm font-semibold">Produits</button>
           <button onclick="setMarketTab('service')" id="tabService" class="marketTab px-5 py-2 rounded-full text-sm font-semibold">Services</button>
+          <button onclick="setMarketTab('favoris')" id="tabFavoris" class="marketTab px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1" aria-label="Mes favoris"><i data-lucide="heart" class="w-3.5 h-3.5"></i> Favoris</button>
         </div>
         <span id="resultsCount" class="text-xs font-semibold opacity-50 ml-2 shrink-0">12 résultats</span>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <select id="filterCategory" onchange="filterMarket()" class="border border-line rounded-full px-4 py-2 text-sm bg-sand font-medium">
+        <select id="filterCategory" onchange="filterMarket()" aria-label="Catégorie" class="border border-line rounded-full px-4 py-2 text-sm bg-sand font-medium">
           <option value="">Toutes catégories</option>
         </select>
-        <select id="filterCity" onchange="filterMarket()" class="border border-line rounded-full px-4 py-2 text-sm bg-white font-medium">
+        <select id="filterCity" onchange="filterMarket()" aria-label="Ville" class="border border-line rounded-full px-4 py-2 text-sm bg-white font-medium">
           <option value="">Toutes villes</option>
           <option>Toronto</option><option>Montréal</option><option>Vancouver</option><option>Calgary</option>
           <option>Ottawa</option><option>Québec</option><option>Winnipeg</option><option>Edmonton</option>
         </select>
+        <select id="sortMarket" onchange="filterMarket()" aria-label="Trier les annonces" class="border border-line rounded-full px-4 py-2 text-sm bg-white font-medium">
+          <option value="">Pertinence</option>
+          <option value="price-asc">Prix croissant</option>
+          <option value="price-desc">Prix décroissant</option>
+          <option value="rating">Mieux notés</option>
+          <option value="new">Nouveautés</option>
+        </select>
         <button onclick="resetFilters()" class="text-xs underline opacity-60 ml-2">Réinitialiser</button>
       </div>
     </div>
+    <div id="recentStrip" class="hidden mt-5"></div>
     <div id="cardsGrid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6"></div>
   </div>
 
@@ -179,7 +188,7 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </main>
 
-<footer id="footer" class="bg-white border-t border-line mt-6">
+<footer id="footer" class="bg-white border-t border-line mt-10">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
     <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
@@ -191,9 +200,11 @@ body{background:#FFFFFF;color:#131A17}
         <ul class="mt-3 space-y-2 opacity-70">
           <li><a href="index.html" class="hover:underline">Accueil</a></li>
           <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
-          <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
-          <li><a href="messagerie.html" class="hover:underline">Messagerie</a></li>
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
           <li><a href="contact.html" class="hover:underline">Contact</a></li>
         </ul>
       </div>
@@ -201,15 +212,16 @@ body{background:#FFFFFF;color:#131A17}
         <div class="font-semibold">Légal</div>
         <ul class="mt-3 space-y-2 opacity-70">
           <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
           <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
           <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
-          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
         </ul>
       </div>
     </div>
-    <div class="mt-8 pt-6 border-t border-line text-[10px] opacity-40 leading-relaxed">
-      Outils de contrôle et de conformité financière : vérification automatisée des vendeurs, plafonds de transaction et détection d'anomalies fournis par les infrastructures Stripe Radar et Supabase. Modération de contenu assistée par l'API Claude (Anthropic). Ces services sont fournis par des tiers indépendants d'AJ Cleaning
-    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 AJ Cleaning. Tous droits réservés.</div>
   </div>
 </footer>
 
@@ -225,7 +237,7 @@ body{background:#FFFFFF;color:#131A17}
   <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[520px] bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
     <div class="p-6 border-b border-line flex items-center justify-between">
       <h3 class="font-display text-xl font-bold">Réserver un créneau</h3>
-      <button onclick="closeBooking()" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="closeBooking()" aria-label="Fermer" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div class="p-6 overflow-auto space-y-5" id="bookingBody"></div>
   </div>
@@ -236,11 +248,14 @@ body{background:#FFFFFF;color:#131A17}
   <div class="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white flex flex-col">
     <div class="p-5 border-b border-line flex items-center justify-between">
       <h3 class="font-display text-xl font-bold">Panier</h3>
-      <button onclick="closeCart()" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="closeCart()" aria-label="Fermer" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div id="cartItems" class="flex-1 overflow-auto p-5 space-y-4"></div>
     <div class="p-5 border-t border-line space-y-3">
       <div class="flex justify-between text-sm"><span class="opacity-60">Sous-total</span><span id="cartSubtotal" class="font-semibold">0.00 $</span></div>
+      <div id="cartShippingRow" class="hidden flex justify-between text-sm"><span class="opacity-60">Livraison (une par vendeur)</span><span id="cartShipping" class="font-semibold">0.00 $</span></div>
+      <div class="flex justify-between text-sm font-bold"><span>Total</span><span id="cartTotalAmount">0.00 $</span></div>
+      <p class="text-[11px] opacity-50">Codes promo AkwaOne : saisissez-les sur la page de paiement sécurisée.</p>
       <button onclick="checkoutCart()" class="w-full bg-coral hover:brightness-95 text-white rounded-full py-3 font-bold">Passer à la caisse</button>
       <p class="text-center text-[11px] opacity-50">Livraison estimée 3 à 5 jours ouvrables</p>
     </div>
@@ -255,7 +270,7 @@ body{background:#FFFFFF;color:#131A17}
         <div class="font-display font-bold text-lg">Finaliser le paiement</div>
         <div class="text-xs opacity-50">Chiffrement 256-bit • Reçu automatique</div>
       </div>
-      <button onclick="closeStripe()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="closeStripe()" aria-label="Fermer" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div class="p-6 space-y-5">
       <div id="stripeDetail" class="bg-white/10 rounded-2xl p-4 flex justify-between items-center"></div>
@@ -351,12 +366,15 @@ function renderMarket(list=marketListings()){
   document.getElementById('cardsGrid').innerHTML = list.map(p=>`
     <div class="bg-white rounded-xl border border-line overflow-hidden card-hover group cursor-pointer${shopThemeClass(p)}"${shopThemeStyle(p)} onclick="openProfile(${jsArg(p.id)})">
       <div class="relative h-[160px] overflow-hidden">
-        <img src="${esc(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <img src="${esc(p.cover)}" alt="${esc(p.name)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-        <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
+        <div class="absolute top-3 left-3 flex gap-1.5">
+          <span class="bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</span>
+          ${planBoost(p) ? `<span class="bg-gold text-ink rounded-full px-2.5 py-1 text-[11px] font-bold flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Mis en avant</span>` : ''}
+        </div>
         <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1">${p.reviews ? `<i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating} <span class="opacity-60 font-normal">(${p.reviews})</span>` : 'Nouveau'}</div>
         <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2">
-          <img src="${esc(p.image)}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
+          <img src="${esc(p.image)}" alt="" class="w-9 h-9 rounded-full border-2 border-white object-cover">
           <div class="text-white">
             <div class="font-semibold text-sm leading-none">${esc(p.seller)}</div>
             <div class="text-xs opacity-80">${esc(p.city)}</div>
@@ -365,7 +383,10 @@ function renderMarket(list=marketListings()){
         </div>
       </div>
       <div class="p-4">
-        <div class="font-semibold text-[15px] leading-tight">${esc(p.name)}</div>
+        <div class="flex items-start gap-2">
+          <a href="produit.html?id=${encodeURIComponent(p.id)}" onclick="event.stopPropagation()" class="font-semibold text-[15px] leading-tight flex-1 hover:underline">${esc(p.name)}</a>
+          <button onclick="event.stopPropagation();toggleFavorite(${jsArg(p.id)})" aria-label="${isFavorite(p.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${isFavorite(p.id)}" class="shrink-0 w-8 h-8 rounded-full hover:bg-sand flex items-center justify-center" style="margin-top:-4px"><i data-lucide="heart" class="w-4 h-4 ${isFavorite(p.id)?'fill-coral text-coral':''}"></i></button>
+        </div>
         <div class="text-xs opacity-60 mt-1 line-clamp-2">${esc(p.desc)}</div>
         <div class="flex flex-wrap gap-1.5 mt-3">
           ${p.tags.map(t=>`<span class="text-[11px] bg-sand border border-line px-2 py-1 rounded-full">${esc(t)}</span>`).join('')}
@@ -387,16 +408,53 @@ function filterMarket(){
   const q = normalizeText(document.getElementById('heroSearch').value.trim());
   const cat = document.getElementById('filterCategory').value;
   const city = document.getElementById('filterCity').value;
+  const favs = marketTab==='favoris' ? new Set(getFavorites().map(String)) : null;
   const filtered = marketListings().filter(p=>{
-    if(marketTab!=='all' && p.type!==marketTab) return false;
+    if(favs){ if(!favs.has(String(p.id))) return false; }
+    else if(marketTab!=='all' && p.type!==marketTab) return false;
     if(cat && p.cat!==cat) return false;
     if(city && p.city!==city) return false;
     if(q && !normalizeText([p.name, p.seller, p.tags.join(' '), p.desc, p.city].join(' ')).includes(q)) return false;
     return true;
   });
+  // Tri. Pertinence : vendeurs Pro et Premium mis en avant, puis note et nombre d'avis, puis nouveauté.
+  const sort = (document.getElementById('sortMarket') || {}).value || '';
+  const score = (p)=> (p.rating||0) * Math.log((p.reviews||0) + 1);
+  const newer = (a,b)=> String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+  filtered.sort(
+    sort==='price-asc' ? (a,b)=>a.price-b.price :
+    sort==='price-desc' ? (a,b)=>b.price-a.price :
+    sort==='rating' ? (a,b)=>score(b)-score(a) || newer(a,b) :
+    sort==='new' ? newer :
+    (a,b)=> planBoost(b)-planBoost(a) || score(b)-score(a) || newer(a,b)
+  );
+  if(favs && !filtered.length){
+    document.getElementById('cardsGrid').innerHTML = `<div class="text-center py-12 bg-sand rounded-2xl" style="grid-column:1/-1"><i data-lucide="heart" class="w-8 h-8 mx-auto opacity-40"></i><div class="font-semibold mt-3">Aucun favori pour le moment</div><p class="text-sm opacity-60 mt-1">Touchez le cœur d'une annonce pour la retrouver ici.</p></div>`;
+    document.getElementById('resultsCount').textContent = '0 favori';
+    lucide.createIcons();
+    renderRecentStrip();
+    return;
+  }
   renderMarket(filtered);
+  renderRecentStrip();
 }
+// « Vus récemment » : les dernières annonces ouvertes dans ce navigateur.
+function renderRecentStrip(){
+  const box = document.getElementById('recentStrip');
+  if(!box) return;
+  const items = getRecentlyViewed().map(id=>marketListings().find(p=>String(p.id)===String(id))).filter(Boolean).slice(0, 8);
+  box.classList.toggle('hidden', items.length===0);
+  box.innerHTML = items.length ? `<div class="text-xs font-bold tracking-widest opacity-50 mb-2">VUS RÉCEMMENT</div>
+    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">${items.map(p=>`
+      <button onclick="openProfile(${jsArg(p.id)})" style="width:150px" class="shrink-0 text-left bg-sand rounded-xl overflow-hidden border border-line hover:border-forest">
+        <img src="${esc(p.cover)}" alt="" loading="lazy" class="w-full object-cover" style="height:80px">
+        <div class="p-2"><div class="text-xs font-semibold truncate">${esc(p.name)}</div><div class="text-xs opacity-60">${fmt(p.price)}</div></div>
+      </button>`).join('')}</div>` : '';
+}
+document.addEventListener('akwaone:favorites', ()=>filterMarket());
+
 function resetFilters(){
+  const sortEl = document.getElementById('sortMarket'); if(sortEl) sortEl.value='';
   document.getElementById('heroSearch').value='';
   document.getElementById('filterCategory').value='';
   document.getElementById('filterCity').value='';
@@ -407,12 +465,14 @@ function setMarketTab(t){
   document.getElementById('tabAll').className = t==='all' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
   document.getElementById('tabProduit').className = t==='produit' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
   document.getElementById('tabService').className = t==='service' ? 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-ink text-white' : 'marketTab px-5 py-2 rounded-full text-sm font-semibold bg-sand';
+  document.getElementById('tabFavoris').className = 'marketTab px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1 ' + (t==='favoris' ? 'bg-ink text-white' : 'bg-sand');
   filterMarket();
 }
 
 function openProfile(id){
   const p = listings.find(x=>x.id===id);
   if(!p) return;
+  rememberViewed(p.id);
   document.getElementById('profileModal').classList.remove('hidden');
   const actionBlock = p.type==='produit' ? `
     <div class="flex items-center gap-3 mt-4">
@@ -432,11 +492,11 @@ function openProfile(id){
     </div>`;
   document.getElementById('profileContent').innerHTML = `
     <div class="relative h-[240px]">
-      <img src="${esc(p.cover)}" class="w-full h-full object-cover">
+      <img alt="" src="${esc(p.cover)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
-      <button onclick="closeProfile()" class="absolute top-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="closeProfile()" aria-label="Fermer" class="absolute top-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
       <div class="absolute bottom-4 left-6 right-6 flex items-end gap-4 text-white">
-        <img src="${esc(p.image)}" class="w-20 h-20 rounded-2xl border-4 border-white object-cover">
+        <img alt="" src="${esc(p.image)}" class="w-20 h-20 rounded-2xl border-4 border-white object-cover">
         <div class="pb-1">
           <h2 class="font-display text-2xl font-bold leading-none"><a href="vendeur.html?id=${encodeURIComponent(p.sellerId || p.seller)}" class="hover:underline" title="Voir la boutique">${esc(p.seller)}</a></h2>
           <div class="text-sm opacity-90">${esc(p.name)} • ${esc(p.city)}</div>
@@ -473,6 +533,7 @@ function openProfile(id){
           ${actionBlock}
           <a href="messagerie.html?avec=${encodeURIComponent(p.sellerId || p.seller)}" class="w-full mt-2 bg-white border border-line rounded-full py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Contacter</a>
           <p class="text-center text-[11px] opacity-50 mt-3">Paiement Stripe • Annulation gratuite 24h • Reçu par courriel</p>
+          <a href="produit.html?id=${encodeURIComponent(p.id)}" class="block text-center text-xs text-forest font-semibold underline mt-2">Voir la fiche complète</a>
           ${!IS_DEMO && typeof p.id==='string' ? `<button onclick="reportContent('listing', ${jsArg(p.id)})" class="w-full mt-2 text-[11px] opacity-60 hover:opacity-100 underline flex items-center justify-center gap-1"><i data-lucide="flag" class="w-3 h-3"></i> Signaler cette annonce</button>` : ''}
         </div>
       </div>
@@ -538,7 +599,7 @@ function openBooking(id){
   bookingSlot = slots.find(s=>s.endsWith(profileSlotTime)) || slots[0];
   document.getElementById('bookingBody').innerHTML = `
     <div class="flex gap-3 items-center bg-sand rounded-2xl p-3">
-      <img src="${esc(bookingItem.image)}" class="w-12 h-12 rounded-full object-cover">
+      <img alt="" src="${esc(bookingItem.image)}" class="w-12 h-12 rounded-full object-cover">
       <div>
         <div class="font-semibold text-sm">${esc(bookingItem.seller)}</div>
         <div class="text-xs opacity-60">${esc(bookingItem.name)} • ${esc(bookingItem.city)}</div>
@@ -552,7 +613,7 @@ function openBooking(id){
       </div>
     </div>
     <div>
-      <label class="text-xs font-bold tracking-widest opacity-60">DÉTAILS</label>
+      <label for="bookingDetails" class="text-xs font-bold tracking-widest opacity-60">DÉTAILS</label>
       <textarea id="bookingDetails" maxlength="500" placeholder="Ex: préférences, allergies, précisions..." class="w-full mt-2 border border-line rounded-2xl p-3 text-sm h-20 outline-none"></textarea>
     </div>
     <div class="flex justify-between text-sm pt-2 border-t border-line">
@@ -595,7 +656,9 @@ function changeQty(id, delta){
   setCart(cart);
   renderCart(); refreshCartBadge();
 }
-function cartTotal(){ return cart.reduce((s,c)=>{ const p=listings.find(l=>l.id===c.id); return s+(p?p.price*c.qty:0); },0); }
+function cartSubtotal(){ return cart.reduce((s,c)=>{ const p=listings.find(l=>l.id===c.id); return s+(p?p.price*c.qty:0); },0); }
+function cartShipping(){ return cartShippingFor(cart.map(c=>({ listing: listings.find(l=>l.id===c.id) }))); }
+function cartTotal(){ return cartSubtotal() + cartShipping(); }
 function refreshCartBadge(){ document.getElementById('cartCount').textContent = cartCount(cart); }
 function renderCart(){
   const box = document.getElementById('cartItems');
@@ -606,7 +669,7 @@ function renderCart(){
       const p = listings.find(l=>l.id===c.id);
       if(!p) return '';
       return `<div class="flex gap-3 items-center border-b border-line pb-4">
-        <img src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
+        <img alt="" src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
         <div class="flex-1">
           <div class="font-semibold text-sm">${esc(p.name)}</div>
           <div class="text-xs opacity-60">${esc(p.seller)}</div>
@@ -623,7 +686,11 @@ function renderCart(){
       </div>`;
     }).join('');
   }
-  document.getElementById('cartSubtotal').textContent = fmt(cartTotal());
+  document.getElementById('cartSubtotal').textContent = fmt(cartSubtotal());
+  const ship = cartShipping();
+  const shipRow = document.getElementById('cartShippingRow');
+  if(shipRow){ shipRow.classList.toggle('hidden', !ship); document.getElementById('cartShipping').textContent = fmt(ship); }
+  const totalEl = document.getElementById('cartTotalAmount'); if(totalEl) totalEl.textContent = fmt(cartTotal());
   lucide.createIcons();
 }
 function openCart(){ renderCart(); document.getElementById('cartModal').classList.remove('hidden'); }
@@ -634,7 +701,7 @@ function checkoutCart(){
   if(!isLoggedIn()){ requireLogin('marketplace.html?checkout=1'); return; }
   stripeMode = 'cart';
   const count = cartCount(cart);
-  document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">Panier — ${count} article(s)</div><div class="text-xs opacity-60">Livraison estimée 3 à 5 jours ouvrables</div></div><div class="font-bold">${fmt(cartTotal())}</div>`;
+  document.getElementById('stripeDetail').innerHTML = `<div><div class="font-bold text-sm">Panier — ${count} article(s)</div><div class="text-xs opacity-60">${cartShipping() ? `Livraison ${fmt(cartShipping())} incluse • ` : ''}livraison estimée 3 à 5 jours ouvrables</div></div><div class="font-bold">${fmt(cartTotal())}</div>`;
   document.getElementById('stripePayLabel').textContent = `Payer ${fmt(cartTotal())}`;
   renderPaymentMethods();
   document.getElementById('stripeModal').classList.remove('hidden');
@@ -747,12 +814,12 @@ function changeRole(role){
 function renderAdmin(){
   document.getElementById('adminValidation').innerHTML = `
     <div class="bg-white rounded-xl p-3 flex gap-3 items-center">
-      <img src="https://i.pravatar.cc/100?img=21" class="w-10 h-10 rounded-full">
+      <img src="${DEFAULT_AVATAR}" alt="" class="w-10 h-10 rounded-full">
       <div class="flex-1"><div class="font-semibold text-sm">Atelier Bogolan</div><div class="text-xs opacity-60">Vancouver • Approuvé automatiquement</div></div>
       <span class="text-xs font-bold text-green-700 flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> OK</span>
     </div>
     <div class="bg-white rounded-xl p-3 flex gap-3 items-center">
-      <img src="https://i.pravatar.cc/100?img=33" class="w-10 h-10 rounded-full">
+      <img src="${DEFAULT_AVATAR}" alt="" class="w-10 h-10 rounded-full">
       <div class="flex-1"><div class="font-semibold text-sm">TransferPlus Diaspora</div><div class="text-xs opacity-60">Ottawa • Approuvé automatiquement</div></div>
       <span class="text-xs font-bold text-green-700 flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> OK</span>
     </div>

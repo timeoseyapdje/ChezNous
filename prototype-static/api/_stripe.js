@@ -43,9 +43,12 @@ const badItem = () => Object.assign(new Error("Cette annonce n'est pas encore pa
 async function fetchDbListings(ids, includeInactive) {
   if (IS_DEMO || ids.length === 0) return [];
   const { supabaseRest } = require('./_supabase');
-  const rows = await supabaseRest('GET', `listings?id=in.(${ids.join(',')})&select=id,seller_id,seller_name,type,category,name,price_cad,active`);
+  const base = `listings?id=in.(${ids.join(',')})&select=id,seller_id,seller_name,type,category,name,price_cad,active`;
+  // shipping_cad : frais de livraison du vendeur (migration 0016) ; sans la colonne, livraison offerte.
+  const rows = await supabaseRest('GET', base + ',shipping_cad').catch(() => supabaseRest('GET', base));
   return rows.filter(r => includeInactive || r.active).map(r => ({
     id: r.id, sellerId: r.seller_id, seller: r.seller_name, type: r.type, cat: r.category, name: r.name, price: Number(r.price_cad),
+    shipping: Number(r.shipping_cad) || 0,
   }));
 }
 
@@ -84,7 +87,14 @@ async function priceOrder(mode, rawItems, { paid = false } = {}) {
   }
   const subtotal = Math.round(lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0) * 100) / 100;
   const fees = mode === 'booking' ? Math.round(subtotal * BOOKING_FEE_RATE * 100) / 100 : 0;
-  return { lines, subtotal, fees, total: subtotal + fees };
+  // Livraison : une expédition par vendeur, au montant le plus élevé parmi ses produits (les prestations n'en ont pas).
+  const shippingBySeller = {};
+  for (const { listing } of lines) {
+    if (listing.type === 'service') continue;
+    shippingBySeller[listing.seller] = Math.max(shippingBySeller[listing.seller] || 0, Number(listing.shipping) || 0);
+  }
+  const shipping = Math.round(Object.values(shippingBySeller).reduce((a, b) => a + b, 0) * 100) / 100;
+  return { lines, subtotal, fees, shipping, shippingBySeller, total: subtotal + fees + shipping };
 }
 
 function siteOrigin(req) {

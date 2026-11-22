@@ -108,8 +108,10 @@ const LISTING_COLUMNS = 'id, seller_id, seller_name, type, category, name, descr
 async function loadRemoteListings(){
   if(!sb) return;
   try{
-    let res = await sb.from('listings').select(LISTING_COLUMNS + ', channel').eq('active', true).order('created_at', { ascending:false }).limit(500);
-    if(res.error) res = await sb.from('listings').select(LISTING_COLUMNS).eq('active', true).order('created_at', { ascending:false }).limit(500);
+    const q = (cols)=> sb.from('listings').select(cols).eq('active', true).order('created_at', { ascending:false }).limit(500);
+    let res = await q(LISTING_COLUMNS + ', channel, shipping_cad');
+    if(res.error) res = await q(LISTING_COLUMNS + ', channel');   // migration 0016 pas encore exécutée
+    if(res.error) res = await q(LISTING_COLUMNS);
     if(!res.error && res.data){
       // Couleur choisie par les vendeurs Premium pour leurs annonces.
       const ids = [...new Set(res.data.map(r=>r.seller_id).filter(Boolean))];
@@ -119,6 +121,10 @@ async function loadRemoteListings(){
         const byId = Object.fromEntries(((rt && rt.data) || []).map(x=>[x.listing_id, x]));
         res.data.forEach(r=>{ const x = byId[r.id]; r.rating = x ? Number(x.rating) : 0; r.reviews = x ? Number(x.reviews) : 0; });
       }
+      // Formules Pro / Premium (mise en avant dans les recherches, carrousel d'accueil).
+      const plans = await sb.rpc('public_seller_plans');
+      const planOf = Object.fromEntries(((plans && plans.data) || []).map(x=>[x.seller_id, x.plan]));
+      res.data.forEach(r=>{ r.plan = planOf[r.seller_id] || 'basique'; });
       if(ids.length){
         const themes = await sb.from('premium_themes').select('seller_id, shop_accent').in('seller_id', ids);
         const accents = Object.fromEntries(((themes && themes.data) || []).map(t=>[t.seller_id, t.shop_accent]));

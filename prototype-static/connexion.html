@@ -10,14 +10,15 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<meta name="description" content="Connectez-vous ou créez votre compte AkwaOne pour acheter, vendre et échanger avec la communauté de la diaspora africaine au Canada.">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
-<script src="assets/passkey.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
+<script src="assets/passkey.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -32,7 +33,7 @@ body{background:#131A17;color:#131A17}
 <body class="font-sans antialiased">
 
 <div class="auth-bg">
-  <img src="https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=1600&auto=format&fit=crop" alt="">
+  <img src="assets/visuels/fond-connexion.svg" alt="">
 </div>
 
 <header class="relative z-10 max-w-[1280px] mx-auto px-4 md:px-6 py-5">
@@ -52,11 +53,11 @@ body{background:#131A17;color:#131A17}
     <form id="loginForm" onsubmit="return submitAuth(event,'login')" class="space-y-4">
       <h1 class="font-display font-bold text-2xl">Content de vous revoir</h1>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <label for="loginEmail" class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
         <input id="loginEmail" required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
       </div>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
+        <label for="loginPassword" class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
         <input id="loginPassword" required type="password" autocomplete="current-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="••••••••">
       </div>
       <div id="loginError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
@@ -69,19 +70,19 @@ body{background:#131A17;color:#131A17}
     </form>
 
     <form id="mfaForm" onsubmit="return submitMfa(event)" class="space-y-4 hidden">
-      <h1 class="font-display font-bold text-2xl">Double authentification</h1>
+      <h2 class="font-display font-bold text-2xl">Double authentification</h2>
       <p class="text-sm opacity-70">Saisissez le code à 6 chiffres affiché par votre application d'authentification (Google Authenticator, Authy, 1Password…).</p>
-      <input id="mfaCode" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-3 text-center text-2xl tracking-[0.5em] font-mono outline-none focus:border-forest" placeholder="000000">
+      <input id="mfaCode" aria-label="Code à 6 chiffres" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-3 text-center text-2xl tracking-[0.5em] font-mono outline-none focus:border-forest" placeholder="000000">
       <div id="mfaError" class="hidden bg-red-600/20 border border-red-500/40 text-sm rounded-xl p-3"></div>
       <button id="mfaSubmit" type="submit" class="w-full bg-forest hover:brightness-110 text-white rounded-full py-3 font-bold">Valider</button>
       <button type="button" onclick="cancelMfa()" class="w-full text-xs opacity-60 hover:underline">Annuler et se déconnecter</button>
     </form>
 
     <form id="forgotForm" onsubmit="return submitForgot(event)" class="space-y-4 hidden">
-      <h1 class="font-display font-bold text-2xl">Mot de passe oublié</h1>
+      <h2 class="font-display font-bold text-2xl">Mot de passe oublié</h2>
       <p class="text-sm opacity-70">Saisissez votre courriel : nous vous enverrons un lien pour choisir un nouveau mot de passe.</p>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <label for="forgotEmail" class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
         <input id="forgotEmail" required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
       </div>
       <div id="forgotMessage" class="hidden bg-forest/15 border border-forest/40 text-sm rounded-xl p-3"></div>
@@ -90,17 +91,17 @@ body{background:#131A17;color:#131A17}
     </form>
 
     <form id="signupForm" onsubmit="return submitAuth(event,'signup')" class="space-y-4 hidden">
-      <h1 class="font-display font-bold text-2xl">Créer votre compte</h1>
+      <h2 class="font-display font-bold text-2xl">Créer votre compte</h2>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">NOM COMPLET</label>
+        <label for="signupName" class="text-xs font-bold tracking-widest opacity-60">NOM COMPLET</label>
         <input id="signupName" required class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Votre nom">
       </div>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
+        <label for="signupEmail" class="text-xs font-bold tracking-widest opacity-60">COURRIEL</label>
         <input id="signupEmail" required type="email" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="vous@exemple.com">
       </div>
       <div>
-        <label class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
+        <label for="signupPassword" class="text-xs font-bold tracking-widest opacity-60">MOT DE PASSE</label>
         <input id="signupPassword" required type="password" minlength="8" autocomplete="new-password" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="8 caractères minimum">
       </div>
       <div class="space-y-2 pt-1">
@@ -113,7 +114,7 @@ body{background:#131A17;color:#131A17}
           Recevoir mes confirmations de commande et notifications par SMS
         </label>
         <div id="phoneField" class="hidden">
-          <input id="signupPhone" type="tel" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Numéro de téléphone mobile">
+          <input id="signupPhone" aria-label="Numéro de téléphone mobile" type="tel" class="w-full mt-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-forest" placeholder="Numéro de téléphone mobile">
         </div>
       </div>
       <p class="text-[11px] opacity-50">En créant un compte, vous acceptez nos <a href="cgu-cgv.html" class="text-white underline">conditions générales</a>, notre <a href="confidentialite.html" class="text-white underline">politique de confidentialité</a> et notre <a href="charte-communaute.html" class="text-white underline">charte de la communauté</a>.</p>

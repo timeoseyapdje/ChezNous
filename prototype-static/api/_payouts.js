@@ -14,7 +14,8 @@ async function sellerRate(sellerId) {
 }
 
 async function payoutOrder(orderNumber) {
-  const [o] = await supabaseRest('GET', `orders?order_number=eq.${Number(orderNumber)}&select=order_number,seller_id,channel,subtotal_cad,status,escrow_status,payout_status,stripe_payment_intent_id`);
+  const [o] = await supabaseRest('GET', `orders?order_number=eq.${Number(orderNumber)}&select=order_number,seller_id,channel,subtotal_cad,shipping_cad,status,escrow_status,payout_status,stripe_payment_intent_id`).catch(() =>
+    supabaseRest('GET', `orders?order_number=eq.${Number(orderNumber)}&select=order_number,seller_id,channel,subtotal_cad,status,escrow_status,payout_status,stripe_payment_intent_id`));
   if (!o || o.status !== 'terminee' || o.escrow_status !== 'libéré') return { status: 'skipped' };
   if (o.payout_status === 'paid' || o.payout_status === 'platform') return { status: o.payout_status };
 
@@ -28,7 +29,8 @@ async function payoutOrder(orderNumber) {
   }
 
   const rate = await sellerRate(o.seller_id);
-  const amount = Math.round(Number(o.subtotal_cad || 0) * (1 - rate) * 100) / 100;
+  // Le vendeur expédie : ses frais de livraison lui reviennent en entier (pas de commission dessus).
+  const amount = Math.round((Number(o.subtotal_cad || 0) * (1 - rate) + Number(o.shipping_cad || 0)) * 100) / 100;
   const [acct] = await supabaseRest('GET', `payment_accounts?user_id=eq.${o.seller_id}&select=stripe_account_id`);
   if (!acct || !acct.stripe_account_id) {
     await patch({ payout_status: 'pending', payout_amount_cad: amount, payout_error: 'Le vendeur n\'a pas encore ajouté ses coordonnées bancaires.' });

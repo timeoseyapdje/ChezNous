@@ -42,13 +42,14 @@ async function describeDemoSession(session) {
 // Crée une commande par vendeur pour une session Stripe payée. Appelée par la page de retour et par le webhook :
 // l'index unique (stripe_session_id, seller_name) garantit qu'une session n'est jamais enregistrée deux fois.
 async function recordPaidSession(session) {
-  if (session.payment_status !== 'paid') return [];
+  // no_payment_required : commande entièrement couverte par un code promo.
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') return [];
   const buyerId = session.metadata && session.metadata.buyer_id;
   if (!buyerId) throw Object.assign(new Error('Session sans acheteur'), { status: 400 });
 
   const mode = session.metadata.mode === 'booking' ? 'booking' : 'cart';
   // paid : une annonce retirée après le paiement reste lisible, et le prix payé fait foi.
-  const { lines, fees } = await priceOrder(mode, JSON.parse(session.metadata.items || '[]'), { paid: true });
+  const { lines, fees, shippingBySeller } = await priceOrder(mode, JSON.parse(session.metadata.items || '[]'), { paid: true });
   const pi = session.payment_intent && typeof session.payment_intent === 'object' ? session.payment_intent : null;
   const pm = pi && pi.payment_method;
   const methodType = pm ? (pm.card && pm.card.wallet ? pm.card.wallet.type : pm.type) : 'card';
@@ -66,8 +67,21 @@ async function recordPaidSession(session) {
   const official = new Set((officialRows || []).map(r => r.seller_id));
   const slotTime = Date.parse(session.metadata.slot_at || '');
 
-  const rows = [...bySeller.entries()].map(([seller, { sellerId, items }]) => {
-    const subtotal = Math.round(items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100;
+  // Code promo : la réduction (payée par AkwaOne) est répartie entre les vendeurs au prorata ; le dernier reçoit l'arrondi.
+  const discountTotal = Math.round(Number((session.total_details && session.total_details.amount_discount) || 0)) / 100;
+  const groups = [...bySeller.entries()].map(([seller, g]) => ({
+    seller, ...g,
+    subtotal: Math.round(g.items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100,
+    shipping: Number(shippingBySeller[seller] || 0),
+  }));
+  const gross = groups.reduce((s, g) => s + g.subtotal + g.shipping, 0) || 1;
+  let discountLeft = discountTotal;
+  groups.forEach((g, i) => {
+    g.discount = i === groups.length - 1 ? Math.round(discountLeft * 100) / 100 : Math.round(discountTotal * (g.subtotal + g.shipping) / gross * 100) / 100;
+    discountLeft -= g.discount;
+  });
+
+  const rows = groups.map(({ seller, sellerId, items, subtotal, shipping, discount }) => {
     return {
       buyer_id: buyerId,
       seller_id: sellerId,
@@ -79,7 +93,9 @@ async function recordPaidSession(session) {
       details: session.metadata.details || null,
       subtotal_cad: subtotal,
       fees_cad: fees,
-      amount_cad: subtotal + fees,
+      shipping_cad: shipping,
+      discount_cad: discount,
+      amount_cad: Math.max(0, Math.round((subtotal + fees + shipping - discount) * 100) / 100),
       status: 'confirmee',
       escrow_status: 'retenu',
       payment_method: METHOD_LABELS[methodType] || 'Carte bancaire',
@@ -99,9 +115,10 @@ async function recordPaidSession(session) {
     created = await insert(rows);
   } catch (err) {
     // Migration 0014 pas encore exécutée : la commande est enregistrée quand même, sans les nouvelles colonnes.
-    if (!/slot_at|channel|column/i.test(err.message)) throw err;
-    console.error('orders: migration 0014 manquante —', err.message);
-    created = await insert(rows.map(({ slot_at, channel, ...r }) => r));
+    if (!/slot_at|channel|shipping_cad|discount_cad|column/i.test(err.message)) throw err;
+    console.error('orders: migration 0014/0016 manquante —', err.message);
+    try { created = await insert(rows.map(({ shipping_cad, discount_cad, ...r }) => r)); }
+    catch (e2) { created = await insert(rows.map(({ slot_at, channel, shipping_cad, discount_cad, ...r }) => r)); }
   }
   for (const o of created || []) await email.orderConfirmed(o).catch(e => console.error('email commande:', e.message));
   return supabaseRest('GET', `orders?stripe_session_id=eq.${encodeURIComponent(session.id)}&order=order_number.asc`);

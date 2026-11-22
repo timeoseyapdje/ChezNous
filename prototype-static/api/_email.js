@@ -138,6 +138,24 @@ async function orderDelivered(o) {
     { href: 'mes-commandes.html', label: 'Laisser un avis' });
 }
 
+const TRACKING_URLS = {
+  'Postes Canada': (n) => `https://www.canadapost-postescanada.ca/track-reperage/fr#/search?searchFor=${encodeURIComponent(n)}`,
+  'Purolator': (n) => `https://www.purolator.com/fr/expedition/suivi?pin=${encodeURIComponent(n)}`,
+  'UPS': (n) => `https://www.ups.com/track?loc=fr_CA&tracknum=${encodeURIComponent(n)}`,
+  'FedEx': (n) => `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(n)}`,
+  'DHL': (n) => `https://www.dhl.com/ca-fr/home/suivi.html?tracking-id=${encodeURIComponent(n)}`,
+  'Canpar': (n) => `https://www.canpar.com/fr/tracking/delivery_options.htm?barcode=${encodeURIComponent(n)}`,
+  'Intelcom': (n) => `https://intelcomexpress.com/fr/suivi-de-colis/?tracking-id=${encodeURIComponent(n)}`,
+};
+async function orderShipped(o) {
+  const link = TRACKING_URLS[o.tracking_carrier] ? TRACKING_URLS[o.tracking_carrier](o.tracking_number) : '';
+  return notifyUser(o.buyer_id, `Commande #${o.order_number} expédiée`, 'Votre commande est en route',
+    `${orderBlock(o)}<p><b>Transporteur :</b> ${escapeHtml(o.tracking_carrier || '—')}<br><b>Numéro de suivi :</b> ${escapeHtml(o.tracking_number)}</p>
+     ${link ? `<p><a href="${link}" style="color:#146B4F">Suivre mon colis</a></p>` : ''}
+     <p>À la réception, si tout est conforme, donnez votre code de réception au vendeur (visible dans « Mes commandes »).</p>`,
+    { href: 'mes-commandes.html', label: 'Mes commandes' });
+}
+
 async function newMessage(recipientId, senderName, preview) {
   return notifyUser(recipientId, `Nouveau message de ${senderName} sur AkwaOne`, 'Vous avez un nouveau message',
     `<p><b>${escapeHtml(senderName)}</b> vous a écrit :</p>
@@ -147,5 +165,5 @@ async function newMessage(recipientId, senderName, preview) {
 
 module.exports = {
   escapeHtml, sendEmail, layout, notifyUser,
-  orderConfirmed, orderCancelled, bookingReminder, disputeOpened, disputeDecided, orderDelivered, newMessage,
+  orderConfirmed, orderCancelled, bookingReminder, disputeOpened, disputeDecided, orderDelivered, orderShipped, newMessage,
 };
