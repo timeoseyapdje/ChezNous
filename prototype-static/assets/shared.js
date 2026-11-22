@@ -807,7 +807,7 @@ function renderSiteHeader(active){
         ${navLink('index.html','Accueil','accueil')}
         ${navLink('boutique.html','Boutique','boutique')}
         ${navLink('marketplace.html','Marketplace','marketplace')}
-        <div class="hidden xl:flex items-center gap-5">${CATEGORIES.map(c=>`<a href="marketplace.html?categorie=${c.id}" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">${c.label}</a>`).join('')}</div>
+        <div class="nav-cats items-center gap-5">${CATEGORIES.map(c=>`<a href="marketplace.html?categorie=${c.id}" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">${c.label}</a>`).join('')}</div>
         ${navLink('mes-commandes.html','Mes commandes','commandes')}
         ${navLink('messagerie.html','Messagerie','messagerie')}
         <div id="navDashboardLink" style="display:contents"></div>
@@ -1475,7 +1475,7 @@ async function reportContent(targetType, targetId){
 
 // Suivi des erreurs en production (Sentry, cahier 6.2). Collez ici le DSN du projet Sentry (Settings → Client Keys) :
 // tant qu'il est vide, rien n'est chargé. Aucune donnée personnelle n'est envoyée (pas d'IP, pas de courriel).
-const SENTRY_DSN = '';
+const SENTRY_DSN = 'https://ae13d3ac4f9e99517d5d4466b6fa7601@o4512476959735808.ingest.us.sentry.io/4512477670014976';
 (function loadSentry(){
   if(!SENTRY_DSN || IS_DEMO || window.Sentry) return;
   const s = document.createElement('script');
