@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122c">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122d">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122c"></script>
-<script src="assets/catalog.js?v=20261122c"></script>
-<script src="assets/shared.js?v=20261122c"></script>
+<script src="assets/i18n-en.js?v=20261122d"></script>
+<script src="assets/catalog.js?v=20261122d"></script>
+<script src="assets/shared.js?v=20261122d"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122c"></script>
+<script src="assets/auth.js?v=20261122d"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -260,6 +260,21 @@ async function loadServerOrders(){
 }
 
 async function cancelOrder(id){
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  // Double confirmation : l'annulation rembourse et ne peut pas être reprise.
+  const first = await confirmDialog({
+    title: `Annuler la commande #${id} ?`,
+    message: `${o.seller} — ${o.service}. Vous serez remboursé de ${fmt(orderTotal(o))} sur votre moyen de paiement (sous 5 jours ouvrables).`,
+    confirmLabel: 'Continuer', cancelLabel: 'Garder ma commande', icon: 'alert-triangle'
+  });
+  if(!first) return;
+  const second = await confirmDialog({
+    title: 'Confirmer définitivement l\'annulation ?',
+    message: 'Cette action est irréversible : la commande sera annulée, le vendeur prévenu, et vous ne pourrez pas la rétablir.',
+    confirmLabel: 'Oui, annuler la commande', cancelLabel: 'Non, revenir', danger: true, icon: 'x-circle'
+  });
+  if(!second) return;
   if(IS_DEMO){
     orders = orders.map(o=> o.id===id ? {...o, status:'annulée', escrowStatus:'remboursé', cancelledAt:new Date().toISOString()} : o);
     setOrders(orders);
