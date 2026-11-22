@@ -66,7 +66,7 @@ function renderThread(){
   }
   cw.innerHTML = thread.length ? thread.map(m=> m.sender_id===me
     ? `<div class="bg-coral rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%] ml-auto text-white w-fit">${esc(m.body)}<div class="msg-meta opacity-70 text-right mt-0.5">${esc(timeLabel(m.created_at))}${m.read_at?' • Lu':''}</div></div>`
-    : `<div class="bg-white text-ink rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%] w-fit">${esc(m.body)}<div class="msg-meta opacity-50 mt-0.5">${esc(timeLabel(m.created_at))}</div></div>`
+    : `<div class="bg-white text-ink rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%] w-fit">${esc(m.body)}<div class="msg-meta opacity-50 mt-0.5">${esc(timeLabel(m.created_at))} • <button onclick="reportContent('message', '${esc(m.id)}')" class="underline" aria-label="Signaler ce message">Signaler</button></div></div>`
   ).join('') : `<div class="text-center text-xs opacity-60 py-10">Écrivez votre premier message à ${esc(conv.name)}.</div>`;
   cw.scrollTop = cw.scrollHeight;
 }
