@@ -11,14 +11,14 @@
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
 <meta name="description" content="Connectez-vous ou créez votre compte AkwaOne pour acheter, vendre et échanger avec la communauté de la diaspora africaine au Canada.">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261123d">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123e">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261123d"></script>
-<script src="assets/catalog.js?v=20261123d"></script>
-<script src="assets/shared.js?v=20261123d"></script>
+<script src="assets/i18n-en.js?v=20261123e"></script>
+<script src="assets/catalog.js?v=20261123e"></script>
+<script src="assets/shared.js?v=20261123e"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261123d"></script>
-<script src="assets/passkey.js?v=20261123d"></script>
+<script src="assets/auth.js?v=20261123e"></script>
+<script src="assets/passkey.js?v=20261123e"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -210,21 +210,71 @@ async function loginWithPasskey(){
   if(IS_DEMO){ showToast("Version démo : les clés d'accès sont disponibles sur le site réel.", 'info'); return; }
   setBusy('passkeyLogin', true);
   try{
-    if(await signInWithPasskey()) await finishSignIn();
+    if(await signInWithPasskey()) await finishSignIn(false, true);
   }catch(err){
     showFormMessage('loginError', err.message);
   }finally{
     setBusy('passkeyLogin', false);
   }
 }
-async function finishSignIn(mfaDone){
+async function finishSignIn(mfaDone, viaPasskey){
   if(!mfaDone && await needsMfa()){ showMfaStep(); return; }
   const profile = await fetchServerProfile();
   if(profile) applyProfileCache(profile);
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('signupForm').classList.add('hidden');
   document.getElementById('authSuccess').classList.remove('hidden');
-  setTimeout(()=>{ window.location.href = returnTarget(); }, 1200);
+  // Pas encore de clé d'accès sur ce compte : on propose d'en créer une avant de continuer.
+  if(!viaPasskey) await maybeOfferPasskey();
+  setTimeout(()=>{ window.location.href = returnTarget(); }, viaPasskey ? 1200 : 400);
+}
+
+// Proposition de clé d'accès après connexion ou inscription. Ne s'affiche pas si le compte en a déjà une,
+// si l'appareil ne les gère pas, si la personne a choisi « Ne plus proposer » ou l'a reportée il y a moins de 7 jours.
+async function maybeOfferPasskey(){
+  try{
+    if(IS_DEMO || !sb || typeof passkeysSupported!=='function' || !passkeysSupported()) return;
+    const { data:{ session } } = await sb.auth.getSession();
+    const uid = session && session.user && session.user.id;
+    if(!uid) return;
+    const key = 'akwaone_passkey_offer_' + uid;
+    let pref = null; try{ pref = JSON.parse(localStorage.getItem(key) || 'null'); }catch(e){}
+    if(pref && (pref.never || (pref.snoozeUntil && Date.now() < pref.snoozeUntil))) return;
+    const { data, error } = await sb.from('passkeys').select('id').eq('user_id', uid).limit(1);
+    if(error || (data && data.length)) return;
+    const choice = await passkeyOfferDialog();
+    const save = (v)=>{ try{ localStorage.setItem(key, JSON.stringify(v)); }catch(e){} };
+    if(choice === 'never'){ save({ never:true }); return; }
+    if(choice !== 'create'){ save({ snoozeUntil: Date.now() + 7*86400000 }); return; }
+    const device = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone / iPad' : /Android/.test(navigator.userAgent) ? 'Android' : /Mac/.test(navigator.userAgent) ? 'Mac' : /Windows/.test(navigator.userAgent) ? 'Windows' : 'Cet appareil';
+    try{
+      if(await createPasskey(device)){ save({ never:true }); showToast("Clé d'accès créée : vous pourrez vous connecter sans mot de passe sur cet appareil.", 'success'); await new Promise(r=>setTimeout(r, 1200)); }
+    }catch(err){ showToast(err.message || "La clé d'accès n'a pas pu être créée.", 'info'); await new Promise(r=>setTimeout(r, 1500)); }
+  }catch(e){}
+}
+function passkeyOfferDialog(){
+  return new Promise(resolve=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'fixed inset-0 flex items-center justify-center p-4';
+    wrap.style.zIndex = '90';
+    wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true'); wrap.setAttribute('aria-labelledby','pkOfferTitle');
+    wrap.innerHTML = `
+      <div class="absolute inset-0" style="background:rgba(0,0,0,.55)"></div>
+      <div class="relative bg-white text-ink rounded-2xl shadow-2xl w-full p-6" style="max-width:420px">
+        <div class="w-12 h-12 rounded-full bg-sand flex items-center justify-center"><i data-lucide="fingerprint" class="w-6 h-6 text-forest"></i></div>
+        <h2 id="pkOfferTitle" class="font-display font-bold text-xl mt-4">Connectez-vous plus vite avec une clé d'accès</h2>
+        <p class="text-sm opacity-70 mt-2 leading-relaxed">Plus besoin de mot de passe : utilisez l'empreinte digitale, le visage ou le code de votre appareil. C'est plus rapide et plus sûr.</p>
+        <button data-c="create" class="w-full mt-5 bg-forest text-white rounded-full py-3 text-sm font-bold hover:brightness-110">Créer une clé d'accès</button>
+        <div class="flex gap-2 mt-2">
+          <button data-c="later" class="flex-1 border border-line rounded-full py-2.5 text-sm font-semibold hover:bg-sand">Plus tard</button>
+          <button data-c="never" class="flex-1 rounded-full py-2.5 text-sm font-semibold opacity-60 hover:opacity-100">Ne plus proposer</button>
+        </div>
+      </div>`;
+    wrap.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click', ()=>{ wrap.remove(); resolve(b.dataset.c); }));
+    document.body.appendChild(wrap);
+    if(typeof lucide!=='undefined') lucide.createIcons({ root: wrap });
+    wrap.querySelector('[data-c="create"]').focus();
+  });
 }
 // Démo : n'importe quel courriel ouvre une session fictive, gardée dans ce navigateur uniquement.
 function demoSignIn(mode){
@@ -315,7 +365,11 @@ async function submitForgot(e){
 // Déjà connecté (ou retour du lien de confirmation) : on renvoie directement vers la page demandée.
 authReady.then(r=>{
   if(r && r.mfaPending) showMfaStep();
-  else if(r && r.profile) window.location.replace(returnTarget());
+  // Retour du lien de confirmation d'inscription : première connexion, on propose aussi la clé d'accès.
+  else if(r && r.profile){
+    const fromLink = /access_token|type=signup|code=/.test(location.hash + location.search);
+    (fromLink ? maybeOfferPasskey() : Promise.resolve()).then(()=>window.location.replace(returnTarget()));
+  }
 });
 if(!IS_DEMO && !passkeysSupported()) document.getElementById('passkeyLogin').remove();
 function showToast(msg, type='info'){
