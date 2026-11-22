@@ -1476,7 +1476,7 @@ async function reportContent(targetType, targetId){
 // Suivi des erreurs en production (Sentry, cahier 6.2). Le script est hébergé sur le site et les rapports passent par
 // /api/notify?relais=1 : les bloqueurs de publicité, qui visent les domaines de Sentry, ne les coupent pas.
 // Aucune donnée personnelle n'est envoyée (pas d'IP, pas de courriel), et seules les erreurs des scripts d'AkwaOne sont gardées.
-const SENTRY_DSN = 'https://ae13d3ac4f9e99517d5d4466b6fa7601@o4512476959735808.ingest.us.sentry.io/4512477670014976';
+const SENTRY_DSN = 'https://688ade2272d159008e54d3b66380b246@o4512476959735808.ingest.us.sentry.io/4512477683318784';
 (function loadSentry(){
   if(!SENTRY_DSN || IS_DEMO || (window.Sentry && window.Sentry.__akwa)) return;
   const s = document.createElement('script');

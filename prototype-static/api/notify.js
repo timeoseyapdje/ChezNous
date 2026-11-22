@@ -12,7 +12,7 @@ const { retryPendingPayouts } = require('./_payouts');
 
 // Seul le projet Sentry d'AkwaOne est accepté par le relais.
 const SENTRY_HOST = 'o4512476959735808.ingest.us.sentry.io';
-const SENTRY_PROJECT = '4512477670014976';
+const SENTRY_PROJECT = '4512477683318784';
 
 async function readRawBody(req) {
   if (typeof req.body === 'string') return req.body;
