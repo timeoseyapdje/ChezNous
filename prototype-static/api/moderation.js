@@ -1,10 +1,13 @@
 const { IS_DEMO, stripeRequest, readJson, send } = require('./_stripe');
 const { supabaseRest, requireUser } = require('./_supabase');
+const { payoutOrder } = require('./_payouts');
+const email = require('./_email');
 
 // Modération et espace administrateur (cahier des charges 3.5 et 3.8).
 // POST { action, ... }
-//  Membres connectés : report, open-dispute, seller-evidence
+//  Membres connectés : report, open-dispute, seller-evidence, review
 //  Administrateurs   : admin-overview, set-seller-status, resolve-report, resolve-dispute
+//  Admin ou compte Boutique AkwaOne : boutique-deliver (confirmer la livraison d'une commande de la Boutique)
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
 const COMMISSION = { basique: 0.15, pro: 0.10, premium: 0.06 };
@@ -24,6 +27,8 @@ module.exports = async (req, res) => {
       case 'report': return send(res, 200, await report(user, body));
       case 'open-dispute': return send(res, 200, await openDispute(user, body));
       case 'seller-evidence': return send(res, 200, await sellerEvidence(user, body));
+      case 'review': return send(res, 200, await review(user, body));
+      case 'boutique-deliver': return send(res, 200, await boutiqueDeliver(user, body));
       case 'admin-overview': await requireAdmin(user); return send(res, 200, await overview());
       case 'set-seller-status': await requireAdmin(user); return send(res, 200, await setSellerStatus(user, body));
       case 'resolve-report': await requireAdmin(user); return send(res, 200, await resolveReport(user, body));
@@ -81,8 +86,9 @@ async function openDispute(user, body) {
   const evidence = text(body.evidence, 2000);
   if (!Number.isInteger(number) || number <= 0) throw fail('Commande invalide');
   if (evidence.length < 10) throw fail('Décrivez le problème en quelques phrases (10 caractères minimum).');
-  const [order] = await supabaseRest('GET', `orders?order_number=eq.${number}&buyer_id=eq.${user.id}&select=order_number,seller_id,status,escrow_status`);
+  const [order] = await supabaseRest('GET', `orders?order_number=eq.${number}&buyer_id=eq.${user.id}&select=order_number,buyer_id,seller_id,seller_name,items,slot,amount_cad,payment_method,channel,status,escrow_status`);
   if (!order) throw fail('Commande introuvable', 404);
+  if (order.channel === 'boutique') throw fail('Pour une commande de la Boutique AkwaOne, contactez directement notre équipe (page Contact) : nous réglons le problème avec vous.', 409);
   if (order.status !== 'confirmee' || order.escrow_status !== 'retenu') throw fail('Un litige ne peut être ouvert que sur une commande payée en attente de réception.', 409);
   try {
     await supabaseRest('POST', 'disputes', {
@@ -93,6 +99,7 @@ async function openDispute(user, body) {
   }
   // Le paiement reste bloqué jusqu'à la décision d'un administrateur.
   await supabaseRest('PATCH', `orders?order_number=eq.${number}&escrow_status=eq.retenu`, { escrow_status: 'litige' }, { Prefer: 'return=minimal' });
+  await email.disputeOpened(order).catch(e => console.error('email litige:', e.message));
   return { ok: true };
 }
 
@@ -103,6 +110,52 @@ async function sellerEvidence(user, body) {
   if (evidence.length < 10) throw fail('Expliquez votre version en quelques phrases (10 caractères minimum).');
   const rows = await supabaseRest('PATCH', `disputes?order_number=eq.${number}&seller_id=eq.${user.id}&status=eq.open`, { seller_evidence: evidence }, { Prefer: 'return=representation' });
   if (!rows || !rows.length) throw fail('Aucun litige ouvert pour cette commande.', 404);
+  return { ok: true };
+}
+
+// Avis vérifié : seul l'acheteur d'une commande payée et terminée peut noter, une seule fois (cahier 3.11).
+async function review(user, body) {
+  const number = Number(body.orderNumber);
+  const rating = Number(body.rating);
+  const comment = text(body.comment, 600);
+  if (!Number.isInteger(number) || number <= 0) throw fail('Commande invalide');
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw fail('Choisissez une note de 1 à 5 étoiles.');
+  const [order] = await supabaseRest('GET', `orders?order_number=eq.${number}&buyer_id=eq.${user.id}&select=id,order_number,seller_id,items,status`);
+  if (!order) throw fail('Commande introuvable', 404);
+  if (order.status !== 'terminee') throw fail('Vous pourrez laisser un avis une fois la commande terminée.', 409);
+  const [p] = await supabaseRest('GET', `profiles?id=eq.${user.id}&select=full_name`);
+  const parts = String((p && p.full_name) || '').trim().split(/\s+/).filter(Boolean);
+  const author = parts.length ? `${parts[0]}${parts[1] ? ` ${parts[1][0].toUpperCase()}.` : ''}` : 'Client vérifié';
+  const first = (order.items || []).find(i => UUID.test(String(i.id)));
+  try {
+    await supabaseRest('POST', 'reviews', {
+      order_id: order.id, order_number: number, buyer_id: user.id, seller_id: order.seller_id || null,
+      listing_id: first ? first.id : null, rating, comment: comment || null, author_name: author.slice(0, 40), approved: true,
+    }, { Prefer: 'return=minimal' });
+  } catch (e) {
+    throw fail('Vous avez déjà laissé un avis pour cette commande.', 409);
+  }
+  return { ok: true };
+}
+
+// Boutique AkwaOne : pas de code de réception, la livraison est confirmée par l'administration (cahier 3.2 et 3.5).
+async function boutiqueDeliver(user, body) {
+  const number = Number(body.orderNumber);
+  if (!Number.isInteger(number) || number <= 0) throw fail('Commande invalide');
+  const [p] = await supabaseRest('GET', `profiles?id=eq.${user.id}&select=role`);
+  const official = await supabaseRest('GET', `official_shops?seller_id=eq.${user.id}&select=seller_id`);
+  const isAdmin = p && p.role === 'admin';
+  if (!isAdmin && !(official && official.length)) throw fail('Réservé à l\'administration AkwaOne.', 403);
+  const [order] = await supabaseRest('GET', `orders?order_number=eq.${number}&select=order_number,buyer_id,seller_id,seller_name,items,slot,amount_cad,payment_method,channel,status,escrow_status`);
+  if (!order) throw fail('Commande introuvable', 404);
+  if (!isAdmin && order.seller_id !== user.id) throw fail('Commande introuvable', 404);
+  if (order.channel !== 'boutique') throw fail('Cette commande n\'est pas une commande de la Boutique AkwaOne.', 409);
+  if (order.status !== 'confirmee' || order.escrow_status !== 'retenu') throw fail('Cette commande est déjà livrée, annulée ou en litige.', 409);
+  await supabaseRest('PATCH', `orders?order_number=eq.${number}&escrow_status=eq.retenu`, {
+    status: 'terminee', escrow_status: 'libéré', payout_status: 'platform',
+  }, { Prefer: 'return=minimal' });
+  if (isAdmin) await audit(user.id, 'boutique_delivered', 'order', number);
+  await email.orderDelivered(order).catch(e => console.error('email livraison:', e.message));
   return { ok: true };
 }
 
@@ -117,7 +170,7 @@ async function authUsers() {
 
 async function overview() {
   const [orders, sellers, plans, officials, listings, reports, disputes, auditLog, emails] = await Promise.all([
-    supabaseRest('GET', 'orders?select=order_number,seller_id,seller_name,subtotal_cad,fees_cad,amount_cad,status,escrow_status&limit=20000'),
+    supabaseRest('GET', 'orders?select=order_number,buyer_id,seller_id,seller_name,items,slot,subtotal_cad,fees_cad,amount_cad,status,escrow_status,channel,payout_status,payout_amount_cad,payout_error,paid_at&order=order_number.desc&limit=20000'),
     supabaseRest('GET', 'profiles?role=eq.seller&select=id,full_name,city,seller_status,seller_status_note,seller_status_at,created_at&order=created_at.desc&limit=2000'),
     supabaseRest('GET', 'seller_plans?select=seller_id,plan,shop_name,status'),
     supabaseRest('GET', 'official_shops?select=seller_id'),
@@ -138,7 +191,7 @@ async function overview() {
   const released = (orders || []).filter((o) => o.status === 'terminee' && o.escrow_status === 'libéré');
   const commissions = released.reduce((s, o) => {
     const fees = Number(o.fees_cad || 0);
-    if (!o.seller_id || official.has(o.seller_id)) return s + fees;
+    if (!o.seller_id || o.channel === 'boutique' || official.has(o.seller_id)) return s + fees;
     const plan = planOf[o.seller_id] && planOf[o.seller_id].status === 'active' ? planOf[o.seller_id].plan : 'basique';
     return s + Number(o.subtotal_cad || 0) * (COMMISSION[plan] || COMMISSION.basique) + fees;
   }, 0);
@@ -169,6 +222,16 @@ async function overview() {
       };
     }),
     audit: auditLog || [],
+    // Commandes de la Boutique à livrer (la libération du paiement est faite par l'administration).
+    boutiqueOrders: (orders || []).filter((o) => o.channel === 'boutique' && o.status === 'confirmee' && o.escrow_status === 'retenu').slice(0, 100).map((o) => ({
+      orderNumber: o.order_number, buyer: emails[o.buyer_id] || '', amount: Number(o.amount_cad || 0), paidAt: o.paid_at,
+      items: (o.items || []).map((i) => `${i.name} x${i.qty}`).join(', '),
+    })),
+    // Versements aux vendeurs en attente (compte bancaire manquant) ou refusés : réessayés chaque jour.
+    payouts: (orders || []).filter((o) => o.payout_status === 'pending' || o.payout_status === 'failed').slice(0, 100).map((o) => ({
+      orderNumber: o.order_number, seller: o.seller_name || names[o.seller_id] || '', amount: Number(o.payout_amount_cad || 0),
+      status: o.payout_status, error: o.payout_error || '',
+    })),
   };
 }
 
@@ -212,7 +275,7 @@ async function resolveDispute(admin, body) {
   if (!UUID.test(id) || !decision) throw fail('Demande invalide');
   const [d] = await supabaseRest('GET', `disputes?id=eq.${id}&status=eq.open&select=id,order_number`);
   if (!d) throw fail('Litige déjà tranché ou introuvable.', 404);
-  const [order] = await supabaseRest('GET', `orders?order_number=eq.${d.order_number}&select=order_number,amount_cad,status,escrow_status,stripe_payment_intent_id`);
+  const [order] = await supabaseRest('GET', `orders?order_number=eq.${d.order_number}&select=order_number,buyer_id,seller_id,seller_name,items,slot,payment_method,amount_cad,status,escrow_status,stripe_payment_intent_id`);
   if (!order || order.escrow_status !== 'litige') throw fail('La commande n\'est plus en litige.', 409);
 
   if (decision === 'buyer') {
@@ -237,5 +300,8 @@ async function resolveDispute(admin, body) {
     status: 'resolved', decision, decided_by: admin.id, decided_at: new Date().toISOString(),
   }, { Prefer: 'return=minimal' });
   await audit(admin.id, decision === 'buyer' ? 'dispute_buyer' : 'dispute_seller', 'order', order.order_number);
-  return { ok: true };
+  let payout = null;
+  if (decision === 'seller') payout = (await payoutOrder(order.order_number).catch(e => { console.error('payout:', e.message); return { status: 'failed' }; })).status;
+  await email.disputeDecided(order, decision).catch(e => console.error('email décision:', e.message));
+  return { ok: true, payout };
 }

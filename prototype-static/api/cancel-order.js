@@ -1,5 +1,6 @@
 const { stripeRequest, readJson, send } = require('./_stripe');
 const { supabaseRest, requireUser } = require('./_supabase');
+const email = require('./_email');
 
 // Annulation par l'acheteur tant que l'argent est en séquestre : remboursement Stripe réel de la part de ce vendeur.
 module.exports = async (req, res) => {
@@ -30,6 +31,7 @@ module.exports = async (req, res) => {
       { status: 'annulee', escrow_status: 'remboursé', cancelled_at: new Date().toISOString() },
       { Prefer: 'return=representation' }
     );
+    await email.orderCancelled(updated || order).catch(e => console.error('email annulation:', e.message));
     return send(res, 200, { order: updated || { ...order, status: 'annulee', escrow_status: 'remboursé' } });
   } catch (err) {
     console.error('cancel-order error:', err.message);

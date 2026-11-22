@@ -98,7 +98,7 @@ const authReady = (async ()=>{
   } else {
     try{ sessionStorage.removeItem('akwaone_auth_reload'); }catch(e){}
   }
-  if(profile) syncUnreadMessages();
+  if(profile){ syncUnreadMessages(); syncServerNotifications(profile); }
   return { offline:false, profile };
 })();
 
@@ -113,6 +113,12 @@ async function loadRemoteListings(){
     if(!res.error && res.data){
       // Couleur choisie par les vendeurs Premium pour leurs annonces.
       const ids = [...new Set(res.data.map(r=>r.seller_id).filter(Boolean))];
+      // Notes réelles : moyenne et nombre d'avis vérifiés par annonce (vue listing_ratings, migration 0014).
+      if(res.data.length){
+        const rt = await sb.from('listing_ratings').select('listing_id, rating, reviews').limit(5000);
+        const byId = Object.fromEntries(((rt && rt.data) || []).map(x=>[x.listing_id, x]));
+        res.data.forEach(r=>{ const x = byId[r.id]; r.rating = x ? Number(x.rating) : 0; r.reviews = x ? Number(x.reviews) : 0; });
+      }
       if(ids.length){
         const themes = await sb.from('premium_themes').select('seller_id, shop_accent').in('seller_id', ids);
         const accents = Object.fromEntries(((themes && themes.data) || []).map(t=>[t.seller_id, t.shop_accent]));
@@ -123,6 +129,42 @@ async function loadRemoteListings(){
   }catch(e){}
 }
 loadRemoteListings();
+
+// La cloche du site réel : commandes de l'acheteur, nouvelles commandes du vendeur et décisions de litige, lues dans Supabase.
+async function syncServerNotifications(profile){
+  try{
+    const short = (iso)=> iso ? new Date(iso).toLocaleDateString('fr-CA',{day:'numeric',month:'short'}) : '';
+    const fmtCad = (n)=> (typeof fmt==='function' ? fmt(Number(n)||0) : `${(Number(n)||0).toFixed(2)} $`);
+    const cols = 'order_number, seller_name, status, escrow_status, amount_cad, paid_at, cancelled_at, created_at';
+    const [bought, sold, disputes, reviews] = await Promise.all([
+      sb.from('orders').select(cols).eq('buyer_id', profile.id).order('created_at', { ascending:false }).limit(8),
+      profile.role==='seller' || profile.role==='admin'
+        ? sb.from('orders').select(cols).eq('seller_id', profile.id).order('created_at', { ascending:false }).limit(8) : Promise.resolve({ data: [] }),
+      sb.from('disputes').select('order_number, status, decision, decided_at, buyer_id, seller_id').or(`buyer_id.eq.${profile.id},seller_id.eq.${profile.id}`).order('created_at', { ascending:false }).limit(8),
+      sb.from('reviews').select('order_number').limit(200)
+    ]);
+    const decided = new Map(((disputes && disputes.data) || []).filter(d=>d.status==='resolved').map(d=>[d.order_number, d]));
+    const reviewed = new Set(((reviews && reviews.data) || []).map(r=>r.order_number));
+    const list = [];
+    ((bought && bought.data) || []).forEach(o=>{
+      const n = o.order_number, seller = o.seller_name || 'AkwaOne', d = decided.get(n);
+      if(d) list.push({ id:`s${n}-litige-${d.decision}`, icon:'scale', text: d.decision==='buyer' ? `Litige tranché en votre faveur : commande #${n} remboursée` : `Litige de la commande #${n} tranché en faveur du vendeur`, time: short(d.decided_at) });
+      else if(o.status==='annulee' || o.status==='remboursee') list.push({ id:`s${n}-annulee`, icon:'rotate-ccw', text:`Commande annulée chez ${seller} — remboursement de ${fmtCad(o.amount_cad)}`, time: short(o.cancelled_at || o.created_at) });
+      else if(o.escrow_status==='litige') list.push({ id:`s${n}-litige`, icon:'alert-triangle', text:`Litige en cours d'examen sur votre commande chez ${seller}`, time: short(o.created_at) });
+      else if(o.status==='terminee' && !reviewed.has(n)) list.push({ id:`s${n}-avis`, icon:'star', text:`Laissez un avis pour ${seller}`, time: short(o.paid_at) });
+      else if(o.status==='confirmee') list.push({ id:`s${n}-confirmee`, icon:'check-circle', text:`Commande confirmée chez ${seller} (${fmtCad(o.amount_cad)})`, time: short(o.paid_at) });
+    });
+    ((sold && sold.data) || []).forEach(o=>{
+      const n = o.order_number, d = decided.get(n);
+      if(d) list.push({ id:`v${n}-litige-${d.decision}`, icon:'scale', text: d.decision==='seller' ? `Litige #${n} tranché en votre faveur : paiement versé` : `Litige #${n} tranché en faveur du client (remboursé)`, time: short(d.decided_at), href:'tableau-de-bord.html' });
+      else if(o.escrow_status==='litige') list.push({ id:`v${n}-litige`, icon:'alert-triangle', text:`Litige ouvert sur la commande #${n} : donnez votre version`, time: short(o.created_at), href:'tableau-de-bord.html' });
+      else if(o.status==='confirmee' && o.escrow_status==='retenu') list.push({ id:`v${n}-nouvelle`, icon:'shopping-bag', text:`Nouvelle commande reçue #${n} (${fmtCad(o.amount_cad)})`, time: short(o.paid_at), href:'tableau-de-bord.html' });
+      else if(o.status==='annulee' || o.status==='remboursee') list.push({ id:`v${n}-annulee`, icon:'rotate-ccw', text:`Commande #${n} annulée par le client`, time: short(o.cancelled_at || o.created_at), href:'tableau-de-bord.html' });
+    });
+    localStorage.setItem('akwaone_server_notifs', JSON.stringify(list.slice(0, 12)));
+    if(typeof refreshNotifBadge==='function') refreshNotifBadge();
+  }catch(e){}
+}
 
 // La cloche compte les messages non lus : on rafraîchit ce résumé depuis Supabase sur chaque page.
 async function syncUnreadMessages(){

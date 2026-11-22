@@ -147,6 +147,31 @@ const CUR = {
 function getCurrency(){
   try{ return localStorage.getItem('akwaone_currency') || 'CAD'; }catch(e){ return 'CAD'; }
 }
+// Taux de change à jour (cahier 3.14) : source publique quotidienne, base CAD, gardée 12 h dans le navigateur.
+// Les prix restent stockés et payés en CAD ; sans réseau, les taux ci-dessus servent de repli.
+const RATES_URL = 'https://open.er-api.com/v6/latest/CAD';
+function applyRates(rates){
+  if(!rates) return false;
+  let changed = false;
+  Object.keys(CUR).forEach(code=>{
+    const r = Number(rates[code]);
+    if(code!=='CAD' && r > 0 && isFinite(r)){ if(CUR[code].rate !== r) changed = true; CUR[code].rate = r; }
+  });
+  return changed;
+}
+(function loadRates(){
+  let cached = null;
+  try{ cached = JSON.parse(localStorage.getItem('akwaone_rates') || 'null'); }catch(e){}
+  if(cached) applyRates(cached.rates);
+  if(cached && Date.now() - cached.at < 12*3600*1000) return;
+  fetch(RATES_URL).then(r=>r.ok ? r.json() : null).then(data=>{
+    if(!data || data.result !== 'success' || !data.rates) return;
+    try{ localStorage.setItem('akwaone_rates', JSON.stringify({ at: Date.now(), rates: data.rates })); }catch(e){}
+    // Prix déjà affichés dans une autre devise : on les recalcule avec les nouveaux taux.
+    if(applyRates(data.rates) && window.currency && window.currency!=='CAD' && typeof onCurrencyChange === 'function') onCurrencyChange();
+  }).catch(()=>{});
+})();
+
 function setCurrency(c){
   try{ localStorage.setItem('akwaone_currency', c); }catch(e){}
   window.currency = c;
@@ -483,7 +508,7 @@ let REMOTE_LISTINGS = (()=>{
 function listingFromRow(r){
   return {
     id: r.id, sellerId: r.seller_id, channel: r.channel==='boutique' ? 'boutique' : 'marketplace', cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
-    seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: 0, reviews: 0, plan: 'basique',
+    seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: Number(r.rating) || 0, reviews: Number(r.reviews) || 0, plan: 'basique',
     active: r.active !== false, createdAt: r.created_at,
     accent: /^#[0-9a-f]{6}$/i.test(r.shop_accent || '') ? r.shop_accent : '',
     cover: safeImageUrl(r.cover_url) || DEFAULT_COVER, image: DEFAULT_AVATAR
@@ -545,9 +570,13 @@ function toggleDeliverMenu(){
 function getNotifications(){
   if(!isLoggedIn()) return [];
   const list = [];
+  // Site réel : notifications calculées depuis Supabase à chaque page (auth.js, syncServerNotifications).
+  if(!IS_DEMO){
+    try{ list.push(...JSON.parse(localStorage.getItem('akwaone_server_notifs') || '[]')); }catch(e){}
+  }
   const disputes = getDisputes();
   // Chaque notification est datée du moment de l'événement (annulation, litige, paiement), pas du rendez-vous.
-  getOrders().slice(0,5).forEach(o=>{
+  (IS_DEMO ? getOrders().slice(0,5) : []).forEach(o=>{
     const total = fmt(orderTotal(o));
     const dispute = disputes.find(d=>d.orderId===o.id);
     if(o.status==='annulée') list.push({id:`o${o.id}-annulee`, icon:'rotate-ccw', text:`Commande annulée chez ${o.seller} — remboursement de ${total} en cours`, time:isoToShortDate(o.cancelledAt) || o.date});
@@ -944,7 +973,7 @@ async function logoutGlobal(everywhere){
   });
   if(!ok) return;
   if(typeof signOutEverywhere==='function') await signOutEverywhere(everywhere);
-  try{ ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_orders','akwaone_messages_v1','akwaone_seller_profile','akwaone_read_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  try{ ['akwaone_logged_in','akwaone_user','akwaone_server_role','akwaone_role','akwaone_orders','akwaone_messages_v1','akwaone_seller_profile','akwaone_read_notifs','akwaone_server_notifs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   window.location.href = 'index.html';
 }
 
@@ -1338,12 +1367,36 @@ function loadAdSense(){
   window.adsbygoogle.requestNonPersonalizedAds = consent === 'accepted' ? 0 : 1;
   // Le script est déjà dans le <head> des pages publiques (validation AdSense) : on lève simplement la pause.
   window.adsbygoogle.pauseAdRequests = 0;
+  renderAdZones();
   if(document.querySelector('script[src*="adsbygoogle.js"]')) return;
   const s = document.createElement('script');
   s.async = true;
   s.crossOrigin = 'anonymous';
   s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(ADSENSE_CLIENT);
   document.head.appendChild(s);
+}
+// Emplacements publicitaires de l'accueil (cahier 3.13). Créez des blocs d'annonces « Display » dans AdSense
+// (Annonces → Par bloc d'annonces) et collez ici leur identifiant data-ad-slot ; un emplacement vide reste masqué.
+const ADSENSE_SLOTS = {
+  'home-top': '',     // ← identifiant du bloc sous le carrousel (ex. '1234567890')
+  'home-middle': ''   // ← identifiant du bloc avant les vedettes
+};
+function renderAdZones(){
+  document.querySelectorAll('[data-ad-zone]').forEach(zone=>{
+    const slot = ADSENSE_SLOTS[zone.dataset.adZone];
+    if(!slot || zone.dataset.filled) return;
+    zone.dataset.filled = '1';
+    zone.classList.remove('hidden');
+    const ins = document.createElement('ins');
+    ins.className = 'adsbygoogle';
+    ins.style.display = 'block';
+    ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
+    ins.setAttribute('data-ad-slot', slot);
+    ins.setAttribute('data-ad-format', 'auto');
+    ins.setAttribute('data-full-width-responsive', 'true');
+    zone.appendChild(ins);
+    try{ (window.adsbygoogle = window.adsbygoogle || []).push({}); }catch(e){}
+  });
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadAdSense);
 else loadAdSense();
@@ -1412,3 +1465,20 @@ async function reportContent(targetType, targetId){
     toast('Merci, le signalement a été transmis à notre équipe.','success');
   }catch(err){ toast(escapeHtmlGlobal(err.message),'error'); }
 }
+
+// Suivi des erreurs en production (Sentry, cahier 6.2). Collez ici le DSN du projet Sentry (Settings → Client Keys) :
+// tant qu'il est vide, rien n'est chargé. Aucune donnée personnelle n'est envoyée (pas d'IP, pas de courriel).
+const SENTRY_DSN = '';
+(function loadSentry(){
+  if(!SENTRY_DSN || IS_DEMO || window.Sentry) return;
+  const s = document.createElement('script');
+  s.src = 'https://browser.sentry-cdn.com/8.42.0/bundle.min.js';
+  s.crossOrigin = 'anonymous';
+  s.onload = ()=>{
+    try{
+      window.Sentry.init({ dsn: SENTRY_DSN, environment: 'production', sendDefaultPii: false, sampleRate: 1.0,
+        beforeSend(event){ if(event.user){ delete event.user.email; delete event.user.ip_address; } return event; } });
+    }catch(e){}
+  };
+  document.head.appendChild(s);
+})();

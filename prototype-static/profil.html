@@ -10,14 +10,14 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122a">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122a"></script>
-<script src="assets/catalog.js?v=20261122a"></script>
-<script src="assets/shared.js?v=20261122a"></script>
+<script src="assets/i18n-en.js?v=20261122b"></script>
+<script src="assets/catalog.js?v=20261122b"></script>
+<script src="assets/shared.js?v=20261122b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122a"></script>
-<script src="assets/passkey.js?v=20261122a"></script>
+<script src="assets/auth.js?v=20261122b"></script>
+<script src="assets/passkey.js?v=20261122b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -366,7 +366,9 @@ async function loadProfile(){
   if(!IS_DEMO && sb && profile){
     // Nom et ville dans la table profiles ; téléphone et préférences dans les métadonnées du compte Supabase.
     const [{ data:row }, { data:userData }, planRes] = await Promise.all([
-      sb.from('profiles').select('full_name, city').eq('id', profile.id).maybeSingle(),
+      // Consentements et téléphone dans profiles (migration 0014) ; sans elle, repli sur l'ancienne lecture.
+      sb.from('profiles').select('full_name, city, phone, notify_email, notify_sms').eq('id', profile.id).maybeSingle()
+        .then(r=> r.error ? sb.from('profiles').select('full_name, city').eq('id', profile.id).maybeSingle() : r),
       sb.auth.getUser(),
       sb.from('seller_plans').select('plan, status').eq('seller_id', profile.id).maybeSingle()
     ]);
@@ -377,6 +379,9 @@ async function loadProfile(){
     if(meta.phone !== undefined) me.phone = meta.phone;
     if(meta.notif_email !== undefined) me.notifEmail = !!meta.notif_email;
     if(meta.notif_sms !== undefined) me.notifSms = !!meta.notif_sms;
+    if(row && row.notify_email !== undefined) me.notifEmail = row.notify_email !== false;
+    if(row && row.notify_sms !== undefined) me.notifSms = !!row.notify_sms;
+    if(row && row.phone) me.phone = row.phone;
     plan = planRes && planRes.data && planRes.data.status==='active' ? planRes.data.plan : null;
   }
   document.getElementById('fullName').value = me.name;
@@ -669,6 +674,7 @@ async function saveIdentity(e){
       if(error) throw error;
       const res = await sb.auth.updateUser({ data:{ full_name:name, phone } });
       if(res.error) throw res.error;
+      await sb.from('profiles').update({ phone: phone || null }).eq('id', me.id);
     }
     saveCurrentUser({ ...(getCurrentUser() || {}), name, email: me.email });
     writeLocal('akwaone_phone', phone);
@@ -744,6 +750,9 @@ async function saveNotifications(){
     if(!IS_DEMO){
       const { error } = await sb.auth.updateUser({ data:{ notif_email:notifEmail, notif_sms:notifSms } });
       if(error) throw error;
+      // Le serveur lit le consentement dans profiles avant tout envoi de courriel.
+      const up = await sb.from('profiles').update({ notify_email:notifEmail, notify_sms:notifSms }).eq('id', me.id);
+      if(up.error) console.warn('consentements :', up.error.message);
     }
     writeLocal('akwaone_notif_email_consent', notifEmail ? '1' : '0');
     writeLocal('akwaone_notif_sms_consent', notifSms ? '1' : '0');

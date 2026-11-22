@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122a">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122a"></script>
-<script src="assets/catalog.js?v=20261122a"></script>
-<script src="assets/shared.js?v=20261122a"></script>
+<script src="assets/i18n-en.js?v=20261122b"></script>
+<script src="assets/catalog.js?v=20261122b"></script>
+<script src="assets/shared.js?v=20261122b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122a"></script>
+<script src="assets/auth.js?v=20261122b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -112,6 +112,14 @@ body{background:#FFFFFF;color:#131A17}
         <div id="sellerOrdersList" class="mt-4 space-y-3"></div>
       </div>
     </div>
+
+    <div class="bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-5 h-5"></i> Statistiques de vente</h2>
+        <span class="text-[11px] font-bold tracking-widest opacity-50">FORMULES PRO ET PREMIUM</span>
+      </div>
+      <div id="sellerStats" class="mt-4"></div>
+    </div>
   </div>
 
   <div id="adminView" class="hidden">
@@ -186,6 +194,19 @@ body{background:#FFFFFF;color:#131A17}
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="scale" class="w-5 h-5"></i> Litiges paiement séquestre</h2>
       <p class="text-xs opacity-60 mt-1">Le paiement reste bloqué tant que le litige n'est pas tranché. Examinez les preuves des deux parties avant de statuer.</p>
       <div id="adminDisputesList" class="mt-4 space-y-3"></div>
+    </div>
+
+    <div id="adminBoutiqueOrdersCard" class="hidden grid lg:grid-cols-2 gap-6 mt-6">
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="truck" class="w-5 h-5"></i> Commandes Boutique à livrer</h2>
+        <p class="text-xs opacity-60 mt-1">Ventes de la Boutique AkwaOne : pas de code client, confirmez la livraison une fois le colis remis.</p>
+        <div id="adminBoutiqueOrders" class="mt-4 space-y-3"></div>
+      </div>
+      <div class="bg-white border border-line rounded-2xl p-5 md:p-6">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="landmark" class="w-5 h-5"></i> Versements vendeurs en attente</h2>
+        <p class="text-xs opacity-60 mt-1">Paiements libérés mais pas encore virés (coordonnées bancaires manquantes ou compte Stripe en vérification). Réessayés automatiquement chaque jour.</p>
+        <div id="adminPayouts" class="mt-4 space-y-2"></div>
+      </div>
     </div>
 
     <div id="adminAuditCard" class="hidden bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
@@ -291,11 +312,13 @@ function getSellerOrders(){
   const shop = getSellerProfile().shopName;
   return getOrders().filter(o=>o.seller===shop);
 }
+const SELLER_ORDER_COLUMNS = 'order_number, items, slot, details, subtotal_cad, amount_cad, status, escrow_status, paid_at, created_at';
 async function loadSellerData(){
   if(IS_DEMO || !sb || !sellerUserId) return;
   const [listings, orders, plan, official] = await Promise.all([
     sb.from('listings').select(LISTING_COLUMNS).eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false }),
-    sb.from('orders').select('order_number, items, slot, details, amount_cad, status, escrow_status, paid_at').eq('seller_id', sellerUserId).order('created_at', { ascending:false }),
+    sb.from('orders').select(SELLER_ORDER_COLUMNS + ', channel, payout_status, payout_amount_cad').eq('seller_id', sellerUserId).order('created_at', { ascending:false })
+      .then(r=> r.error ? sb.from('orders').select(SELLER_ORDER_COLUMNS).eq('seller_id', sellerUserId).order('created_at', { ascending:false }) : r), // sans migration 0014
     sb.from('seller_plans').select('plan, shop_name, status').eq('seller_id', sellerUserId).maybeSingle(),
     // Boutique officielle : ce compte vendeur publie dans la Boutique AkwaOne au lieu de la marketplace.
     sb.from('official_shops').select('seller_id').eq('seller_id', sellerUserId).maybeSingle()
@@ -309,7 +332,9 @@ async function loadSellerData(){
     details: r.details || '',
     status: DB_ORDER_STATUS[r.status] || r.status,
     escrowStatus: r.escrow_status,
-    total: Number(r.amount_cad), price: Number(r.amount_cad)
+    total: Number(r.amount_cad), price: Number(r.amount_cad),
+    subtotal: Number(r.subtotal_cad ?? r.amount_cad), items: r.items || [], paidAt: r.paid_at || r.created_at,
+    channel: r.channel || 'marketplace', payoutStatus: r.payout_status || 'none', payoutAmount: Number(r.payout_amount_cad || 0)
   }));
   sellerRemote.plan = plan.data && plan.data.status==='active' ? plan.data.plan : null;
   sellerRemote.official = !!(official && official.data);
@@ -364,7 +389,8 @@ function renderSellerView(){
       <div class="text-xs opacity-60 mt-1">${esc(o.date)} • ${fmt(orderTotal(o))}</div>
       ${o.details?`<div class="text-xs opacity-60 mt-1">Précisions du client : ${esc(o.details)}</div>`:''}
       <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${esc(o.status)}</span>
-      ${o.escrowStatus==='retenu' ? `
+      ${o.escrowStatus==='retenu' && o.channel==='boutique' ? `
+      <button onclick="deliverBoutiqueOrder(${o.id})" class="mt-2 text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Confirmer la livraison</button>` : o.escrowStatus==='retenu' ? `
       <div class="mt-2 flex gap-2">
         <input id="codeInput${o.id}" placeholder="Code du client" class="flex-1 border border-line rounded-lg px-2 py-1.5 text-xs outline-none font-mono uppercase">
         <button onclick="tryReleaseEscrow(${o.id})" class="text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-lg">Valider & recevoir</button>
@@ -373,6 +399,7 @@ function renderSellerView(){
     </div>
   `).join('') : `<div class="text-center py-8 bg-sand rounded-2xl text-sm opacity-60">Aucune commande en attente.</div>`;
 
+  renderSellerStats();
   lucide.createIcons();
 }
 async function tryReleaseEscrow(orderId){
@@ -396,6 +423,77 @@ async function tryReleaseEscrow(orderId){
     showToast(esc(err.message),'error');
   }
 }
+// Boutique AkwaOne : pas de code client, la livraison est confirmée par l'équipe (compte Boutique ou administrateur).
+async function deliverBoutiqueOrder(orderId){
+  if(!await confirmDialog({ title:`Commande #${orderId} livrée ?`, message:'La commande passe en terminée et le client est prévenu par courriel. Confirmez seulement une fois le colis remis.', confirmLabel:'Confirmer la livraison', icon:'truck' })) return;
+  try{
+    await moderationApi('boutique-deliver', { orderNumber: orderId });
+    showToast('Livraison confirmée, le client est prévenu.','success');
+    if(role==='admin') await loadAdminData(); else await loadSellerData();
+  }catch(err){ showToast(esc(err.message),'error'); }
+}
+
+// Statistiques de vente (formules Pro et Premium) : ventes payées, évolution sur 6 mois, meilleures annonces, versements.
+function renderSellerStats(){
+  const box = document.getElementById('sellerStats');
+  if(!box) return;
+  const plan = IS_DEMO ? (getSellerProfile().plan || 'basique') : (sellerRemote.official ? 'premium' : (sellerRemote.plan || 'basique'));
+  if(plan!=='pro' && plan!=='premium'){
+    box.innerHTML = `<div class="bg-sand rounded-2xl p-5 text-sm flex flex-wrap items-center justify-between gap-3">
+      <span><b>Suivez vos ventes en détail</b> : évolution mois par mois, meilleures annonces, panier moyen. Inclus dans les formules Pro et Premium.</span>
+      <a href="devenir-vendeur.html" class="bg-forest text-white text-xs font-bold px-4 py-2 rounded-full">Passer à Pro</a></div>`;
+    return;
+  }
+  const orders = getSellerOrders().filter(o=>o.status==='confirmée' || o.status==='terminée');
+  const now = Date.now(), day = 86400000;
+  const when = (o)=> Date.parse(o.paidAt || '') || now;
+  const amount = (o)=> Number(o.subtotal ?? o.price ?? 0);
+  const sum = (list)=> list.reduce((s,o)=>s+amount(o),0);
+  const last30 = orders.filter(o=>now-when(o) < 30*day), prev30 = orders.filter(o=>now-when(o) >= 30*day && now-when(o) < 60*day);
+  const delta = sum(prev30) ? Math.round((sum(last30)-sum(prev30))/sum(prev30)*100) : null;
+  const avg = orders.length ? sum(orders)/orders.length : 0;
+  // 6 derniers mois
+  const months = [];
+  for(let i=5;i>=0;i--){ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i); months.push({ key:`${d.getFullYear()}-${d.getMonth()}`, label:d.toLocaleDateString('fr-CA',{month:'short'}), total:0, count:0 }); }
+  orders.forEach(o=>{ const d = new Date(when(o)); const m = months.find(x=>x.key===`${d.getFullYear()}-${d.getMonth()}`); if(m){ m.total += amount(o); m.count++; } });
+  const max = Math.max(...months.map(m=>m.total), 1);
+  // Meilleures annonces
+  const byItem = {};
+  orders.forEach(o=>(o.items && o.items.length ? o.items : [{ name:o.service, qty:1, unitPrice:amount(o) }]).forEach(i=>{
+    const k = i.name || '—'; byItem[k] = byItem[k] || { name:k, qty:0, total:0 };
+    byItem[k].qty += Number(i.qty)||1; byItem[k].total += (Number(i.unitPrice)||0)*(Number(i.qty)||1);
+  }));
+  const top = Object.values(byItem).sort((a,b)=>b.total-a.total).slice(0,5);
+  const paidOut = getSellerOrders().filter(o=>o.payoutStatus==='paid').reduce((s,o)=>s+o.payoutAmount,0);
+  const waiting = getSellerOrders().filter(o=>o.payoutStatus==='pending' || o.payoutStatus==='failed');
+  const tile = (label, value, sub)=>`<div class="border border-line rounded-xl p-3"><div class="text-[11px] font-bold tracking-widest opacity-50">${label}</div><div class="text-xl font-bold mt-1">${value}</div>${sub?`<div class="text-xs opacity-60 mt-0.5">${sub}</div>`:''}</div>`;
+  box.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${tile('VENTES (30 JOURS)', fmt(sum(last30)), delta===null ? `${last30.length} commande${last30.length>1?'s':''}` : `${delta>=0?'+':''}${delta} % vs 30 jours précédents`)}
+      ${tile('COMMANDES PAYÉES', orders.length, 'depuis le début')}
+      ${tile('PANIER MOYEN', fmt(avg), 'hors frais de service')}
+      ${IS_DEMO || sellerRemote.official ? tile('TOTAL DES VENTES', fmt(sum(orders)), 'depuis le début') : tile('VERSÉ SUR VOTRE COMPTE', fmt(paidOut), waiting.length ? `${waiting.length} versement${waiting.length>1?'s':''} en attente — <a href="profil.html#paiements" class="underline">coordonnées bancaires</a>` : 'commission déduite')}
+    </div>
+    <div class="grid lg:grid-cols-[1.3fr_1fr] gap-6 mt-5">
+      <div>
+        <div class="text-sm font-semibold">Ventes par mois</div>
+        <div class="flex items-end gap-2 mt-3" style="height:160px" role="img" aria-label="Ventes des 6 derniers mois">
+          ${months.map(m=>`<div class="flex-1 h-full flex flex-col justify-end items-center group relative" tabindex="0">
+            <div class="absolute -top-1 left-1/2 -translate-x-1/2 bg-ink text-white text-[11px] rounded-md px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none" style="transform:translate(-50%,-100%)">${fmt(m.total)} • ${m.count} cmd</div>
+            <div class="w-full bg-forest" style="max-width:36px;height:${m.total ? Math.max(4, m.total/max*130) : 2}px;border-radius:4px 4px 0 0;${m.total?'':'opacity:.25'}"></div>
+          </div>`).join('')}
+        </div>
+        <div class="flex gap-2 mt-1 border-t border-line pt-1">${months.map(m=>`<div class="flex-1 text-center text-[11px] opacity-60">${esc(m.label)}</div>`).join('')}</div>
+      </div>
+      <div>
+        <div class="text-sm font-semibold">Meilleures annonces</div>
+        ${top.length ? `<table class="w-full text-xs mt-3"><thead><tr class="opacity-50 text-left"><th class="font-semibold pb-1">Annonce</th><th class="font-semibold pb-1 text-right">Qté</th><th class="font-semibold pb-1 text-right">Ventes</th></tr></thead>
+          <tbody>${top.map(t=>`<tr class="border-t border-line"><td class="py-1.5 pr-2">${esc(t.name)}</td><td class="py-1.5 text-right">${t.qty}</td><td class="py-1.5 text-right font-semibold">${fmt(t.total)}</td></tr>`).join('')}</tbody></table>`
+          : `<p class="text-xs opacity-60 mt-3">Vos ventes apparaîtront ici dès la première commande payée.</p>`}
+      </div>
+    </div>`;
+}
+
 // Litige : le vendeur transmet sa version et ses preuves à l'administrateur, qui tranche.
 async function sendSellerEvidence(orderId){
   const evidence = await promptDialog({
@@ -656,6 +754,7 @@ let adminData = null;
 const AUDIT_LABELS = {
   suspend_seller:'Vendeur suspendu', reactivate_seller:'Vendeur réactivé',
   report_approved:'Signalement classé (contenu conservé)', report_removed:'Contenu retiré',
+  boutique_delivered:'Commande Boutique livrée',
   dispute_buyer:'Litige tranché pour l\'acheteur (remboursé)', dispute_seller:'Litige tranché pour le vendeur (paiement libéré)'
 };
 const REPORT_TYPES = { listing:'ANNONCE', message:'MESSAGE PRIVÉ', review:'AVIS CLIENT' };
@@ -715,6 +814,22 @@ function renderAdminReal(){
         <button onclick="adminResolveDispute('${esc(x.id)}','seller',${Number(x.orderNumber)},${Number(x.amount)})" class="text-xs font-bold bg-ink text-white px-3 py-1.5 rounded-full">Trancher pour le vendeur (paiement libéré)</button>
       </div>
     </div>`).join('') : emptyBox('Aucun litige en cours.');
+
+  document.getElementById('adminBoutiqueOrdersCard').classList.remove('hidden');
+  document.getElementById('adminBoutiqueOrders').innerHTML = (d.boutiqueOrders||[]).length ? d.boutiqueOrders.map(o=>`
+    <div class="border border-line rounded-xl p-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="font-semibold text-sm">Commande #${esc(o.orderNumber)} • ${fmt(o.amount)}</div>
+        <span class="text-[11px] opacity-50">payée le ${esc(dateFr(o.paidAt))}</span>
+      </div>
+      <div class="text-xs opacity-60 mt-1">${esc(o.items)}${o.buyer?` — ${esc(o.buyer)}`:''}</div>
+      <button onclick="deliverBoutiqueOrder(${Number(o.orderNumber)})" class="mt-2 text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-full">Confirmer la livraison</button>
+    </div>`).join('') : emptyBox('Aucune commande de la Boutique en attente de livraison.');
+  document.getElementById('adminPayouts').innerHTML = (d.payouts||[]).length ? d.payouts.map(x=>`
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-line pb-2">
+      <span><span class="font-semibold">#${esc(x.orderNumber)} — ${esc(x.seller)}</span> <span class="opacity-60">${fmt(x.amount)}</span><br><span class="opacity-60">${esc(x.error)}</span></span>
+      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${x.status==='failed'?'bg-red-600 text-white':'bg-amber-500 text-white'}">${x.status==='failed'?'refusé':'en attente'}</span>
+    </div>`).join('') : emptyBox('Aucun versement en attente.');
 
   document.getElementById('adminAuditCard').classList.remove('hidden');
   document.getElementById('adminAuditList').innerHTML = d.audit.length ? d.audit.map(a=>`

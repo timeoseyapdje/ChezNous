@@ -13,6 +13,9 @@ module.exports = async (req, res) => {
     const origin = siteOrigin(req);
     const slot = String(body.slot || '').slice(0, 80);
     const details = String(body.details || '').slice(0, 450);
+    // Date réelle du créneau (pour le rappel 24 h avant) : acceptée seulement dans les 4 prochains jours.
+    const slotTime = Date.parse(body.slotAt || '');
+    const slotAt = mode === 'booking' && slotTime > Date.now() && slotTime < Date.now() + 4 * 86400000 ? new Date(slotTime).toISOString() : '';
     // Le prix payé voyage avec la session : la commande enregistrée après paiement reprend exactement ce montant.
     const items = JSON.stringify(lines.map(l => ({
       id: l.listing.id, qty: l.quantity, p: l.unitPrice,
@@ -67,6 +70,7 @@ module.exports = async (req, res) => {
         buyer_id: user ? user.id : undefined,
         items,
         slot,
+        slot_at: slotAt || undefined,
         details,
       },
     });

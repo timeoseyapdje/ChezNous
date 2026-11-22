@@ -10,14 +10,14 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122a">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122a"></script>
-<script src="assets/catalog.js?v=20261122a"></script>
-<script src="assets/shared.js?v=20261122a"></script>
+<script src="assets/i18n-en.js?v=20261122b"></script>
+<script src="assets/catalog.js?v=20261122b"></script>
+<script src="assets/shared.js?v=20261122b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122a"></script>
-<script src="assets/passkey.js?v=20261122a"></script>
+<script src="assets/auth.js?v=20261122b"></script>
+<script src="assets/passkey.js?v=20261122b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -261,7 +261,13 @@ async function submitAuth(e, mode){
       const { data, error } = await sb.auth.signUp({
         email: document.getElementById('signupEmail').value.trim(),
         password: document.getElementById('signupPassword').value,
-        options: { data: { full_name: name }, emailRedirectTo: new URL('connexion.html?retour=' + encodeURIComponent(returnTarget()), location.href).href }
+        // Consentements enregistrés dans le profil (Supabase) : le serveur n'envoie de courriel qu'avec cet accord.
+        options: { data: {
+          full_name: name,
+          notify_email: document.getElementById('consentEmail').checked,
+          notify_sms: document.getElementById('consentSms').checked,
+          phone: document.getElementById('consentSms').checked ? document.getElementById('signupPhone').value.trim().slice(0,30) : ''
+        }, emailRedirectTo: new URL('connexion.html?retour=' + encodeURIComponent(returnTarget()), location.href).href }
       });
       if(error) throw error;
       if(!data.session){
