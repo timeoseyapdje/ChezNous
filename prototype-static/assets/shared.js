@@ -1473,18 +1473,26 @@ async function reportContent(targetType, targetId){
   }catch(err){ toast(escapeHtmlGlobal(err.message),'error'); }
 }
 
-// Suivi des erreurs en production (Sentry, cahier 6.2). Collez ici le DSN du projet Sentry (Settings → Client Keys) :
-// tant qu'il est vide, rien n'est chargé. Aucune donnée personnelle n'est envoyée (pas d'IP, pas de courriel).
+// Suivi des erreurs en production (Sentry, cahier 6.2). Le script est hébergé sur le site et les rapports passent par
+// /api/notify?relais=1 : les bloqueurs de publicité, qui visent les domaines de Sentry, ne les coupent pas.
+// Aucune donnée personnelle n'est envoyée (pas d'IP, pas de courriel), et seules les erreurs des scripts d'AkwaOne sont gardées.
 const SENTRY_DSN = 'https://ae13d3ac4f9e99517d5d4466b6fa7601@o4512476959735808.ingest.us.sentry.io/4512477670014976';
 (function loadSentry(){
-  if(!SENTRY_DSN || IS_DEMO || window.Sentry) return;
+  if(!SENTRY_DSN || IS_DEMO || (window.Sentry && window.Sentry.__akwa)) return;
   const s = document.createElement('script');
-  s.src = 'https://browser.sentry-cdn.com/8.42.0/bundle.min.js';
-  s.crossOrigin = 'anonymous';
+  s.src = 'assets/vendor/suivi-erreurs-8.42.0.js';
   s.onload = ()=>{
     try{
-      window.Sentry.init({ dsn: SENTRY_DSN, environment: 'production', sendDefaultPii: false, sampleRate: 1.0,
-        beforeSend(event){ if(event.user){ delete event.user.email; delete event.user.ip_address; } return event; } });
+      window.Sentry.__akwa = true;
+      window.Sentry.init({
+        dsn: SENTRY_DSN, environment: 'production', sendDefaultPii: false, sampleRate: 1.0,
+        tunnel: '/api/notify?relais=1',
+        // Erreurs des scripts du site seulement : pas celles des extensions de navigateur ni des applications qui l'ouvrent.
+        allowUrls: [/https?:\/\/(www\.)?akwaone\.ca/, location.origin],
+        denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//, /^safari-(web-)?extension:\/\//],
+        ignoreErrors: [/updateFrom/, /ResizeObserver loop/, /Non-Error promise rejection captured/],
+        beforeSend(event){ if(event.user){ delete event.user.email; delete event.user.ip_address; } return event; }
+      });
     }catch(e){}
   };
   document.head.appendChild(s);
