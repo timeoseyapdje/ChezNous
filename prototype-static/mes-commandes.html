@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122c">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122b"></script>
-<script src="assets/catalog.js?v=20261122b"></script>
-<script src="assets/shared.js?v=20261122b"></script>
+<script src="assets/i18n-en.js?v=20261122c"></script>
+<script src="assets/catalog.js?v=20261122c"></script>
+<script src="assets/shared.js?v=20261122c"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122b"></script>
+<script src="assets/auth.js?v=20261122c"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -40,11 +40,6 @@ body{background:#FFFFFF;color:#131A17}
     <button onclick="setDashTab('seller')" id="dashSeller" class="dashTab px-4 py-1.5 rounded-full text-sm font-semibold bg-sand hidden">Vue vendeur</button>
   </div>
   <div id="dashList" class="mt-4 space-y-3"></div>
-  <div class="mt-4 p-3 bg-sand rounded-2xl flex items-center gap-3 text-xs">
-    <i data-lucide="mail" class="w-4 h-4"></i>
-    <span>Notifications automatiques : confirmation, annulation, rappel 24h, nouvelle commande.</span>
-    <button id="notifyTestBtn" onclick="sendTestNotification()" class="ml-auto bg-white border border-line px-3 py-1 rounded-full font-semibold">Tester</button>
-  </div>
 </main>
 
 <footer id="footer" class="bg-white border-t border-line mt-10">
@@ -140,7 +135,7 @@ function renderDash(){
         </div>
         <span class="text-xs font-bold px-3 py-1 rounded-full ${STATUS_STYLES[o.status]||'bg-gray-500 text-white'}">${esc(o.status)}</span>
         <div class="flex gap-2">
-          ${!CLOSED_STATUSES.includes(o.status)&&o.id?`<a href="messagerie.html?avec=${encodeURIComponent(o.seller)}" aria-label="Contacter le vendeur" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></a>`:''}
+          ${o.id && (o.sellerId || (IS_DEMO && !CLOSED_STATUSES.includes(o.status)))?`<a href="messagerie.html?avec=${encodeURIComponent(o.sellerId || o.seller)}&commande=${encodeURIComponent(o.id)}" aria-label="Contacter le vendeur" class="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></a>`:''}
           ${o.id&&(o.status==='en attente'||(o.status==='confirmée'&&o.escrowStatus==='retenu'))?`<button onclick="cancelOrder(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-white border border-line hover:bg-red-50">Annuler</button>`:''}
           ${o.status==='terminée' && !o.review ?`<button onclick="openReviewForm(${o.id})" class="text-xs font-bold px-4 py-1.5 rounded-full bg-gold">Laisser un avis</button>`:''}
           ${o.status==='terminée' && o.review ?`<span class="text-xs text-forest font-semibold flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Avis laissé${o.review.rating?` (${o.review.rating}/5)`:''}</span>`:''}
@@ -211,24 +206,6 @@ async function submitDispute(id){
   showToast('Litige transmis à notre équipe. Le paiement reste bloqué jusqu\'à décision.','info');
 }
 
-async function sendTestNotification(){
-  if(IS_DEMO){ showToast('Version démo : aucun courriel n\'est envoyé.','info'); return; }
-  const btn = document.getElementById('notifyTestBtn');
-  btn.disabled = true;
-  btn.style.opacity = '0.6';
-  try{
-    const res = await fetch('api/notify', { method:'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ action:'test' }) });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || "Le courriel n'a pas pu être envoyé.");
-    showToast('Courriel de test envoyé à ' + esc(data.sentTo) + '. Pensez à vérifier vos indésirables.','success');
-  }catch(err){
-    showToast(esc(err.message),'error');
-  }finally{
-    btn.disabled = false;
-    btn.style.opacity = '';
-  }
-}
-
 // Les commandes payées vivent dans Supabase ; le cache local garde seulement ce qui n'est pas encore en base (avis, litiges).
 const DB_STATUS = {en_attente:'en attente', confirmee:'confirmée', terminee:'terminée', annulee:'annulée', remboursee:'annulée'};
 function mapDbOrder(row, local){
@@ -237,6 +214,7 @@ function mapDbOrder(row, local){
   const mapped = {
     id: row.order_number,
     seller: row.seller_name || '',
+    sellerId: row.seller_id || null,
     service: items.map(i=>`${i.name} x${i.qty}`).join(', '),
     items,
     date: row.slot || `${paidLabel} • livraison 3 à 5 jours`,
@@ -258,7 +236,7 @@ function mapDbOrder(row, local){
   mapped.channel = row.channel || 'marketplace';
   return mapped;
 }
-const ORDER_COLUMNS = 'order_number, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
+const ORDER_COLUMNS = 'order_number, seller_id, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
 const ORDER_COLUMNS_V14 = ORDER_COLUMNS + ', channel';
 async function loadServerOrders(){
   if(IS_DEMO) return;

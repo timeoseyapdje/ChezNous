@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122c">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122b"></script>
-<script src="assets/catalog.js?v=20261122b"></script>
-<script src="assets/shared.js?v=20261122b"></script>
+<script src="assets/i18n-en.js?v=20261122c"></script>
+<script src="assets/catalog.js?v=20261122c"></script>
+<script src="assets/shared.js?v=20261122c"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122b"></script>
+<script src="assets/auth.js?v=20261122c"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -312,7 +312,7 @@ function getSellerOrders(){
   const shop = getSellerProfile().shopName;
   return getOrders().filter(o=>o.seller===shop);
 }
-const SELLER_ORDER_COLUMNS = 'order_number, items, slot, details, subtotal_cad, amount_cad, status, escrow_status, paid_at, created_at';
+const SELLER_ORDER_COLUMNS = 'order_number, buyer_id, items, slot, details, subtotal_cad, amount_cad, status, escrow_status, paid_at, created_at';
 async function loadSellerData(){
   if(IS_DEMO || !sb || !sellerUserId) return;
   const [listings, orders, plan, official] = await Promise.all([
@@ -327,6 +327,7 @@ async function loadSellerData(){
   sellerRemote.catalog = (listings.data || []).map(listingFromRow);
   sellerRemote.orders = (orders.data || []).map(r=>({
     id: r.order_number,
+    buyerId: r.buyer_id || null,
     service: (r.items || []).map(i=>`${i.name} x${i.qty}`).join(', '),
     date: r.slot || (r.paid_at ? new Date(r.paid_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'}) : ''),
     details: r.details || '',
@@ -385,7 +386,10 @@ function renderSellerView(){
 
   document.getElementById('sellerOrdersList').innerHTML = active.length ? active.map(o=>`
     <div class="border border-line rounded-xl p-3">
-      <div class="font-semibold text-sm">${esc(o.service)}</div>
+      <div class="flex items-start justify-between gap-2">
+        <div class="font-semibold text-sm">${esc(o.service)}</div>
+        ${o.buyerId ? `<a href="messagerie.html?avec=${encodeURIComponent(o.buyerId)}&commande=${encodeURIComponent(o.id)}" aria-label="Écrire au client" title="Écrire au client" class="w-8 h-8 rounded-full bg-sand hover:bg-white border border-transparent hover:border-line flex items-center justify-center shrink-0"><i data-lucide="message-circle" class="w-4 h-4"></i></a>` : ''}
+      </div>
       <div class="text-xs opacity-60 mt-1">${esc(o.date)} • ${fmt(orderTotal(o))}</div>
       ${o.details?`<div class="text-xs opacity-60 mt-1">Précisions du client : ${esc(o.details)}</div>`:''}
       <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${esc(o.status)}</span>
