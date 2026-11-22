@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     const user = IS_DEMO ? null : await requireUser(req);
     const body = await readJson(req);
     const mode = body.mode === 'booking' ? 'booking' : 'cart';
-    const { lines, fees } = await priceOrder(mode, body.items);
+    const { lines, fees, shippingBySeller } = await priceOrder(mode, body.items);
     if (user && lines.some(l => l.listing.sellerId === user.id)) return send(res, 400, { error: 'Vous ne pouvez pas acheter votre propre annonce.' });
     const origin = siteOrigin(req);
     const slot = String(body.slot || '').slice(0, 80);
@@ -32,6 +32,9 @@ module.exports = async (req, res) => {
         product_data: { name: listing.name, description: listing.seller },
       },
     }));
+    for (const [seller, amount] of Object.entries(shippingBySeller)) {
+      if (amount > 0) lineItems.push({ quantity: 1, price_data: { currency: 'cad', unit_amount: Math.round(amount * 100), product_data: { name: `Livraison — ${seller}` } } });
+    }
     if (fees > 0) {
       lineItems.push({
         quantity: 1,
@@ -50,6 +53,8 @@ module.exports = async (req, res) => {
       mode: 'payment',
       customer,
       line_items: lineItems,
+      // Codes promo créés dans le tableau de bord Stripe (Produits → Coupons) : champ « Ajouter un code » au paiement.
+      allow_promotion_codes: true,
       // Moyens choisis dans le dashboard Stripe. Sans conversion de devise, tout reste en CAD et Stripe ne propose
       // que les moyens canadiens (carte, Apple Pay, Google Pay, Link, Klarna, Afterpay, Affirm dès 50 $, prélèvement DPA).
       adaptive_pricing: { enabled: false },

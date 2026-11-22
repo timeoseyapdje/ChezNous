@@ -10,13 +10,14 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<meta name="description" content="Tableau de bord AkwaOne : gérez vos annonces, vos commandes, vos statistiques de vente et l'espace administrateur.">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -82,7 +83,8 @@ body{background:#FFFFFF;color:#131A17}
           <div id="itemFormTitle" class="font-semibold text-sm">Nouvelle annonce</div>
           <div class="grid md:grid-cols-2 gap-3">
             <input id="itemName" placeholder="Nom du produit ou service" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
-            <input id="itemPrice" type="number" min="0" placeholder="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+            <input id="itemPrice" type="number" min="0" placeholder="Prix (CAD)" aria-label="Prix (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none">
+            <input id="itemShipping" type="number" min="0" max="500" step="0.01" placeholder="Frais de livraison (CAD) — 0 = offerte" aria-label="Frais de livraison (CAD)" class="border border-line rounded-xl px-3 py-2 text-sm outline-none" style="grid-column:1/-1">
           </div>
           <div class="grid md:grid-cols-2 gap-3">
             <select id="itemCat" class="border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white"></select>
@@ -236,9 +238,13 @@ body{background:#FFFFFF;color:#131A17}
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html" class="hover:underline">Accueil</a></li>
           <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
           <li><a href="contact.html" class="hover:underline">Contact</a></li>
         </ul>
       </div>
@@ -246,7 +252,12 @@ body{background:#FFFFFF;color:#131A17}
         <div class="font-semibold">Légal</div>
         <ul class="mt-3 space-y-2 opacity-70">
           <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
-          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
+          <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
+          <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
         </ul>
       </div>
     </div>
@@ -316,8 +327,10 @@ const SELLER_ORDER_COLUMNS = 'order_number, buyer_id, items, slot, details, subt
 async function loadSellerData(){
   if(IS_DEMO || !sb || !sellerUserId) return;
   const [listings, orders, plan, official] = await Promise.all([
-    sb.from('listings').select(LISTING_COLUMNS).eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false }),
-    sb.from('orders').select(SELLER_ORDER_COLUMNS + ', channel, payout_status, payout_amount_cad').eq('seller_id', sellerUserId).order('created_at', { ascending:false })
+    sb.from('listings').select(LISTING_COLUMNS + ', shipping_cad').eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false })
+      .then(r=> r.error ? sb.from('listings').select(LISTING_COLUMNS).eq('seller_id', sellerUserId).eq('active', true).order('created_at', { ascending:false }) : r),
+    sb.from('orders').select(SELLER_ORDER_COLUMNS + ', channel, payout_status, payout_amount_cad, shipping_cad, tracking_number, tracking_carrier').eq('seller_id', sellerUserId).order('created_at', { ascending:false })
+      .then(r=> r.error ? sb.from('orders').select(SELLER_ORDER_COLUMNS + ', channel, payout_status, payout_amount_cad').eq('seller_id', sellerUserId).order('created_at', { ascending:false }) : r) // sans migration 0016
       .then(r=> r.error ? sb.from('orders').select(SELLER_ORDER_COLUMNS).eq('seller_id', sellerUserId).order('created_at', { ascending:false }) : r), // sans migration 0014
     sb.from('seller_plans').select('plan, shop_name, status').eq('seller_id', sellerUserId).maybeSingle(),
     // Boutique officielle : ce compte vendeur publie dans la Boutique AkwaOne au lieu de la marketplace.
@@ -335,7 +348,9 @@ async function loadSellerData(){
     escrowStatus: r.escrow_status,
     total: Number(r.amount_cad), price: Number(r.amount_cad),
     subtotal: Number(r.subtotal_cad ?? r.amount_cad), items: r.items || [], paidAt: r.paid_at || r.created_at,
-    channel: r.channel || 'marketplace', payoutStatus: r.payout_status || 'none', payoutAmount: Number(r.payout_amount_cad || 0)
+    channel: r.channel || 'marketplace', payoutStatus: r.payout_status || 'none', payoutAmount: Number(r.payout_amount_cad || 0),
+    shipping: Number(r.shipping_cad || 0), trackingNumber: r.tracking_number || '', trackingCarrier: r.tracking_carrier || '',
+    isService: (r.items || []).some(i=>i.cat==='services') || !!r.slot
   }));
   sellerRemote.plan = plan.data && plan.data.status==='active' ? plan.data.plan : null;
   sellerRemote.official = !!(official && official.data);
@@ -374,7 +389,7 @@ function renderSellerView(){
 
   document.getElementById('sellerCatalogList').innerHTML = catalog.length ? catalog.map((p,i)=>`
     <div class="flex items-center gap-3 border border-line rounded-xl p-3">
-      <img src="${esc(safeImageUrl(p.cover) || DEFAULT_COVER)}" class="w-14 h-14 rounded-lg object-cover shrink-0">
+      <img alt="" src="${esc(safeImageUrl(p.cover) || DEFAULT_COVER)}" class="w-14 h-14 rounded-lg object-cover shrink-0">
       <div class="flex-1 min-w-0">
         <div class="font-semibold text-sm truncate">${esc(p.name)}</div>
         <div class="text-xs opacity-60">${fmt(p.price)} • ${p.type==='produit'?'Produit':'Service'}${p.reviews?` • <i data-lucide="star" class="w-3 h-3 inline fill-gold text-gold"></i> ${p.rating} (${p.reviews})`:''}</div>
@@ -393,6 +408,9 @@ function renderSellerView(){
       <div class="text-xs opacity-60 mt-1">${esc(o.date)} • ${fmt(orderTotal(o))}</div>
       ${o.details?`<div class="text-xs opacity-60 mt-1">Précisions du client : ${esc(o.details)}</div>`:''}
       <span class="text-[11px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${o.status==='confirmée'?'bg-forest text-white':'bg-amber-500 text-white'}">${esc(o.status)}</span>
+      ${!IS_DEMO && o.status==='confirmée' && !o.isService ? (o.trackingNumber
+        ? `<div class="mt-2 text-xs flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i> ${esc(o.trackingCarrier)} • <span class="font-mono">${esc(o.trackingNumber)}</span> <button onclick="openTrackingForm(${o.id})" class="underline opacity-60 ml-1">modifier</button></div>`
+        : `<button onclick="openTrackingForm(${o.id})" class="mt-2 text-xs font-semibold border border-line rounded-lg px-3 py-1.5 flex items-center gap-1 hover:bg-sand"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Ajouter le numéro de suivi</button>`) : ''}
       ${o.escrowStatus==='retenu' && o.channel==='boutique' ? `
       <button onclick="deliverBoutiqueOrder(${o.id})" class="mt-2 text-xs font-bold bg-forest text-white px-3 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Confirmer la livraison</button>` : o.escrowStatus==='retenu' ? `
       <div class="mt-2 flex gap-2">
@@ -427,6 +445,40 @@ async function tryReleaseEscrow(orderId){
     showToast(esc(err.message),'error');
   }
 }
+// Numéro de suivi du colis : transporteur + numéro, l'acheteur reçoit un courriel avec le lien de suivi.
+function openTrackingForm(orderId){
+  const o = getSellerOrders().find(x=>x.id===orderId) || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'fixed inset-0 flex items-center justify-center p-4';
+  wrap.style.zIndex = '90';
+  wrap.innerHTML = `
+    <div data-close class="absolute inset-0" style="background:rgba(0,0,0,.5)"></div>
+    <form class="relative bg-white rounded-2xl shadow-2xl w-full p-6" style="max-width:420px">
+      <h2 class="font-display font-bold text-xl">Suivi du colis — commande #${orderId}</h2>
+      <p class="text-sm opacity-70 mt-1">Le client reçoit un courriel avec le lien de suivi.</p>
+      <label for="trkCarrier" class="block text-xs font-bold tracking-widest opacity-60 mt-4">TRANSPORTEUR</label>
+      <select id="trkCarrier" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm bg-white">${TRACKING_CARRIERS.map(c=>`<option ${c===o.trackingCarrier?'selected':''}>${c}</option>`).join('')}</select>
+      <label for="trkNumber" class="block text-xs font-bold tracking-widest opacity-60 mt-3">NUMÉRO DE SUIVI</label>
+      <input id="trkNumber" required maxlength="60" value="${esc(o.trackingNumber || '')}" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm font-mono" placeholder="Ex. 1234567890123456">
+      <div class="flex gap-2 mt-5">
+        <button type="button" data-close class="flex-1 border border-line rounded-full py-2.5 text-sm font-semibold">Annuler</button>
+        <button type="submit" class="flex-1 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer</button>
+      </div>
+    </form>`;
+  wrap.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click', ()=>wrap.remove()));
+  wrap.querySelector('form').addEventListener('submit', async e=>{
+    e.preventDefault();
+    try{
+      await moderationApi('set-tracking', { orderNumber: orderId, carrier: wrap.querySelector('#trkCarrier').value, trackingNumber: wrap.querySelector('#trkNumber').value });
+      wrap.remove();
+      showToast('Numéro de suivi enregistré, le client est prévenu.','success');
+      await loadSellerData();
+    }catch(err){ showToast(esc(err.message),'error'); }
+  });
+  document.body.appendChild(wrap);
+  wrap.querySelector('#trkNumber').focus();
+}
+
 // Boutique AkwaOne : pas de code client, la livraison est confirmée par l'équipe (compte Boutique ou administrateur).
 async function deliverBoutiqueOrder(orderId){
   if(!await confirmDialog({ title:`Commande #${orderId} livrée ?`, message:'La commande passe en terminée et le client est prévenu par courriel. Confirmez seulement une fois le colis remis.', confirmLabel:'Confirmer la livraison', icon:'truck' })) return;
@@ -525,7 +577,7 @@ function toggleAddItemForm(){
   const form = document.getElementById('addItemForm');
   const opening = form.classList.contains('hidden');
   if(opening || editingItem){
-    ['itemName','itemPrice','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+    ['itemName','itemPrice','itemShipping','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
     resetListingImage('itemCover');
     setItemFormMode(null);
   }
@@ -538,6 +590,7 @@ function editSellerItem(i){
   form.classList.remove('hidden');
   document.getElementById('itemName').value = item.name || '';
   document.getElementById('itemPrice').value = item.price || '';
+  document.getElementById('itemShipping').value = item.shipping || '';
   document.getElementById('itemDesc').value = item.desc || '';
   if(item.cat) document.getElementById('itemCat').value = item.cat;
   if(item.type) document.getElementById('itemType').value = item.type;
@@ -550,7 +603,9 @@ async function addSellerItem(){
   const name = document.getElementById('itemName').value.trim();
   const price = Math.round(parseFloat(document.getElementById('itemPrice').value)*100)/100;
   const desc = document.getElementById('itemDesc').value.trim();
+  const shipping = Math.round((parseFloat(document.getElementById('itemShipping').value) || 0)*100)/100;
   if(!name || !price || price<=0 || price>100000){ showToast('Merci de renseigner un nom et un prix valide.','error'); return; }
+  if(shipping<0 || shipping>500){ showToast('Frais de livraison entre 0 et 500 $.','error'); return; }
   if(containsProhibited(name) || containsProhibited(desc)){ showToast('Ce contenu ne respecte pas notre charte de la communauté.','error'); return; }
   const photo = document.getElementById('itemCover').files[0];
   let cover = '';
@@ -558,12 +613,12 @@ async function addSellerItem(){
     try{ showToast('Envoi de la photo…','info'); cover = await uploadListingImage(photo); }
     catch(err){ showToast(esc(err.message),'error'); return; }
   }
-  if(editingItem){ await saveEditedItem(editingItem, name, price, desc, cover); return; }
+  if(editingItem){ await saveEditedItem(editingItem, name, price, desc, cover, shipping); return; }
   const profile = getSellerProfile();
   const item = {
     cat: document.getElementById('itemCat').value,
     type: document.getElementById('itemType').value,
-    name, price, desc,
+    name, price, desc, shipping,
     seller: profile.shopName,
     city: getDeliverCity(),
     cover: cover || DEFAULT_COVER
@@ -574,15 +629,18 @@ async function addSellerItem(){
     setSellerCatalog(catalog);
   } else {
     const official = sellerRemote.official;
-    const { error } = await sb.from('listings').insert({
+    const row = {
       seller_id: sellerUserId, seller_name: official ? 'AkwaOne' : item.seller.slice(0,80), type: item.type, category: item.cat,
       channel: official ? 'boutique' : 'marketplace',
-      name: item.name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: item.price, cover_url: cover || null, city: official ? 'Canada' : item.city
-    });
+      name: item.name.slice(0,120), description: desc.slice(0,2000) || null, price_cad: item.price, cover_url: cover || null, city: official ? 'Canada' : item.city,
+      shipping_cad: item.type==='service' ? 0 : shipping
+    };
+    let { error } = await sb.from('listings').insert(row);
+    if(error && /shipping_cad/.test(error.message)){ delete row.shipping_cad; ({ error } = await sb.from('listings').insert(row)); } // migration 0016 absente
     if(error){ showToast("L'annonce n'a pas pu être publiée. Réessayez dans un instant.",'error'); return; }
     await Promise.all([loadSellerData(), loadRemoteListings()]);
   }
-  ['itemName','itemPrice','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
+  ['itemName','itemPrice','itemShipping','itemDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
   resetListingImage('itemCover');
   toggleAddItemForm();
   renderSellerView();
@@ -590,19 +648,20 @@ async function addSellerItem(){
     ? "Produit publié dans la <a href='boutique.html' class='underline'>Boutique AkwaOne</a>."
     : "Annonce publiée : elle est visible sur la <a href='marketplace.html' class='underline'>marketplace</a>.",'success');
 }
-async function saveEditedItem(item, name, price, desc, cover){
+async function saveEditedItem(item, name, price, desc, cover, shipping = 0){
   const cat = document.getElementById('itemCat').value;
   const type = document.getElementById('itemType').value;
   if(IS_DEMO){
     const catalog = getSellerCatalog();
     const idx = catalog.findIndex(p=>String(p.id)===String(item.id));
     if(idx<0){ showToast("Cette annonce n'existe plus.",'error'); return; }
-    catalog[idx] = { ...catalog[idx], name, price, desc, cat, type, cover: cover || catalog[idx].cover };
+    catalog[idx] = { ...catalog[idx], name, price, desc, cat, type, shipping, cover: cover || catalog[idx].cover };
     setSellerCatalog(catalog);
   } else {
-    const changes = { name: name.slice(0,120), price_cad: price, description: desc.slice(0,2000) || null, category: cat, type };
+    const changes = { name: name.slice(0,120), price_cad: price, description: desc.slice(0,2000) || null, category: cat, type, shipping_cad: type==='service' ? 0 : shipping };
     if(cover) changes.cover_url = cover;
-    const { error } = await sb.from('listings').update(changes).eq('id', item.id).eq('seller_id', sellerUserId);
+    let { error } = await sb.from('listings').update(changes).eq('id', item.id).eq('seller_id', sellerUserId);
+    if(error && /shipping_cad/.test(error.message)){ delete changes.shipping_cad; ({ error } = await sb.from('listings').update(changes).eq('id', item.id).eq('seller_id', sellerUserId)); }
     if(error){ showToast("L'annonce n'a pas pu être modifiée. Réessayez dans un instant.",'error'); return; }
     await Promise.all([loadSellerData(), loadRemoteListings()]);
   }
@@ -741,7 +800,7 @@ function renderAdminBoutique(){
   const items = getBoutiqueListings();
   document.getElementById('adminBoutiqueList').innerHTML = items.length ? items.map(p=>`
     <div class="flex items-center gap-3 border border-line rounded-xl p-3">
-      <img src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-lg object-cover shrink-0">
+      <img alt="" src="${esc(p.cover)}" loading="lazy" class="w-14 h-14 rounded-lg object-cover shrink-0">
       <div class="flex-1 min-w-0">
         <div class="font-semibold text-sm truncate">${esc(p.name)}</div>
         <div class="text-xs opacity-60">${fmt(p.price)}</div>

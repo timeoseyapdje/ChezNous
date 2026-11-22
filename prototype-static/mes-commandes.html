@@ -10,13 +10,14 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<meta name="description" content="Suivez vos commandes et réservations AkwaOne : statut, suivi du colis, reçus Stripe, annulation et avis.">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -52,10 +53,13 @@ body{background:#FFFFFF;color:#131A17}
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html" class="hover:underline">Accueil</a></li>
           <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
-          <li><a href="messagerie.html" class="hover:underline">Messagerie</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
           <li><a href="contact.html" class="hover:underline">Contact</a></li>
         </ul>
       </div>
@@ -63,8 +67,12 @@ body{background:#FFFFFF;color:#131A17}
         <div class="font-semibold">Légal</div>
         <ul class="mt-3 space-y-2 opacity-70">
           <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
+          <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
           <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
-          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
         </ul>
       </div>
     </div>
@@ -142,6 +150,12 @@ function renderDash(){
           ${o.id&&o.status!=='en attente'?`<button onclick="openReceipt(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-ink text-white">Reçu</button>`:''}
         </div>
       </div>
+      ${o.trackingNumber && o.status!=='annulée' ? `
+      <div class="mt-3 bg-white border border-line rounded-xl p-3 text-xs flex flex-wrap items-center gap-2">
+        <i data-lucide="truck" class="w-4 h-4 text-forest"></i>
+        <span class="font-semibold">Colis expédié</span> <span class="opacity-60">${esc(o.trackingCarrier)} • <span class="font-mono">${esc(o.trackingNumber)}</span></span>
+        ${trackingUrl(o.trackingCarrier, o.trackingNumber) ? `<a href="${esc(trackingUrl(o.trackingCarrier, o.trackingNumber))}" target="_blank" rel="noopener" class="ml-auto font-semibold text-forest underline">Suivre mon colis</a>` : ''}
+      </div>` : ''}
       ${o.channel==='boutique' && o.escrowStatus==='retenu' && o.status!=='annulée' ? `
       <div class="mt-3 bg-sand rounded-xl p-3 text-xs">
         <div class="font-semibold flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Préparée et expédiée par l'équipe AkwaOne</div>
@@ -176,13 +190,13 @@ function openDisputeForm(id){
   openOrderModal(`
     <h3 class="font-display text-xl font-bold" style="padding-right:40px">Signaler un litige</h3>
     <p class="text-xs opacity-60 mt-1">Commande #${o.id} — ${esc(o.seller)}. Le paiement reste bloqué jusqu'à la décision de notre équipe.</p>
-    <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">DESCRIPTION DU PROBLÈME</label>
+    <label for="disputeText" class="block text-xs font-bold tracking-widest opacity-60 mt-4">DESCRIPTION DU PROBLÈME</label>
     <textarea id="disputeText" maxlength="1000" class="w-full mt-2 border border-line rounded-2xl p-3 text-sm h-28 outline-none" placeholder="Ce qui s'est passé, ce que vous attendiez, dates..."></textarea>
-    ${IS_DEMO ? `<label class="block text-xs font-bold tracking-widest opacity-60 mt-3">PHOTO (FACULTATIF)</label>
+    ${IS_DEMO ? `<label for="disputePhoto" class="block text-xs font-bold tracking-widest opacity-60 mt-3">PHOTO (FACULTATIF)</label>
     <input id="disputePhoto" type="file" accept="image/*" class="w-full mt-2 text-xs">` : `<p class="text-xs opacity-60 mt-2">Des photos à joindre ? Envoyez-les à aide@akwaone.ca en indiquant le numéro de commande #${o.id}.</p>`}
     <div class="flex gap-2 mt-5">
       <button onclick="submitDispute(${o.id})" class="flex-1 bg-coral text-white rounded-full py-2.5 text-sm font-bold">Envoyer le litige</button>
-      <button onclick="closeOrderModal()" class="flex-1 bg-sand rounded-full py-2.5 text-sm font-semibold">Annuler</button>
+      <button onclick="closeOrderModal()" aria-label="Fermer" class="flex-1 bg-sand rounded-full py-2.5 text-sm font-semibold">Annuler</button>
     </div>`);
 }
 async function submitDispute(id){
@@ -222,6 +236,10 @@ function mapDbOrder(row, local){
     status: DB_STATUS[row.status] || row.status,
     price: Number(row.subtotal_cad ?? row.amount_cad),
     fees: Number(row.fees_cad || 0),
+    shipping: Number(row.shipping_cad || 0),
+    discount: Number(row.discount_cad || 0),
+    trackingNumber: row.tracking_number || '',
+    trackingCarrier: row.tracking_carrier || '',
     total: Number(row.amount_cad),
     paymentMethod: row.payment_method,
     paidAt: row.paid_at,
@@ -238,13 +256,15 @@ function mapDbOrder(row, local){
 }
 const ORDER_COLUMNS = 'order_number, seller_id, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
 const ORDER_COLUMNS_V14 = ORDER_COLUMNS + ', channel';
+const ORDER_COLUMNS_V16 = ORDER_COLUMNS_V14 + ', shipping_cad, discount_cad, tracking_number, tracking_carrier';
 async function loadServerOrders(){
   if(IS_DEMO) return;
   const { profile } = await authReady;
   if(!profile || !sb) return;
   // Le code de réception n'est pas lisible dans la table (un vendeur la lit aussi) : l'acheteur l'obtient par my_release_codes().
   const byBuyer = (cols)=>sb.from('orders').select(cols).eq('buyer_id', profile.id).order('created_at', { ascending:false });
-  let [{ data, error }, codes] = await Promise.all([ byBuyer(ORDER_COLUMNS_V14), sb.rpc('my_release_codes') ]);
+  let [{ data, error }, codes] = await Promise.all([ byBuyer(ORDER_COLUMNS_V16), sb.rpc('my_release_codes') ]);
+  if(error) ({ data, error } = await byBuyer(ORDER_COLUMNS_V14)); // migration 0016 pas encore exécutée
   if(error) ({ data, error } = await byBuyer(ORDER_COLUMNS)); // migration 0014 pas encore exécutée
   if(error){ console.warn('commandes Supabase :', error.message); return; }
   const codeByOrder = new Map((codes.data || []).map(c=>[c.order_number, c.release_code]));
@@ -348,6 +368,8 @@ function openReceipt(id){
       <div class="mt-4 space-y-1 text-sm">
         ${lines.map(l=>`<div class="flex justify-between gap-3"><span>${esc(l.name)} x${l.qty}</span><span>${fmt(l.unitPrice*l.qty)}</span></div>`).join('')}
         <div class="flex justify-between opacity-60"><span>Frais de service</span><span>${fmt(fees)}</span></div>
+        ${o.shipping ? `<div class="flex justify-between opacity-60"><span>Livraison</span><span>${fmt(o.shipping)}</span></div>` : ''}
+        ${o.discount ? `<div class="flex justify-between text-forest"><span>Code promo</span><span>− ${fmt(o.discount)}</span></div>` : ''}
         <div class="flex justify-between font-bold border-t border-line pt-2 mt-2"><span>Total payé</span><span>${fmt(orderTotal(o))}</span></div>
       </div>
       <div class="text-xs opacity-60 mt-3">Moyen de paiement : ${esc(o.paymentMethod || 'Carte bancaire')}</div>

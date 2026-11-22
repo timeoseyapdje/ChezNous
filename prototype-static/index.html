@@ -27,13 +27,13 @@
 <meta name="twitter:description" content="AkwaOne, la boutique en ligne et la marketplace de la diaspora africaine au Canada : épicerie africaine, tissus wax, beauté afro, artisanat, cuisine maison et services. Livraison partout au Canada.">
 <meta name="twitter:image" content="https://www.akwaone.ca/assets/logos/akwaone-og.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"AkwaOne","url":"https://www.akwaone.ca/","logo":"https://www.akwaone.ca/assets/logos/akwaone-icone-1024.png","email":"aide@akwaone.ca","areaServed":"CA","description":"Boutique en ligne et marketplace de la diaspora africaine au Canada."},{"@type":"WebSite","name":"AkwaOne","url":"https://www.akwaone.ca/","inLanguage":"fr-CA","potentialAction":{"@type":"SearchAction","target":"https://www.akwaone.ca/marketplace.html?q={search_term_string}","query-input":"required name=search_term_string"}}]}</script>
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -76,18 +76,18 @@ body{background:#FFFFFF;color:#131A17}
     </div>
 
     <div class="flex-1 min-w-[220px] flex bg-white rounded-md overflow-hidden">
-      <select id="heroCategory" onchange="goToMarketplace()" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
+      <select id="heroCategory" aria-label="Catégorie" onchange="goToMarketplace()" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
         <option value="" data-i18n="allCategories">Toutes catégories</option>
       </select>
-      <input id="heroSearch" onkeydown="if(event.key==='Enter')goToMarketplace()" placeholder="Rechercher un produit, un plat, un service..." class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
-      <button onclick="goToMarketplace()" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
+      <input id="heroSearch" onkeydown="if(event.key==='Enter')goToMarketplace()" placeholder="Rechercher sur AkwaOne…" aria-label="Rechercher un produit, un plat, un service" class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
+      <button onclick="goToMarketplace()" aria-label="Rechercher" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
         <i data-lucide="search" class="w-4 h-4"></i>
       </button>
     </div>
 
     <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
-      <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
-      <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
+      <select id="currencySelect" onchange="setCurrency(this.value)" aria-label="Devise" class="bg-transparent text-xs font-medium outline-none cursor-pointer" style="max-width:170px"></select>
+      <select id="langSelect" aria-label="Langue" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
       <div class="relative">
         <button id="accountBtn" class="text-left leading-tight hover:opacity-80">
           <div class="text-[10px]">Bonjour</div>
@@ -123,13 +123,13 @@ body{background:#FFFFFF;color:#131A17}
       <div id="navCategoryLinks" class="hidden xl:flex items-center gap-5"></div>
       <div class="hidden md:flex items-center gap-2 ml-auto shrink-0">
         <span class="text-[10px] font-semibold opacity-60" data-i18n="roleLabel">RÔLE</span>
-        <select id="roleSelect" onchange="changeRole(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
+        <select id="roleSelect" aria-label="Rôle" onchange="changeRole(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
           <option value="buyer" class="text-ink">Acheteur</option>
           <option value="seller" class="text-ink">Vendeur</option>
           <option value="admin" class="text-ink">Administrateur</option>
         </select>
       </div>
-      <a href="devenir-vendeur.html" class="shrink-0 font-semibold hover:opacity-80" data-i18n="navSell">Vendre sur AkwaOne</a>
+      <a href="devenir-vendeur.html" class="shrink-0 font-semibold hover:opacity-80"><span class="md:hidden" data-i18n="navSellShort">Vendre</span><span class="hidden md:inline" data-i18n="navSell">Vendre sur AkwaOne</span></a>
     </div>
   </div>
 </header>
@@ -180,9 +180,9 @@ body{background:#FFFFFF;color:#131A17}
     <a href="marketplace.html" class="text-sm font-semibold text-forest hover:underline flex items-center gap-1 shrink-0">Voir toute la marketplace <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
   </div>
   <div class="relative mt-4">
-    <button onclick="scrollCarousel(-1)" class="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+    <button onclick="scrollCarousel(-1)" aria-label="Précédent" data-featured-arrow class="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
     <div id="featuredGrid" class="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-2"></div>
-    <button onclick="scrollCarousel(1)" class="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+    <button onclick="scrollCarousel(1)" aria-label="Suivant" data-featured-arrow class="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-line shadow items-center justify-center hover:bg-sand"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
   </div>
 
 </section>
@@ -222,23 +222,21 @@ body{background:#FFFFFF;color:#131A17}
   </div>
 </div>
 
-<div id="tourGuide" class="hidden"><img src="assets/malik-classic.jpg"></div>
+<div id="tourGuide" class="hidden"><img alt="" src="assets/malik-classic.jpg"></div>
 
-<footer id="footer" class="bg-white border-t border-line mt-6">
+<footer id="footer" class="bg-white border-t border-line mt-10">
   <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
     <div class="grid md:grid-cols-3 gap-8 text-sm">
       <div>
         <div class="flex items-center gap-2 font-display font-bold text-lg"><img src="assets/logos/akwaone-icone.svg" alt="" width="32" height="32" class="w-8 h-8 rounded-lg"> AkwaOne</div>
-        <p class="opacity-60 mt-3 leading-relaxed">Marketplace multi-vendeurs de la diaspora africaine, active partout au Canada.</p>
+        <p class="opacity-60 mt-3 leading-relaxed">Boutique en ligne et marketplace de la diaspora africaine, active partout au Canada.</p>
       </div>
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html" class="hover:underline">Accueil</a></li>
           <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
-          <li><a href="#categories" class="hover:underline">Catégories</a></li>
-          <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
-          <li><a href="messagerie.html" class="hover:underline">Messagerie</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
           <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
           <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
@@ -256,11 +254,10 @@ body{background:#FFFFFF;color:#131A17}
           <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
           <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
           <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
-          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
-          <li><span class="text-xs">© 2026 AJ Cleaning. Tous droits réservés.</span></li>
         </ul>
       </div>
     </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 AJ Cleaning. Tous droits réservés.</div>
   </div>
 </footer>
 
@@ -274,7 +271,7 @@ const i18n = {
   fr:{
     logoSub:"DIASPORA AFRICAINE • CANADA",
     deliverTo:"Livrer à", allCategories:"Toutes catégories", menu:"Menu",
-    navHome:"Accueil", navMarket:"Marketplace", navSell:"Vendre sur AkwaOne",
+    navHome:"Accueil", navMarket:"Marketplace", navSell:"Vendre sur AkwaOne", navSellShort:"Vendre",
     greeting:"Bonjour", accountOrders:"Comptes & Commandes", roleLabel:"RÔLE",
     heroDesc:"Notre boutique en ligne pour les produits AkwaOne, et une marketplace réunissant les vendeurs indépendants de la diaspora : épicerie, tissus wax, beauté afro, artisanat, cuisine maison et services.",
     popular:"Populaires :",
@@ -286,7 +283,7 @@ const i18n = {
   en:{
     logoSub:"AFRICAN DIASPORA • CANADA",
     deliverTo:"Deliver to", allCategories:"All categories", menu:"Menu",
-    navHome:"Home", navMarket:"Marketplace", navSell:"Sell on AkwaOne",
+    navHome:"Home", navMarket:"Marketplace", navSell:"Sell on AkwaOne", navSellShort:"Sell",
     greeting:"Hello", accountOrders:"Accounts & Orders", roleLabel:"ROLE",
     heroDesc:"Our online shop for AkwaOne products, and a marketplace of independent diaspora sellers: groceries, wax fabrics, afro beauty, crafts, home cooking and services.",
     popular:"Popular:",
@@ -362,7 +359,7 @@ function renderCategories(){
     <a href="marketplace.html?categorie=${c.id}" class="bg-white border border-line rounded-2xl p-4 text-left card-hover hover:border-forest transition group block">
       <div class="w-10 h-10 rounded-xl bg-sand group-hover:bg-forest group-hover:text-white flex items-center justify-center transition"><i data-lucide="${c.icon}" class="w-5 h-5"></i></div>
       <div class="font-semibold text-sm mt-3">${lang==='fr'?c.label:c.label_en}</div>
-      <div class="text-xs opacity-50">${(n=>n ? `${n} ${lang==='fr'?(n>1?'vendeurs':'vendeur'):(n>1?'sellers':'seller')}` : (lang==='fr'?'Premiers vendeurs bienvenus':'First sellers welcome'))(getCategoryVendorCount(c.id))}</div>
+      <div class="text-xs opacity-50">${(n=>n ? `${n} ${lang==='fr'?(n>1?'vendeurs':'vendeur'):(n>1?'sellers':'seller')}` : (lang==='fr'?'Découvrir':'Explore'))(getCategoryVendorCount(c.id))}</div>
     </a>
   `).join('');
   const heroSel = document.getElementById('heroCategory');
@@ -371,14 +368,15 @@ function renderCategories(){
   lucide.createIcons();
 }
 
-const heroSlides = [
+function buildHeroSlides(){ return [
   {type:'intro'},
-  {type:'section', tag:'BOUTIQUE AKWAONE', icon:'store', href:'boutique.html', bg:'bg-ink', img:'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop', title:'Nos propres produits,<br>expédiés par nous', desc:'La boutique en ligne AkwaOne : une sélection de produits de la diaspora vendus directement par notre équipe.', cta:'Visiter la boutique', ctaClass:'bg-white text-ink'},
-  {type:'section', tag:'MARKETPLACE • PRODUITS', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', img:'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop', title:'Produits des vendeurs<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
-  {type:'section', tag:'MARKETPLACE • SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-ink', img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
+  {type:'section', tag:'BOUTIQUE AKWAONE', icon:'store', href:'boutique.html', bg:'bg-ink', img:'assets/visuels/motif-boutique.svg', title:'Nos propres produits,<br>expédiés par nous', desc:'La boutique en ligne AkwaOne : une sélection de produits de la diaspora vendus directement par notre équipe.', cta:'Visiter la boutique', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • PRODUITS', icon:'shopping-basket', href:'marketplace.html?tab=produit', bg:'bg-ink', img:'assets/visuels/motif-produits.svg', title:'Produits des vendeurs<br>de la diaspora', desc:"Épicerie, tissus wax, beauté, artisanat • Livraison ou ramassage", cta:'Explorer', ctaClass:'bg-white text-ink'},
+  {type:'section', tag:'MARKETPLACE • SERVICES', icon:'utensils', href:'marketplace.html?tab=service', bg:'bg-ink', img:'assets/visuels/motif-services.svg', title:'Cuisine maison<br>et services', desc:'Traiteurs, coiffure, transfert d\'argent, événementiel', cta:'Réserver', ctaClass:'bg-ink text-white'}
 ].concat(getSponsoredListings().map(p=>({
-  type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${p.id}`, bg:'bg-ink', img:p.cover, title:p.name, desc:`${p.seller} • ${p.city} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
-})));
+  type:'sponsor', tag:'SPONSORISÉ • FORMULE PREMIUM', icon:'star', href:`marketplace.html?produit=${encodeURIComponent(p.id)}`, bg:'bg-ink', img:escapeHtmlGlobal(p.cover), title:escapeHtmlGlobal(p.name), desc:`${escapeHtmlGlobal(p.seller)} • ${escapeHtmlGlobal(p.city)} • à partir de ${fmt(p.price)}`, cta:'Voir l\'annonce', ctaClass:'bg-white text-ink'
+}))); }
+let heroSlides = buildHeroSlides();
 let heroIndex = 0;
 let heroTimer = null;
 function renderHeroCarousel(){
@@ -391,13 +389,14 @@ function renderHeroCarousel(){
         : 'Online shop and marketplace<br><span class="text-forest">for the African diaspora,</span><br>delivered across Canada.';
       return `
       <div class="absolute inset-0 rounded-2xl overflow-hidden bg-white border border-line p-6 md:p-10 flex flex-col justify-center transition-opacity duration-500 ${visible}">
+        <img src="assets/visuels/accueil-motif.svg" alt="" class="hidden md:block absolute top-0 right-0 h-full object-cover" style="width:34%;-webkit-mask-image:linear-gradient(to right,transparent,#000 40%);mask-image:linear-gradient(to right,transparent,#000 40%)">
         <h1 class="font-display font-black text-[26px] sm:text-[32px] md:text-[46px] leading-[1.1]">${heroTitle}</h1>
         <p class="text-[14px] sm:text-[15px] leading-relaxed opacity-70 mt-4 max-w-[520px]">${i18n[lang].heroDesc}</p>
       </div>`;
     }
     return `
     <a href="${s.href}" class="absolute inset-0 rounded-2xl overflow-hidden ${s.bg} text-white p-6 md:p-10 flex flex-col justify-between transition-opacity duration-500 ${visible}">
-      <img src="${s.img}" class="absolute inset-0 w-full h-full object-cover">
+      <img src="${s.img}" alt="" class="absolute inset-0 w-full h-full object-cover">
       <div class="absolute inset-0" style="background:rgba(0,0,0,.3)"></div>
       <div class="relative flex justify-between items-start">
         <span class="bg-white text-ink text-[11px] font-bold tracking-widest px-3 py-1 rounded-full">${s.tag}</span>
@@ -411,7 +410,7 @@ function renderHeroCarousel(){
     </a>`;
   }).join('');
   document.getElementById('heroCarouselDots').innerHTML = heroSlides.map((s,i)=>`
-    <button onclick="goToHeroSlide(${i})" class="w-2 h-2 rounded-full ${i===heroIndex?'bg-forest':'bg-line'}"></button>
+    <button onclick="goToHeroSlide(${i})" aria-label="Diapositive ${i+1}" class="w-2 h-2 rounded-full ${i===heroIndex?'bg-forest':'bg-line'}"></button>
   `).join('');
   lucide.createIcons();
 }
@@ -446,7 +445,7 @@ function renderBoutiqueHome(){
   box.innerHTML = items.map(p=>`
     <a href="boutique.html" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block">
       <div class="relative h-[160px] overflow-hidden">
-        <img src="${escapeHtmlGlobal(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <img src="${escapeHtmlGlobal(p.cover)}" alt="${escapeHtmlGlobal(p.name)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-forest text-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">AKWAONE</div>
       </div>
@@ -462,6 +461,8 @@ function renderBoutiqueHome(){
 }
 
 function renderFeatured(){
+  // Flèches inutiles tant qu'il n'y a rien à faire défiler.
+  document.querySelectorAll('[data-featured-arrow]').forEach(b=>{ b.style.display = featured.length > 3 ? '' : 'none'; });
   // Site réel avant les premières annonces : on invite les vendeurs plutôt que d'afficher une rangée vide.
   if(!featured.length){
     document.getElementById('featuredGrid').innerHTML = `<div class="w-full bg-sand rounded-xl p-6 text-sm">
@@ -472,14 +473,14 @@ function renderFeatured(){
   }
   const e = escapeHtmlGlobal;
   document.getElementById('featuredGrid').innerHTML = featured.map(p=>`
-    <a href="marketplace.html?produit=${encodeURIComponent(p.id)}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block${shopThemeClass(p)}"${shopThemeStyle(p)}>
+    <a href="produit.html?id=${encodeURIComponent(p.id)}" class="w-[240px] sm:w-[260px] shrink-0 snap-start bg-white rounded-xl border border-line overflow-hidden card-hover group block${shopThemeClass(p)}"${shopThemeStyle(p)}>
       <div class="relative h-[160px] overflow-hidden">
-        <img src="${e(p.cover)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
+        <img src="${e(p.cover)}" alt="${e(p.name)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.04] transition duration-500">
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div class="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-[11px] font-bold tracking-widest">${p.type==='produit'?'PRODUIT':'SERVICE'}</div>
         <div class="absolute top-3 right-3 bg-ink text-white rounded-full px-2 py-1 text-xs font-bold flex items-center gap-1">${p.reviews ? `<i data-lucide="star" class="w-3 h-3 fill-gold text-gold"></i> ${p.rating}` : (lang==='fr'?'Nouveau':'New')}</div>
         <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2">
-          <img src="${e(p.image)}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
+          <img alt="" src="${e(p.image)}" class="w-9 h-9 rounded-full border-2 border-white object-cover">
           <div class="text-white">
             <div class="font-semibold text-sm leading-none">${e(p.seller)}</div>
             <div class="text-xs opacity-80">${e(p.city)}</div>
@@ -540,6 +541,7 @@ function setCookieConsent(accepted){
   try{ localStorage.setItem('akwaone_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
   document.getElementById('akwaNotice').classList.add('hidden');
   if(typeof loadAdSense==='function') loadAdSense();
+  initTourPrompt(); // la visite guidée n'est proposée qu'une fois le choix des cookies fait
 }
 function initCookieBanner(){
   let consent = null;
@@ -628,8 +630,10 @@ function showTourStep(){
   }, 500);
 }
 function initTourPrompt(){
-  let seen = null;
-  try{ seen = localStorage.getItem('akwaone_tour_seen'); }catch(e){}
+  let seen = null, consent = null;
+  try{ seen = localStorage.getItem('akwaone_tour_seen'); consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
+  // Une seule fenêtre à la fois : tant que le bandeau cookies est affiché, Malik attend.
+  if(!consent) return;
   if(!seen) setTimeout(()=>{ document.getElementById('tourPrompt').classList.remove('hidden'); }, 1200);
 }
 
@@ -644,7 +648,12 @@ restartHeroTimer();
 renderFeatured();
 renderBoutiqueHome();
 // Site réel : les annonces des vendeurs arrivent de Supabase après le premier affichage.
-document.addEventListener('akwaone:listings', ()=>{ featured = getTopListings(4); renderFeatured(); renderBoutiqueHome(); renderCategories(); });
+document.addEventListener('akwaone:listings', ()=>{
+  featured = getTopListings(4); renderFeatured(); renderBoutiqueHome(); renderCategories();
+  // Annonces Premium arrivées de Supabase : nouvelles diapositives « Sponsorisé ».
+  const next = buildHeroSlides();
+  if(next.length !== heroSlides.length){ heroSlides = next; if(heroIndex >= heroSlides.length) heroIndex = 0; renderHeroCarousel(); }
+});
 refreshCartBadge();
 initCookieBanner();
 initTourPrompt();

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produit — AkwaOne</title>
+<meta name="google-adsense-account" content="ca-pub-8942815586687518">
+<script>window.adsbygoogle=window.adsbygoogle||[];(function(){var c=null;try{c=localStorage.getItem('akwaone_cookie_consent')}catch(e){}window.adsbygoogle.pauseAdRequests=c?0:1;window.adsbygoogle.requestNonPersonalizedAds=c==='accepted'?0:1;})();</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8942815586687518" crossorigin="anonymous"></script>
+<link rel="icon" type="image/svg+xml" href="assets/logos/akwaone-icone.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logos/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
+<meta name="theme-color" content="#131A17">
+<meta name="description" content="Produit ou service de la diaspora africaine sur AkwaOne : prix, vendeur, avis vérifiés, paiement sécurisé et livraison partout au Canada.">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
+<script src="assets/lucide.min.js"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
+<script src="assets/vendor/supabase-2.45.4.js"></script>
+<script src="assets/auth.js?v=20261123a"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{scroll-behavior:smooth}
+body{background:#FFFFFF;color:#131A17}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#D4D4D4;border-radius:99px}
+.card-hover{transition:transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:0 20px 36px -18px rgba(19,26,23,.18)}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div id="siteHeaderMount"></div>
+
+
+<main class="max-w-[1100px] mx-auto px-4 md:px-6 py-8">
+  <nav aria-label="Fil d'Ariane" class="text-xs opacity-60 flex flex-wrap items-center gap-1"><a href="index.html" class="hover:underline">Accueil</a> › <a id="crumbSection" href="marketplace.html" class="hover:underline">Marketplace</a> › <span id="crumbName">Produit</span></nav>
+  <div id="productBox" class="mt-4"><div class="text-sm opacity-60">Chargement…</div></div>
+  <section id="reviewsSection" class="mt-10 hidden">
+    <h2 class="font-display font-bold text-xl flex items-center gap-2"><i data-lucide="star" class="w-5 h-5"></i> Avis vérifiés</h2>
+    <div id="productReviews" class="space-y-3 mt-4"></div>
+  </section>
+  <section id="moreSection" class="mt-10 hidden">
+    <h2 class="font-display font-bold text-xl">Du même vendeur</h2>
+    <div id="moreListings" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
+  </section>
+</main>
+
+<footer id="footer" class="bg-white border-t border-line mt-10">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
+    <div class="grid md:grid-cols-3 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2 font-display font-bold text-lg"><img src="assets/logos/akwaone-icone.svg" alt="" width="32" height="32" class="w-8 h-8 rounded-lg"> AkwaOne</div>
+        <p class="opacity-60 mt-3 leading-relaxed">Boutique en ligne et marketplace de la diaspora africaine, active partout au Canada.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Explorer</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html" class="hover:underline">Accueil</a></li>
+          <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
+          <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
+          <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
+          <li><a href="contact.html" class="hover:underline">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Légal</div>
+        <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
+          <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
+          <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-line text-xs opacity-50">© 2026 AJ Cleaning. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<div id="akwaNotice" class="fixed bottom-0 inset-x-0 z-[60] bg-ink text-white p-4 md:p-5 hidden">
+  <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
+    <p class="text-xs md:text-sm opacity-80 flex-1">Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre consentement, des cookies de mesure d'audience et de publicité. <a href="cookies.html" class="underline">En savoir plus</a>.</p>
+    <div class="flex gap-2 shrink-0">
+      <button onclick="setCookieConsent(false)" class="text-xs md:text-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/10">Refuser</button>
+      <button onclick="setCookieConsent(true)" class="text-xs md:text-sm px-4 py-2 rounded-full bg-forest text-white font-semibold">Accepter</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.getElementById('siteHeaderMount').outerHTML = renderSiteHeader('marketplace');
+initSiteHeader('marketplace');
+renderChatWidget();
+const esc = escapeHtmlGlobal;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Fiche produit indexable : ?id=<identifiant de l'annonce>. Achat et réservation se font sur la marketplace (panier, créneau).
+const rawId = new URLSearchParams(location.search).get('id') || '';
+const productId = UUID_RE.test(rawId) ? rawId.toLowerCase() : (Number(rawId) || rawId);
+const stars = (n)=>[1,2,3,4,5].map(i=>`<i data-lucide="star" class="w-4 h-4 ${i<=Math.round(n)?'fill-gold text-gold':'text-line'}"></i>`).join('');
+
+function findProduct(){ return getAllListings().find(p=>String(p.id)===String(productId)); }
+
+function setMeta(p){
+  const desc = (p.desc || `${p.name} par ${p.seller}`).slice(0, 155);
+  document.title = `${p.name} — ${p.seller} | AkwaOne`;
+  const setTag = (sel, attr, val, create)=>{ let el = document.querySelector(sel); if(!el && create){ el = create(); document.head.appendChild(el); } if(el) el.setAttribute(attr, val); };
+  setTag('meta[name="description"]', 'content', desc);
+  const url = `https://www.akwaone.ca/produit.html?id=${encodeURIComponent(p.id)}`;
+  setTag('link[rel="canonical"]', 'href', url, ()=>{ const l = document.createElement('link'); l.rel = 'canonical'; return l; });
+  // Données structurées Product (Google : prix, disponibilité, avis dans les résultats de recherche).
+  const data = {
+    '@context': 'https://schema.org', '@type': 'Product', name: p.name, description: p.desc || undefined,
+    image: p.cover && !p.cover.startsWith('assets/') ? [p.cover] : [`https://www.akwaone.ca/${p.cover || 'assets/logos/akwaone-og.png'}`],
+    brand: { '@type': 'Brand', name: p.channel==='boutique' ? 'AkwaOne' : p.seller },
+    offers: { '@type': 'Offer', url, priceCurrency: 'CAD', price: Number(p.price).toFixed(2), availability: 'https://schema.org/InStock',
+      seller: { '@type': 'Organization', name: p.channel==='boutique' ? 'AkwaOne' : p.seller } },
+    ...(p.reviews ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: p.rating, reviewCount: p.reviews } } : {})
+  };
+  let ld = document.getElementById('productJsonLd');
+  if(!ld){ ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.id = 'productJsonLd'; document.head.appendChild(ld); }
+  ld.textContent = JSON.stringify(data);
+}
+
+function render(){
+  const box = document.getElementById('productBox');
+  const p = findProduct();
+  if(!p){
+    box.innerHTML = `<div class="bg-sand rounded-2xl p-8 text-center"><div class="font-semibold">Cette annonce est introuvable ou n'est plus disponible.</div><a href="marketplace.html" class="inline-block mt-4 bg-forest text-white rounded-full px-5 py-2 text-sm font-semibold">Voir la marketplace</a></div>`;
+    return;
+  }
+  setMeta(p);
+  const boutique = p.channel==='boutique';
+  document.getElementById('crumbSection').textContent = boutique ? 'Boutique AkwaOne' : 'Marketplace';
+  document.getElementById('crumbSection').href = boutique ? 'boutique.html' : 'marketplace.html';
+  document.getElementById('crumbName').textContent = p.name;
+  const fav = isFavorite(p.id);
+  const buyHref = boutique ? 'boutique.html' : `marketplace.html?produit=${encodeURIComponent(p.id)}`;
+  box.innerHTML = `
+    <div class="grid md:grid-cols-2 gap-8">
+      <img src="${esc(p.cover)}" alt="${esc(p.name)}" class="w-full rounded-2xl object-cover border border-line" style="aspect-ratio:4/3">
+      <div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-bold tracking-widest">
+          <span class="bg-sand px-3 py-1 rounded-full">${p.type==='service' ? 'SERVICE' : 'PRODUIT'}</span>
+          ${boutique ? '<span class="bg-forest text-white px-3 py-1 rounded-full">BOUTIQUE AKWAONE</span>' : ''}
+          ${planBoost(p) ? '<span class="bg-gold px-3 py-1 rounded-full">MIS EN AVANT</span>' : ''}
+        </div>
+        <h1 class="font-display font-bold text-3xl mt-3 leading-tight">${esc(p.name)}</h1>
+        <div class="text-sm mt-2">par <a href="vendeur.html?id=${encodeURIComponent(p.sellerId || p.seller)}" class="font-semibold text-forest hover:underline">${esc(p.seller)}</a>${p.city ? ` • ${esc(p.city)}` : ''}</div>
+        <div class="flex items-center gap-2 mt-2 text-sm">${p.reviews ? `${stars(p.rating)} <b>${p.rating}</b> <span class="opacity-60">(${p.reviews} avis vérifiés)</span>` : '<span class="opacity-60">Nouveau • pas encore d\'avis</span>'}</div>
+        <div class="text-3xl font-bold mt-4">${fmt(p.price)}</div>
+        ${p.type!=='service' ? `<div class="text-sm opacity-70 mt-1">${p.shipping ? `Livraison : ${fmt(p.shipping)}` : 'Livraison offerte'} • 3 à 5 jours ouvrables au Canada</div>` : '<div class="text-sm opacity-70 mt-1">Réservation d\'un créneau • annulation gratuite jusqu\'à 24 h avant</div>'}
+        ${p.desc ? `<p class="text-[15px] opacity-80 mt-5 leading-relaxed" style="white-space:pre-wrap">${esc(p.desc)}</p>` : ''}
+        <div class="flex flex-wrap gap-2 mt-6">
+          <a href="${buyHref}" class="flex-1 min-w-[200px] text-center bg-forest text-white rounded-full py-3 font-bold hover:brightness-110">${boutique ? 'Commander dans la boutique' : p.type==='service' ? 'Réserver un créneau' : 'Ajouter au panier'}</a>
+          <button id="favBtn" onclick="toggleFav()" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}" class="w-12 h-12 rounded-full border border-line flex items-center justify-center hover:bg-sand"><i data-lucide="heart" class="w-5 h-5 ${fav ? 'fill-coral text-coral' : ''}"></i></button>
+          <button onclick="shareProduct()" aria-label="Partager" class="w-12 h-12 rounded-full border border-line flex items-center justify-center hover:bg-sand"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+        </div>
+        <ul class="text-xs opacity-70 mt-5 space-y-1.5">
+          <li class="flex items-center gap-2"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Paiement sécurisé par Stripe${boutique ? '' : ', conservé jusqu\'à la réception'}</li>
+          <li class="flex items-center gap-2"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> <a href="messagerie.html?avec=${encodeURIComponent(p.sellerId || p.seller)}" class="hover:underline">Poser une question au vendeur</a></li>
+        </ul>
+      </div>
+    </div>`;
+  rememberViewed(p.id);
+  const more = getAllListings().filter(x=>x.seller===p.seller && String(x.id)!==String(p.id)).slice(0, 4);
+  document.getElementById('moreSection').classList.toggle('hidden', !more.length);
+  document.getElementById('moreListings').innerHTML = more.map(x=>`
+    <a href="produit.html?id=${encodeURIComponent(x.id)}" class="card-hover block bg-white border border-line rounded-2xl overflow-hidden">
+      <img src="${esc(x.cover)}" alt="${esc(x.name)}" loading="lazy" class="w-full object-cover" style="aspect-ratio:4/3">
+      <div class="p-3"><div class="font-semibold text-sm truncate">${esc(x.name)}</div><div class="text-xs font-bold mt-1">${fmt(x.price)}</div></div>
+    </a>`).join('');
+  lucide.createIcons();
+}
+function toggleFav(){ toggleFavorite(findProduct().id); render(); }
+async function shareProduct(){
+  const p = findProduct(); const url = location.href;
+  try{ if(navigator.share){ await navigator.share({ title: p.name, url }); return; } await navigator.clipboard.writeText(url); showToast('Lien copié.'); }catch(e){}
+}
+async function loadReviews(){
+  if(IS_DEMO || !sb || !UUID_RE.test(String(productId))) return;
+  const { data } = await sb.from('reviews').select('id, rating, comment, author_name, created_at').eq('listing_id', productId).eq('approved', true).order('created_at', { ascending:false }).limit(20);
+  if(!data || !data.length) return;
+  document.getElementById('reviewsSection').classList.remove('hidden');
+  document.getElementById('productReviews').innerHTML = data.map(r=>`
+    <div class="border border-line rounded-2xl p-4">
+      <div class="flex flex-wrap items-center gap-2 text-sm"><span class="font-semibold">${esc(r.author_name || 'Client vérifié')}</span> <span class="flex items-center gap-0.5">${stars(r.rating)}</span>
+        <span class="text-xs opacity-50">• achat vérifié • ${esc(new Date(r.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short',year:'numeric'}))}</span>
+        <button onclick="reportContent('review', '${esc(r.id)}')" class="ml-auto text-[11px] opacity-50 hover:opacity-100 underline">Signaler</button></div>
+      ${r.comment ? `<p class="text-sm opacity-70 mt-1" style="white-space:pre-wrap">${esc(r.comment)}</p>` : ''}
+    </div>`).join('');
+  lucide.createIcons();
+}
+function showToast(msg, type='success'){
+  const box = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `px-4 py-3 rounded-xl shadow-lg text-sm text-white ${type==='error'?'bg-red-600':type==='info'?'bg-ink':'bg-forest'}`;
+  el.innerHTML = msg; box.appendChild(el); setTimeout(()=>el.remove(), 4000);
+}
+render(); loadReviews();
+document.addEventListener('akwaone:listings', render);
+document.addEventListener('akwaone:favorites', render);
+
+function setCookieConsent(accepted){
+  try{ localStorage.setItem('akwaone_cookie_consent', accepted ? 'accepted' : 'refused'); }catch(e){}
+  document.getElementById('akwaNotice').classList.add('hidden');
+  if(typeof loadAdSense==='function') loadAdSense();
+}
+(function(){
+  let consent = null;
+  try{ consent = localStorage.getItem('akwaone_cookie_consent'); }catch(e){}
+  if(!consent) document.getElementById('akwaNotice').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>

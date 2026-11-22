@@ -85,9 +85,13 @@ function getCategoryVendorCount(catId){
 function getTopListings(n){
   return getMarketplaceListings().sort((a,b)=> (b.rating*Math.log(b.reviews+1)) - (a.rating*Math.log(a.reviews+1)) || String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,n);
 }
+// Carrousel d'accueil : annonces des vendeurs Premium (démo : boutiques fictives ; site réel : formules payées).
 function getSponsoredListings(){
-  return CATALOG.filter(p=>p.plan==='premium' && p.channel!=='boutique');
+  return getMarketplaceListings().filter(p=>p.plan==='premium').slice(0, 6);
 }
+// Mise en avant dans les recherches (formules Pro et Premium) : à pertinence égale, elles passent devant.
+const PLAN_BOOST = { premium: 2, pro: 1, basique: 0 };
+function planBoost(p){ return PLAN_BOOST[p && p.plan] || 0; }
 // Argument d'un onclick : les annonces de démo ont un id numérique, celles de la base un uuid (texte).
 function jsArg(id){
   return typeof id==='number' ? String(id) : `'${String(id).replace(/[^a-zA-Z0-9-]/g,'')}'`;
@@ -499,8 +503,9 @@ function resetListingImage(id){
   input.value = '';
   previewListingImage(input);
 }
-const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506617420156-8e4536971650?q=80&w=800&auto=format&fit=crop';
-const DEFAULT_AVATAR = 'https://i.pravatar.cc/100?img=48';
+// Visuels par défaut hébergés sur le site (aucune dépendance à un service d'images externe).
+const DEFAULT_COVER = 'assets/visuels/couverture-defaut.svg';
+const DEFAULT_AVATAR = 'assets/visuels/avatar-defaut.svg';
 // Site réel : annonces lues dans Supabase par auth.js ; gardées en sessionStorage pour l'affichage immédiat de la page suivante.
 let REMOTE_LISTINGS = (()=>{
   try{ return JSON.parse(sessionStorage.getItem('akwaone_listings_cache') || '[]'); }catch(e){ return []; }
@@ -508,7 +513,8 @@ let REMOTE_LISTINGS = (()=>{
 function listingFromRow(r){
   return {
     id: r.id, sellerId: r.seller_id, channel: r.channel==='boutique' ? 'boutique' : 'marketplace', cat: r.category, type: r.type, name: r.name, price: Number(r.price_cad),
-    seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: Number(r.rating) || 0, reviews: Number(r.reviews) || 0, plan: 'basique',
+    seller: r.seller_name, city: r.city, desc: r.description || '', tags: [], rating: Number(r.rating) || 0, reviews: Number(r.reviews) || 0, plan: ['pro','premium'].includes(r.plan) ? r.plan : 'basique',
+    shipping: Number(r.shipping_cad) || 0,
     active: r.active !== false, createdAt: r.created_at,
     accent: /^#[0-9a-f]{6}$/i.test(r.shop_accent || '') ? r.shop_accent : '',
     cover: safeImageUrl(r.cover_url) || DEFAULT_COVER, image: DEFAULT_AVATAR
@@ -671,7 +677,7 @@ function ensureCartModal(){
       <div class="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white flex flex-col">
         <div class="p-5 border-b border-line flex items-center justify-between">
           <h3 class="font-display text-xl font-bold">Panier</h3>
-          <button onclick="closeCart()" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <button onclick="closeCart()" aria-label="Fermer" class="w-8 h-8 rounded-full bg-sand flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
         <div id="cartItems" class="flex-1 overflow-auto p-5 space-y-4"></div>
         <div class="p-5 border-t border-line space-y-3">
@@ -703,7 +709,7 @@ function renderCartGeneric(){
       if(!p) return '';
       return `
       <div class="flex gap-3 items-center">
-        <img src="${escapeHtmlGlobal(p.cover)}" loading="lazy" class="w-16 h-16 rounded-lg object-cover shrink-0">
+        <img alt="" src="${escapeHtmlGlobal(p.cover)}" loading="lazy" class="w-16 h-16 rounded-lg object-cover shrink-0">
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-sm truncate">${escapeHtmlGlobal(p.name)}</div>
           <div class="text-xs opacity-60">${fmt(p.price)} x ${c.qty}</div>
@@ -767,18 +773,18 @@ function renderSiteHeader(active){
         <div id="deliverMenu" class="dropdown-panel hidden"></div>
       </div>
       <div class="flex-1 min-w-[220px] flex bg-white rounded-md overflow-hidden">
-        <select id="heroCategory" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
+        <select id="heroCategory" aria-label="Catégorie" class="hidden sm:block bg-sand text-ink text-xs px-2 border-r border-line outline-none max-w-[160px]">
           <option value="">Toutes catégories</option>
           ${CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}
         </select>
-        <input id="heroSearch" onkeydown="if(event.key==='Enter')goToMarketplaceGlobal()" placeholder="Rechercher un produit, un plat, un service..." class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
-        <button onclick="goToMarketplaceGlobal()" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
+        <input id="heroSearch" onkeydown="if(event.key==='Enter')goToMarketplaceGlobal()" placeholder="Rechercher sur AkwaOne…" aria-label="Rechercher un produit, un plat, un service" class="flex-1 px-3 py-2 text-sm text-ink outline-none min-w-0">
+        <button onclick="goToMarketplaceGlobal()" aria-label="Rechercher" class="bg-forest hover:brightness-110 text-white px-4 flex items-center justify-center shrink-0">
           <i data-lucide="search" class="w-4 h-4"></i>
         </button>
       </div>
       <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs min-w-0 ml-auto" style="max-width:100%">
-        <select id="currencySelect" onchange="setCurrency(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer max-w-[120px]"></select>
-        <select id="langSelect" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
+        <select id="currencySelect" onchange="setCurrency(this.value)" aria-label="Devise" class="bg-transparent text-xs font-medium outline-none cursor-pointer" style="max-width:170px"></select>
+        <select id="langSelect" aria-label="Langue" onchange="setLang(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer"></select>
         <div class="relative">
           <button id="accountBtn" class="text-left leading-tight hover:opacity-80"></button>
           <div id="accountMenu" class="dropdown-panel hidden"></div>
@@ -801,19 +807,20 @@ function renderSiteHeader(active){
         ${navLink('index.html','Accueil','accueil')}
         ${navLink('boutique.html','Boutique','boutique')}
         ${navLink('marketplace.html','Marketplace','marketplace')}
+        <div class="hidden xl:flex items-center gap-5">${CATEGORIES.map(c=>`<a href="marketplace.html?categorie=${c.id}" class="shrink-0 hover:opacity-80 font-medium whitespace-nowrap">${c.label}</a>`).join('')}</div>
         ${navLink('mes-commandes.html','Mes commandes','commandes')}
         ${navLink('messagerie.html','Messagerie','messagerie')}
         <div id="navDashboardLink" style="display:contents"></div>
         ${navLink('contact.html','Contact','contact')}
         <div class="hidden md:flex items-center gap-2 ml-auto shrink-0">
           <span class="text-[10px] font-semibold opacity-60">RÔLE</span>
-          <select id="roleSelect" onchange="changeRoleGlobal(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
+          <select id="roleSelect" aria-label="Rôle" onchange="changeRoleGlobal(this.value)" class="bg-transparent text-xs font-medium outline-none cursor-pointer">
             <option value="buyer" class="text-ink">Acheteur</option>
             <option value="seller" class="text-ink">Vendeur</option>
             <option value="admin" class="text-ink">Administrateur</option>
           </select>
         </div>
-        ${navLink('devenir-vendeur.html','Vendre sur AkwaOne','vendre')}
+        ${navLink('devenir-vendeur.html','<span class="md:hidden">Vendre</span><span class="hidden md:inline">Vendre sur AkwaOne</span>','vendre')}
       </div>
     </div>
   </header>`;
@@ -1012,22 +1019,22 @@ function renderChatWidget(){
   const div = document.createElement('div');
   div.innerHTML = `
   <button id="malikBtn" onclick="toggleChat()" class="fixed z-[65] rounded-full shadow-xl border-none p-0 overflow-hidden" style="bottom:96px;right:20px;width:60px;height:60px;background:#146B4F" title="Discuter avec Malik">
-    <img src="${CHAT_AVATAR_URL}" class="w-full h-full object-cover" style="object-position:50% 12%">
+    <img alt="" src="${CHAT_AVATAR_URL}" class="w-full h-full object-cover" style="object-position:50% 12%">
   </button>
   <div id="malikBox" class="fixed z-[70] bg-white rounded-2xl shadow-2xl flex-col overflow-hidden hidden" style="bottom:164px;right:20px;width:360px;max-width:92vw;height:500px;max-height:70vh">
     <div class="bg-forest text-white p-4 flex items-center gap-3 shrink-0">
-      <img src="${CHAT_AVATAR_URL}" class="w-10 h-10 rounded-full object-cover border-2 border-white" style="object-position:50% 12%">
+      <img alt="" src="${CHAT_AVATAR_URL}" class="w-10 h-10 rounded-full object-cover border-2 border-white" style="object-position:50% 12%">
       <div class="flex-1">
         <div class="font-display font-bold text-sm">Malik</div>
         <div class="text-[11px] opacity-70">Assistant AkwaOne</div>
       </div>
-      <button onclick="toggleChat()" class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="toggleChat()" aria-label="Fermer l'assistant" class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div id="malikMsgs" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
     <div id="malikChips" class="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar shrink-0"></div>
     <div class="p-3 border-t border-line flex gap-2 shrink-0">
-      <input id="malikInput" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
-      <button onclick="sendChat()" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
+      <input id="malikInput" aria-label="Votre question à Malik" placeholder="Écrivez votre question..." class="flex-1 border border-line rounded-full px-4 py-2 text-sm outline-none">
+      <button onclick="sendChat()" aria-label="Envoyer" class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></button>
     </div>
   </div>`;
   while(div.firstElementChild){ document.body.appendChild(div.firstElementChild); }
@@ -1482,3 +1489,57 @@ const SENTRY_DSN = '';
   };
   document.head.appendChild(s);
 })();
+
+// Favoris et annonces vues récemment : gardés dans ce navigateur (confort personnel, aucune donnée envoyée).
+function readIdList(key){ try{ const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+function writeIdList(key, list){ try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){} }
+function getFavorites(){ return readIdList('akwaone_favorites'); }
+function isFavorite(id){ return getFavorites().some(x=>String(x)===String(id)); }
+function toggleFavorite(id){
+  const list = getFavorites();
+  const on = !list.some(x=>String(x)===String(id));
+  writeIdList('akwaone_favorites', on ? [id, ...list].slice(0, 200) : list.filter(x=>String(x)!==String(id)));
+  document.dispatchEvent(new CustomEvent('akwaone:favorites'));
+  return on;
+}
+function rememberViewed(id){
+  writeIdList('akwaone_recent', [id, ...readIdList('akwaone_recent').filter(x=>String(x)!==String(id))].slice(0, 8));
+}
+function getRecentlyViewed(){ return readIdList('akwaone_recent'); }
+// Frais de livraison du panier : une expédition par vendeur, au montant le plus élevé de ses articles.
+function cartShippingFor(items){
+  const bySeller = {};
+  items.forEach(({ listing })=>{ if(listing && listing.type!=='service') bySeller[listing.seller] = Math.max(bySeller[listing.seller] || 0, Number(listing.shipping) || 0); });
+  return Math.round(Object.values(bySeller).reduce((a,b)=>a+b, 0) * 100) / 100;
+}
+
+// Lien de suivi du colis selon le transporteur.
+const TRACKING_CARRIERS = ['Postes Canada','Purolator','UPS','FedEx','DHL','Canpar','Intelcom','Autre'];
+function trackingUrl(carrier, n){
+  const e = encodeURIComponent(n || '');
+  return ({
+    'Postes Canada': `https://www.canadapost-postescanada.ca/track-reperage/fr#/search?searchFor=${e}`,
+    'Purolator': `https://www.purolator.com/fr/expedition/suivi?pin=${e}`,
+    'UPS': `https://www.ups.com/track?loc=fr_CA&tracknum=${e}`,
+    'FedEx': `https://www.fedex.com/fedextrack/?trknbr=${e}`,
+    'DHL': `https://www.dhl.com/ca-fr/home/suivi.html?tracking-id=${e}`,
+    'Canpar': `https://www.canpar.com/fr/tracking/delivery_options.htm?barcode=${e}`,
+    'Intelcom': `https://intelcomexpress.com/fr/suivi-de-colis/?tracking-id=${e}`
+  })[carrier] || '';
+}
+
+// Suggestions pendant la frappe dans la recherche : noms d'annonces, vendeurs et catégories.
+function refreshSearchSuggestions(){
+  const input = document.getElementById('heroSearch');
+  if(!input || typeof getAllListings!=='function') return;
+  let list = document.getElementById('searchSuggestions');
+  if(!list){ list = document.createElement('datalist'); list.id = 'searchSuggestions'; document.body.appendChild(list); }
+  input.setAttribute('list', 'searchSuggestions');
+  input.setAttribute('autocomplete', 'off');
+  const words = new Set();
+  getAllListings().forEach(p=>{ if(p.name) words.add(p.name); if(p.seller) words.add(p.seller); });
+  (typeof CATEGORIES!=='undefined' ? CATEGORIES : []).forEach(c=>words.add(c.label));
+  list.innerHTML = [...words].slice(0, 300).map(w=>`<option value="${escapeHtmlGlobal(w)}"></option>`).join('');
+}
+document.addEventListener('DOMContentLoaded', refreshSearchSuggestions);
+document.addEventListener('akwaone:listings', refreshSearchSuggestions);

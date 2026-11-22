@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
       case 'seller-evidence': return send(res, 200, await sellerEvidence(user, body));
       case 'review': return send(res, 200, await review(user, body));
       case 'boutique-deliver': return send(res, 200, await boutiqueDeliver(user, body));
+      case 'set-tracking': return send(res, 200, await setTracking(user, body));
       case 'admin-overview': await requireAdmin(user); return send(res, 200, await overview());
       case 'set-seller-status': await requireAdmin(user); return send(res, 200, await setSellerStatus(user, body));
       case 'resolve-report': await requireAdmin(user); return send(res, 200, await resolveReport(user, body));
@@ -163,6 +164,27 @@ async function boutiqueDeliver(user, body) {
   }, { Prefer: 'return=minimal' });
   if (isAdmin) await audit(user.id, 'boutique_delivered', 'order', number);
   await email.orderDelivered(order).catch(e => console.error('email livraison:', e.message));
+  return { ok: true };
+}
+
+// Suivi du colis : le vendeur (ou l'admin) saisit le transporteur et le numéro ; l'acheteur est prévenu par courriel.
+const CARRIERS = ['Postes Canada', 'Purolator', 'UPS', 'FedEx', 'DHL', 'Canpar', 'Intelcom', 'Autre'];
+async function setTracking(user, body) {
+  const number = Number(body.orderNumber);
+  const carrier = CARRIERS.includes(body.carrier) ? body.carrier : null;
+  const tracking = text(body.trackingNumber, 60).replace(/[^A-Za-z0-9 -]/g, '');
+  if (!Number.isInteger(number) || number <= 0) throw fail('Commande invalide');
+  if (!carrier) throw fail('Choisissez le transporteur.');
+  if (tracking.length < 4) throw fail('Numéro de suivi invalide.');
+  const [p] = await supabaseRest('GET', `profiles?id=eq.${user.id}&select=role`);
+  const filter = p && p.role === 'admin' ? '' : `&seller_id=eq.${user.id}`;
+  const [order] = await supabaseRest('GET', `orders?order_number=eq.${number}${filter}&select=order_number,buyer_id,seller_id,seller_name,items,slot,amount_cad,payment_method,status`);
+  if (!order) throw fail('Commande introuvable', 404);
+  if (order.status !== 'confirmee') throw fail('Le suivi ne peut être ajouté que sur une commande en cours.', 409);
+  await supabaseRest('PATCH', `orders?order_number=eq.${number}`, {
+    tracking_number: tracking, tracking_carrier: carrier, shipped_at: new Date().toISOString(),
+  }, { Prefer: 'return=minimal' });
+  await email.orderShipped({ ...order, tracking_number: tracking, tracking_carrier: carrier }).catch(e => console.error('email expédition:', e.message));
   return { ok: true };
 }
 

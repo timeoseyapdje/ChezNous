@@ -10,14 +10,15 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
+<meta name="description" content="Paramètres de votre compte AkwaOne : profil, sécurité, paiements, notifications et thème.">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261123a">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122e"></script>
-<script src="assets/catalog.js?v=20261122e"></script>
-<script src="assets/shared.js?v=20261122e"></script>
+<script src="assets/i18n-en.js?v=20261123a"></script>
+<script src="assets/catalog.js?v=20261123a"></script>
+<script src="assets/shared.js?v=20261123a"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122e"></script>
-<script src="assets/passkey.js?v=20261122e"></script>
+<script src="assets/auth.js?v=20261123a"></script>
+<script src="assets/passkey.js?v=20261123a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -88,11 +89,11 @@ body{background:#FFFFFF;color:#131A17}
     </div>
 <form id="identityForm" onsubmit="return saveIdentity(event)" class="bg-white border border-line rounded-2xl p-6">
       <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i> Informations personnelles</h2>
-      <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOM COMPLET</label>
+      <label for="fullName" class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOM COMPLET</label>
       <input id="fullName" required maxlength="80" class="field" autocomplete="name">
-      <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">TÉLÉPHONE (FACULTATIF)</label>
+      <label for="phone" class="block text-xs font-bold tracking-widest opacity-60 mt-3">TÉLÉPHONE (FACULTATIF)</label>
       <input id="phone" type="tel" maxlength="20" class="field" placeholder="Pour les rappels par SMS" autocomplete="tel">
-      <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">VILLE</label>
+      <label for="city" class="block text-xs font-bold tracking-widest opacity-60 mt-3">VILLE</label>
       <select id="city" class="field"></select>
       <button id="identitySubmit" type="submit" class="w-full mt-5 bg-forest text-white rounded-full py-2.5 text-sm font-bold">Enregistrer</button>
       <div id="identityMsg" class="form-msg hidden"></div>
@@ -113,16 +114,16 @@ body{background:#FFFFFF;color:#131A17}
         <div class="space-y-4 mt-6">
 <form id="emailForm" onsubmit="return saveEmail(event)" class="bg-white border border-line rounded-2xl p-6">
         <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5"></i> Courriel</h2>
-        <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">ADRESSE DE CONNEXION</label>
+        <label for="email" class="block text-xs font-bold tracking-widest opacity-60 mt-4">ADRESSE DE CONNEXION</label>
         <input id="email" type="email" required maxlength="200" class="field" autocomplete="email">
         <button id="emailSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer de courriel</button>
         <div id="emailMsg" class="form-msg hidden"></div>
       </form>
 <form id="passwordForm" onsubmit="return savePassword(event)" class="bg-white border border-line rounded-2xl p-6">
         <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Mot de passe</h2>
-        <label class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOUVEAU MOT DE PASSE</label>
+        <label for="newPassword" class="block text-xs font-bold tracking-widest opacity-60 mt-4">NOUVEAU MOT DE PASSE</label>
         <input id="newPassword" type="password" required minlength="8" class="field" autocomplete="new-password" placeholder="8 caractères minimum">
-        <label class="block text-xs font-bold tracking-widest opacity-60 mt-3">CONFIRMATION</label>
+        <label for="confirmPassword" class="block text-xs font-bold tracking-widest opacity-60 mt-3">CONFIRMATION</label>
         <input id="confirmPassword" type="password" required minlength="8" class="field" autocomplete="new-password">
         <button id="passwordSubmit" type="submit" class="w-full mt-4 bg-ink text-white rounded-full py-2.5 text-sm font-bold">Changer le mot de passe</button>
         <div id="passwordMsg" class="form-msg hidden"></div>
@@ -271,10 +272,13 @@ body{background:#FFFFFF;color:#131A17}
       <div>
         <div class="font-semibold">Explorer</div>
         <ul class="mt-3 space-y-2 opacity-70">
+          <li><a href="index.html" class="hover:underline">Accueil</a></li>
           <li><a href="boutique.html" class="hover:underline">Boutique AkwaOne</a></li>
           <li><a href="marketplace.html" class="hover:underline">Marketplace</a></li>
-          <li><a href="mes-commandes.html" class="hover:underline">Mes commandes</a></li>
           <li><a href="devenir-vendeur.html" class="hover:underline">Devenir vendeur</a></li>
+          <li><a href="comment-ca-marche.html" class="hover:underline">Comment ça marche</a></li>
+          <li><a href="a-propos.html" class="hover:underline">À propos</a></li>
+          <li><a href="faq.html" class="hover:underline">FAQ</a></li>
           <li><a href="contact.html" class="hover:underline">Contact</a></li>
         </ul>
       </div>
@@ -282,8 +286,12 @@ body{background:#FFFFFF;color:#131A17}
         <div class="font-semibold">Légal</div>
         <ul class="mt-3 space-y-2 opacity-70">
           <li><a href="mentions-legales.html" class="hover:underline">Mentions légales</a></li>
+          <li><a href="cgu-cgv.html" class="hover:underline">Conditions générales (CGU/CGV)</a></li>
           <li><a href="confidentialite.html" class="hover:underline">Politique de confidentialité</a></li>
-          <li><a href="charte-communaute.html" class="hover:underline">Charte de la communauté</a></li>
+          <li><a href="cookies.html" class="hover:underline">Cookies & consentement</a></li>
+          <li><a href="retours-remboursement.html" class="hover:underline">Retours & remboursements</a></li>
+          <li><a href="livraison.html" class="hover:underline">Livraison</a></li>
+          <li><a href="accessibilite.html" class="hover:underline">Accessibilité</a></li>
         </ul>
       </div>
     </div>
