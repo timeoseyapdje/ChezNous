@@ -1453,7 +1453,7 @@ async function reportContent(targetType, targetId){
   const toast = (m, t)=>{ if(typeof showToast==='function') showToast(m, t); };
   if(IS_DEMO){ toast('Version démo : le signalement est disponible sur le site réel.','info'); return; }
   if(typeof isLoggedIn==='function' && !isLoggedIn()){ window.location.href = 'connexion.html'; return; }
-  const what = targetType==='listing' ? 'cette annonce' : targetType==='message' ? 'ce message' : 'cet avis';
+  const what = targetType==='listing' ? 'cette annonce' : targetType==='message' ? 'ce message' : targetType==='conversation' ? 'cette discussion' : 'cet avis';
   const reason = await promptDialog({
     title: `Signaler ${what}`,
     message: "Expliquez en quelques mots ce qui ne respecte pas la charte de la communauté. Notre équipe examinera le contenu.",

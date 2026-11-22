@@ -33,6 +33,7 @@ module.exports = async (req, res) => {
       case 'set-seller-status': await requireAdmin(user); return send(res, 200, await setSellerStatus(user, body));
       case 'resolve-report': await requireAdmin(user); return send(res, 200, await resolveReport(user, body));
       case 'resolve-dispute': await requireAdmin(user); return send(res, 200, await resolveDispute(user, body));
+      case 'report-thread': await requireAdmin(user); return send(res, 200, await reportThread(body));
       default: return send(res, 400, { error: 'Action inconnue' });
     }
   } catch (err) {
@@ -54,7 +55,7 @@ async function report(user, body) {
   const type = body.targetType;
   const id = text(body.targetId, 80);
   const reason = text(body.reason, 500);
-  if (!['listing', 'message', 'review'].includes(type) || !id) throw fail('Contenu invalide');
+  if (!['listing', 'message', 'review', 'conversation'].includes(type) || !id) throw fail('Contenu invalide');
   if (reason.length < 3) throw fail('Précisez la raison du signalement.');
   let excerpt = null;
   if (type === 'listing') {
@@ -66,6 +67,12 @@ async function report(user, body) {
     const [m] = await supabaseRest('GET', `messages?id=eq.${enc(id)}&recipient_id=eq.${user.id}&select=body`);
     if (!m) throw fail('Message introuvable', 404);
     excerpt = m.body;
+  } else if (type === 'conversation') {
+    // Discussion entière : target_id = membre signalé. Extrait des derniers messages, gardé même si la discussion est supprimée.
+    if (!UUID.test(id) || id === user.id) throw fail('Discussion invalide');
+    const rows = await supabaseRest('GET', `messages?or=(and(sender_id.eq.${user.id},recipient_id.eq.${id}),and(sender_id.eq.${id},recipient_id.eq.${user.id}))&select=sender_id,body,created_at&order=created_at.desc&limit=15`);
+    if (!rows || !rows.length) throw fail('Discussion introuvable', 404);
+    excerpt = rows.reverse().map(m => `${m.sender_id === id ? 'Membre signalé' : 'Signaleur'} : ${m.body}`).join('\n');
   } else {
     const [r] = await supabaseRest('GET', `reviews?id=eq.${enc(id)}&select=comment,rating`);
     if (!r) throw fail('Avis introuvable', 404);
@@ -73,7 +80,7 @@ async function report(user, body) {
   }
   try {
     await supabaseRest('POST', 'reports', {
-      reporter_id: user.id, target_type: type, target_id: id, reason, excerpt: text(excerpt, 1000),
+      reporter_id: user.id, target_type: type, target_id: id, reason, excerpt: text(excerpt, type === 'conversation' ? 3000 : 1000),
     }, { Prefer: 'return=minimal' });
   } catch (e) {
     throw fail('Vous avez déjà signalé ce contenu. Notre équipe l\'examine.', 409);
@@ -253,13 +260,17 @@ async function resolveReport(admin, body) {
   const id = String(body.reportId || '');
   const decision = body.decision === 'removed' ? 'removed' : body.decision === 'approved' ? 'approved' : null;
   if (!UUID.test(id) || !decision) throw fail('Demande invalide');
-  const [r] = await supabaseRest('GET', `reports?id=eq.${id}&status=eq.pending&select=id,target_type,target_id`);
+  const [r] = await supabaseRest('GET', `reports?id=eq.${id}&status=eq.pending&select=id,target_type,target_id,reporter_id`);
   if (!r) throw fail('Signalement déjà traité ou introuvable.', 404);
   if (decision === 'removed') {
     // Retrait : l'annonce est désactivée, le message ou l'avis est supprimé.
     if (r.target_type === 'listing') await supabaseRest('PATCH', `listings?id=eq.${enc(r.target_id)}`, { active: false }, { Prefer: 'return=minimal' });
     if (r.target_type === 'message') await supabaseRest('DELETE', `messages?id=eq.${enc(r.target_id)}`, undefined, { Prefer: 'return=minimal' });
     if (r.target_type === 'review') await supabaseRest('DELETE', `reviews?id=eq.${enc(r.target_id)}`, undefined, { Prefer: 'return=minimal' });
+    // Discussion signalée : les messages du membre signalé dans cette discussion sont supprimés.
+    if (r.target_type === 'conversation' && r.reporter_id) {
+      await supabaseRest('DELETE', `messages?sender_id=eq.${enc(r.target_id)}&recipient_id=eq.${r.reporter_id}`, undefined, { Prefer: 'return=minimal' });
+    }
   }
   // Tous les signalements sur le même contenu sont clos par la même décision.
   await supabaseRest('PATCH', `reports?target_type=eq.${r.target_type}&target_id=eq.${enc(r.target_id)}&status=eq.pending`, {
@@ -267,6 +278,22 @@ async function resolveReport(admin, body) {
   }, { Prefer: 'return=minimal' });
   await audit(admin.id, decision === 'removed' ? 'report_removed' : 'report_approved', r.target_type, r.target_id);
   return { ok: true };
+}
+
+// Discussion signalée : l'administrateur lit l'échange complet (même si un membre l'a supprimée de sa liste).
+async function reportThread(body) {
+  const id = String(body.reportId || '');
+  if (!UUID.test(id)) throw fail('Demande invalide');
+  const [r] = await supabaseRest('GET', `reports?id=eq.${id}&select=target_type,target_id,reporter_id`);
+  if (!r || r.target_type !== 'conversation' || !r.reporter_id) throw fail('Signalement introuvable', 404);
+  const a = r.reporter_id, b = r.target_id;
+  const rows = await supabaseRest('GET', `messages?or=(and(sender_id.eq.${a},recipient_id.eq.${b}),and(sender_id.eq.${b},recipient_id.eq.${a}))&select=sender_id,body,created_at&order=created_at.asc&limit=500`);
+  const names = await supabaseRest('GET', `profiles?id=in.(${a},${b})&select=id,full_name`);
+  const nameOf = Object.fromEntries((names || []).map(n => [n.id, n.full_name || 'Membre']));
+  return {
+    reporter: nameOf[a] || 'Signaleur', reported: nameOf[b] || 'Membre signalé',
+    messages: (rows || []).map(m => ({ fromReported: m.sender_id === b, body: m.body, at: m.created_at })),
+  };
 }
 
 async function resolveDispute(admin, body) {

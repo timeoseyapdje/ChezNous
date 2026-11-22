@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122d">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122e">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122d"></script>
-<script src="assets/catalog.js?v=20261122d"></script>
-<script src="assets/shared.js?v=20261122d"></script>
+<script src="assets/i18n-en.js?v=20261122e"></script>
+<script src="assets/catalog.js?v=20261122e"></script>
+<script src="assets/shared.js?v=20261122e"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122d"></script>
+<script src="assets/auth.js?v=20261122e"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -50,7 +50,12 @@ body{background:#FFFFFF;color:#131A17}
       <div id="conversations" class="space-y-2"></div>
     </div>
     <div class="msg-panel flex flex-col bg-white/10 rounded-2xl">
-      <div id="chatHeader" class="px-4 py-3 border-b border-white/10 font-semibold text-sm"></div>
+      <div class="px-4 py-3 border-b border-white/10 flex items-center gap-2 relative">
+        <div id="chatHeader" class="font-semibold text-sm flex-1 min-w-0 truncate"></div>
+        <button id="chatMenuBtn" onclick="toggleChatMenu(event)" aria-label="Options de la discussion" class="hidden w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
+        <div id="chatMenu" class="hidden absolute right-3 top-12 bg-white text-ink rounded-xl shadow-2xl py-1 text-sm" style="z-index:40;min-width:220px"></div>
+      </div>
+      <div id="blockedBanner" class="hidden mx-3 mt-3 bg-white/10 rounded-xl px-3 py-2 text-xs"></div>
       <div id="chatWindow" class="msg-thread flex-1 p-3 overflow-y-auto space-y-2 text-sm"></div>
       <form id="msgForm" class="msg-form bg-white rounded-2xl p-2 flex gap-2">
         <input id="msgInput" autocomplete="off" placeholder="Écrire un message..." class="flex-1 px-3 py-2 outline-none text-sm text-ink placeholder:text-black/40">

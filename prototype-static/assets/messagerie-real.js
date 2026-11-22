@@ -29,7 +29,7 @@ async function loadConversations(){
   const { data, error } = await sb.rpc('my_conversations');
   if(error){ showToast('Messagerie indisponible pour le moment.','error'); return; }
   const pending = conversations.filter(c=>!c.lastAt && !data.some(r=>r.partner_id===c.id));
-  conversations = [...pending, ...data.map(r=>({id:r.partner_id, name:r.partner_name, lastBody:r.last_body, lastFromMe:r.last_from_me, lastAt:r.last_at, unread:Number(r.unread)}))];
+  conversations = [...pending, ...data.map(r=>({id:r.partner_id, name:r.partner_name, lastBody:r.last_body, lastFromMe:r.last_from_me, lastAt:r.last_at, unread:Number(r.unread), blockedByMe:!!r.blocked_by_me, blockedMe:!!r.blocked_me}))];
   cacheUnread();
   renderConversations();
 }
@@ -58,7 +58,20 @@ function renderThread(){
   const conv = conversations.find(c=>c.id===activeChat);
   const form = document.getElementById('msgForm');
   form.style.display = conv ? '' : 'none';
-  document.getElementById('chatHeader').textContent = conv ? conv.name : 'Messagerie';
+  // Nom cliquable : ouvre le profil (et la boutique) du membre, comme un profil sur un réseau social.
+  document.getElementById('chatHeader').innerHTML = conv
+    ? `<a href="vendeur.html?id=${encodeURIComponent(conv.id)}" class="hover:underline inline-flex items-center gap-2"><span class="w-7 h-7 rounded-full bg-forest text-white text-[11px] font-bold inline-flex items-center justify-center">${esc(initials(conv.name))}</span>${esc(conv.name)}</a>`
+    : 'Messagerie';
+  document.getElementById('chatMenuBtn').classList.toggle('hidden', !conv);
+  const banner = document.getElementById('blockedBanner');
+  const blocked = conv && (conv.blockedByMe || conv.blockedMe);
+  banner.classList.toggle('hidden', !blocked);
+  if(blocked){
+    banner.innerHTML = conv.blockedByMe
+      ? `Vous avez bloqué ${esc(conv.name)} : aucun message ne peut être échangé. <button onclick="toggleBlock()" class="underline font-semibold">Débloquer</button>`
+      : `Vous ne pouvez plus écrire à ce membre.`;
+    form.style.display = 'none';
+  }
   const cw = document.getElementById('chatWindow');
   if(!conv){
     cw.innerHTML = `<div class="text-center text-xs opacity-60 py-10">Choisissez une conversation ou écrivez à un membre avec son courriel.</div>`;
@@ -78,7 +91,10 @@ async function openChat(id){
     .or(`and(sender_id.eq.${me},recipient_id.eq.${id}),and(sender_id.eq.${id},recipient_id.eq.${me})`)
     .order('created_at', { ascending:true }).limit(500);
   if(error){ showToast('Impossible de charger cette conversation.','error'); return; }
-  thread = data;
+  // Discussion supprimée auparavant : on n'affiche que les messages arrivés depuis.
+  const hidden = await sb.from('conversation_hidden').select('hidden_at').eq('user_id', me).eq('partner_id', id).maybeSingle();
+  const since = hidden && hidden.data ? Date.parse(hidden.data.hidden_at) : 0;
+  thread = since ? data.filter(m=>Date.parse(m.created_at) > since) : data;
   renderThread();
   const conv = conversations.find(c=>c.id===id);
   if(conv && conv.unread){
@@ -115,6 +131,64 @@ async function sendMessage(){
 }
 
 document.getElementById('msgForm').addEventListener('submit', e=>{ e.preventDefault(); sendMessage(); });
+// ===== Options d'une discussion : profil, signaler, bloquer, supprimer =====
+function toggleChatMenu(e){
+  if(e) e.stopPropagation();
+  const menu = document.getElementById('chatMenu');
+  const conv = conversations.find(c=>c.id===activeChat);
+  if(!conv){ menu.classList.add('hidden'); return; }
+  const item = (icon, label, action, danger)=>`<button onclick="document.getElementById('chatMenu').classList.add('hidden');${action}" class="w-full text-left px-4 py-2.5 flex items-center gap-2 hover:bg-sand ${danger?'text-red-600':''}"><i data-lucide="${icon}" class="w-4 h-4"></i>${label}</button>`;
+  menu.innerHTML = [
+    item('store', 'Voir le profil et la boutique', `location.href='vendeur.html?id=${encodeURIComponent(conv.id)}'`),
+    item('flag', 'Signaler la discussion', 'reportConversation()'),
+    item(conv.blockedByMe ? 'unlock' : 'ban', conv.blockedByMe ? 'Débloquer ce membre' : 'Bloquer ce membre', 'toggleBlock()', !conv.blockedByMe),
+    item('trash-2', 'Supprimer la discussion', 'deleteConversation()', true)
+  ].join('');
+  menu.classList.toggle('hidden');
+  lucide.createIcons({ root: menu });
+}
+document.addEventListener('click', ()=>{ const m = document.getElementById('chatMenu'); if(m) m.classList.add('hidden'); });
+
+async function reportConversation(){
+  const conv = conversations.find(c=>c.id===activeChat);
+  if(!conv) return;
+  await reportContent('conversation', conv.id);
+}
+
+async function toggleBlock(){
+  const conv = conversations.find(c=>c.id===activeChat);
+  if(!conv) return;
+  if(conv.blockedByMe){
+    const { error } = await sb.from('member_blocks').delete().eq('blocker_id', me).eq('blocked_id', conv.id);
+    if(error){ showToast("Le déblocage n'a pas abouti.",'error'); return; }
+    conv.blockedByMe = false;
+    showToast(`${esc(conv.name)} est débloqué.`,'success');
+  } else {
+    const ok = await confirmDialog({ title:`Bloquer ${conv.name} ?`, message:"Vous ne pourrez plus vous écrire, dans un sens comme dans l'autre. Ce membre n'est pas prévenu. Vous pourrez le débloquer à tout moment.", confirmLabel:'Bloquer', danger:true, icon:'ban' });
+    if(!ok) return;
+    const { error } = await sb.from('member_blocks').insert({ blocker_id: me, blocked_id: conv.id });
+    if(error && !/duplicate/i.test(error.message)){ showToast("Le blocage n'a pas abouti.",'error'); return; }
+    conv.blockedByMe = true;
+    showToast(`${esc(conv.name)} est bloqué.`,'info');
+  }
+  renderThread();
+}
+
+async function deleteConversation(){
+  const conv = conversations.find(c=>c.id===activeChat);
+  if(!conv) return;
+  const ok = await confirmDialog({ title:'Supprimer cette discussion ?', message:`La discussion avec ${conv.name} disparaît de votre messagerie (pas de la sienne). Si elle a été signalée, l'équipe AkwaOne peut toujours l'examiner.`, confirmLabel:'Supprimer', danger:true, icon:'trash-2' });
+  if(!ok) return;
+  const { error } = await sb.from('conversation_hidden').upsert({ user_id: me, partner_id: conv.id, hidden_at: new Date().toISOString() });
+  if(error){ showToast("La discussion n'a pas pu être supprimée.",'error'); return; }
+  conversations = conversations.filter(c=>c.id!==conv.id);
+  activeChat = null; thread = [];
+  cacheUnread();
+  renderConversations();
+  renderThread();
+  showToast('Discussion supprimée.','info');
+}
+
 document.getElementById('newChatForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('newChatEmail').value.trim();
