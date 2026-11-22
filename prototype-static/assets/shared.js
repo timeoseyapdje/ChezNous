@@ -1347,3 +1347,68 @@ function loadAdSense(){
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadAdSense);
 else loadAdSense();
+
+// Fenêtre de saisie du site (raison d'un signalement, d'une suspension…). Renvoie le texte saisi, ou null si annulé.
+function promptDialog({ title, message, placeholder = '', confirmLabel = 'Envoyer', danger = false, icon = 'flag', minLength = 3, maxLength = 500 }){
+  return new Promise(resolve=>{
+    const prev = document.activeElement;
+    const wrap = document.createElement('div');
+    wrap.className = 'fixed inset-0 flex items-center justify-center p-4';
+    wrap.style.zIndex = '90';
+    wrap.setAttribute('role','dialog');
+    wrap.setAttribute('aria-modal','true');
+    wrap.innerHTML = `
+      <div data-close class="absolute inset-0" style="background:rgba(0,0,0,.5)"></div>
+      <div class="relative bg-white text-ink rounded-2xl shadow-2xl w-full p-6" style="max-width:440px">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center ${danger ? 'bg-red-50 text-red-600' : 'bg-sand'}"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+        <h2 class="font-display font-bold text-xl mt-4">${escapeHtmlGlobal(title)}</h2>
+        ${message ? `<p class="text-sm opacity-70 mt-2 leading-relaxed">${escapeHtmlGlobal(message)}</p>` : ''}
+        <textarea data-input maxlength="${maxLength}" placeholder="${escapeHtmlGlobal(placeholder)}" class="w-full mt-4 border border-line rounded-xl p-3 text-sm outline-none" style="height:96px"></textarea>
+        <div data-err class="text-xs text-red-600 mt-1 hidden">Merci de préciser (${minLength} caractères minimum).</div>
+        <div class="flex gap-2 mt-5">
+          <button data-close class="flex-1 border border-line rounded-full py-2.5 text-sm font-semibold hover:bg-sand">Annuler</button>
+          <button data-ok class="flex-1 rounded-full py-2.5 text-sm font-bold text-white ${danger ? 'bg-red-600 hover:brightness-110' : 'bg-forest hover:brightness-110'}">${escapeHtmlGlobal(confirmLabel)}</button>
+        </div>
+      </div>`;
+    const input = wrap.querySelector('[data-input]');
+    const close = (val)=>{ document.removeEventListener('keydown', onKey); wrap.remove(); if(prev && prev.focus) prev.focus(); resolve(val); };
+    const onKey = (e)=>{ if(e.key==='Escape') close(null); };
+    wrap.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click', ()=>close(null)));
+    wrap.querySelector('[data-ok]').addEventListener('click', ()=>{
+      const v = input.value.trim();
+      if(v.length < minLength){ wrap.querySelector('[data-err]').classList.remove('hidden'); input.focus(); return; }
+      close(v);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(wrap);
+    if(typeof lucide !== 'undefined') lucide.createIcons({ root: wrap });
+    input.focus();
+  });
+}
+
+// Modération (api/moderation.js) : signalements, litiges et actions de l'espace administrateur.
+async function moderationApi(action, data = {}){
+  const headers = { 'Content-Type':'application/json', ...(typeof authHeaders==='function' ? await authHeaders() : {}) };
+  const res = await fetch('api/moderation', { method:'POST', headers, body: JSON.stringify({ action, ...data }) });
+  const out = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(out.error || 'Action impossible pour le moment.');
+  return out;
+}
+
+// Bouton « Signaler » (annonce, message reçu) : le contenu part dans la file de modération de l'administrateur.
+async function reportContent(targetType, targetId){
+  const toast = (m, t)=>{ if(typeof showToast==='function') showToast(m, t); };
+  if(IS_DEMO){ toast('Version démo : le signalement est disponible sur le site réel.','info'); return; }
+  if(typeof isLoggedIn==='function' && !isLoggedIn()){ window.location.href = 'connexion.html'; return; }
+  const what = targetType==='listing' ? 'cette annonce' : targetType==='message' ? 'ce message' : 'cet avis';
+  const reason = await promptDialog({
+    title: `Signaler ${what}`,
+    message: "Expliquez en quelques mots ce qui ne respecte pas la charte de la communauté. Notre équipe examinera le contenu.",
+    placeholder: 'Arnaque, contenu offensant, produit interdit…', confirmLabel: 'Signaler', danger: true
+  });
+  if(!reason) return;
+  try{
+    await moderationApi('report', { targetType, targetId: String(targetId), reason });
+    toast('Merci, le signalement a été transmis à notre équipe.','success');
+  }catch(err){ toast(escapeHtmlGlobal(err.message),'error'); }
+}
