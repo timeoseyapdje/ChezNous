@@ -58,5 +58,11 @@
       "path": "/api/notify",
       "schedule": "0 14 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/notify?plan-du-site=1"
+    }
   ]
 }

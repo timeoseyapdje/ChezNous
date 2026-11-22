@@ -7,6 +7,7 @@ const { retryPendingPayouts } = require('./_payouts');
 //  POST { action: 'message', messageId }   prévient le destinataire d'un nouveau message (s'il a accepté les courriels)
 //  GET  (tâche planifiée Vercel, chaque jour) rappels 24 h avant les réservations + réessai des versements aux vendeurs
 //       Vercel envoie « Authorization: Bearer CRON_SECRET » : variable CRON_SECRET à définir dans Vercel.
+//  GET  ?plan-du-site=1 (servi à /sitemap.xml) plan du site pour Google : pages fixes + fiches produit en ligne
 //  POST ?relais=1                          relais du suivi des erreurs (Sentry) par le domaine du site, pour que
 //                                          les bloqueurs de publicité ne coupent pas les rapports d'erreur.
 
@@ -41,6 +42,7 @@ async function relayErrors(req, res) {
 module.exports = async (req, res) => {
   try {
     if (req.method === 'POST' && /[?&]relais=1/.test(req.url || '')) return await relayErrors(req, res);
+    if (req.method === 'GET' && /[?&]plan-du-site=1/.test(req.url || '')) return await sitemap(res);
     if (req.method === 'GET') return send(res, 200, await dailyJob(req));
     if (req.method !== 'POST') return send(res, 405, { error: 'Méthode non autorisée' });
     const body = await readJson(req).catch(() => ({}));
@@ -53,6 +55,45 @@ module.exports = async (req, res) => {
 };
 
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
+
+// Plan du site (sitemap.xml) : pages publiques + une entrée par annonce active (produit.html?id=…), mis en cache 1 h.
+const SITE = 'https://www.akwaone.ca';
+const SITEMAP_PAGES = [
+  ["", "daily", "1.0"],
+  ["a-propos.html", "monthly", "0.5"],
+  ["accessibilite.html", "monthly", "0.5"],
+  ["boutique.html", "daily", "0.8"],
+  ["cgu-cgv.html", "monthly", "0.5"],
+  ["charte-communaute.html", "monthly", "0.5"],
+  ["comment-ca-marche.html", "monthly", "0.5"],
+  ["confidentialite.html", "monthly", "0.5"],
+  ["contact.html", "monthly", "0.5"],
+  ["cookies.html", "monthly", "0.5"],
+  ["devenir-vendeur.html", "monthly", "0.8"],
+  ["faq.html", "monthly", "0.5"],
+  ["livraison.html", "monthly", "0.5"],
+  ["marketplace.html", "daily", "0.8"],
+  ["mentions-legales.html", "monthly", "0.5"],
+  ["retours-remboursement.html", "monthly", "0.5"]
+];
+async function sitemap(res) {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  let listings = [];
+  if (!IS_DEMO) {
+    try {
+      listings = await supabaseRest('GET', 'listings?active=eq.true&select=id,created_at&order=created_at.desc&limit=5000');
+    } catch (e) { console.error('sitemap:', e.message); }
+  }
+  const urls = SITEMAP_PAGES.map(([path, freq, prio]) =>
+    `  <url><loc>${SITE}/${path}</loc><changefreq>${freq}</changefreq><priority>${prio}</priority></url>`);
+  for (const l of listings || []) {
+    urls.push(`  <url><loc>${SITE}/produit.html?id=${esc(l.id)}</loc>${l.created_at ? `<lastmod>${String(l.created_at).slice(0, 10)}</lastmod>` : ''}<changefreq>weekly</changefreq><priority>0.7</priority></url>`);
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
+}
 
 // Un seul courriel par série de messages : seulement si c'est le premier message non lu de cet expéditeur.
 async function messageNotice(req, body) {

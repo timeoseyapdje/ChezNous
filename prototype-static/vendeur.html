@@ -126,7 +126,7 @@ function renderProfile(){
   const list = myListings();
   const isMe = typeof getCurrentUser==='function' && profile && window.__myId===profile.id;
   if(!profile && !list.length){
-    box.innerHTML = `<div class="text-sm opacity-70">Ce profil est introuvable.</div>`;
+    box.innerHTML = `<h1 class="font-display font-bold text-2xl">Profil introuvable</h1><div class="text-sm opacity-70 mt-1">Ce profil est introuvable.</div>`;
     return;
   }
   const name = (profile && (profile.shop_name || profile.display_name)) || memberId;

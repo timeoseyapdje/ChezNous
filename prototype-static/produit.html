@@ -138,7 +138,7 @@ function render(){
   const box = document.getElementById('productBox');
   const p = findProduct();
   if(!p){
-    box.innerHTML = `<div class="bg-sand rounded-2xl p-8 text-center"><div class="font-semibold">Cette annonce est introuvable ou n'est plus disponible.</div><a href="marketplace.html" class="inline-block mt-4 bg-forest text-white rounded-full px-5 py-2 text-sm font-semibold">Voir la marketplace</a></div>`;
+    box.innerHTML = `<div class="bg-sand rounded-2xl p-8 text-center"><h1 class="font-display font-bold text-2xl">Annonce introuvable</h1><div class="opacity-70 mt-2">Cette annonce est introuvable ou n'est plus disponible.</div><a href="marketplace.html" class="inline-block mt-4 bg-forest text-white rounded-full px-5 py-2 text-sm font-semibold">Voir la marketplace</a></div>`;
     return;
   }
   setMeta(p);
