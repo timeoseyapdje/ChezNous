@@ -66,8 +66,17 @@ async function recordPaidSession(session) {
   const official = new Set((officialRows || []).map(r => r.seller_id));
   const slotTime = Date.parse(session.metadata.slot_at || '');
 
-  const rows = [...bySeller.entries()].map(([seller, { sellerId, items }]) => {
-    const subtotal = Math.round(items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100;
+  // Taxes de vente (Stripe Tax) : réparties entre les vendeurs au prorata de leur sous-total ; le dernier reçoit l'arrondi.
+  const taxTotal = Math.round(Number((session.total_details && session.total_details.amount_tax) || 0)) / 100;
+  const groups = [...bySeller.entries()].map(([seller, g]) => ({ seller, ...g, subtotal: Math.round(g.items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100 }));
+  const allSubtotal = groups.reduce((s, g) => s + g.subtotal, 0) || 1;
+  let taxLeft = taxTotal;
+  groups.forEach((g, i) => {
+    g.tax = i === groups.length - 1 ? Math.round(taxLeft * 100) / 100 : Math.round(taxTotal * g.subtotal / allSubtotal * 100) / 100;
+    taxLeft -= g.tax;
+  });
+
+  const rows = groups.map(({ seller, sellerId, items, subtotal, tax }) => {
     return {
       buyer_id: buyerId,
       seller_id: sellerId,
@@ -79,7 +88,8 @@ async function recordPaidSession(session) {
       details: session.metadata.details || null,
       subtotal_cad: subtotal,
       fees_cad: fees,
-      amount_cad: subtotal + fees,
+      tax_cad: tax,
+      amount_cad: Math.round((subtotal + fees + tax) * 100) / 100,
       status: 'confirmee',
       escrow_status: 'retenu',
       payment_method: METHOD_LABELS[methodType] || 'Carte bancaire',
@@ -99,9 +109,9 @@ async function recordPaidSession(session) {
     created = await insert(rows);
   } catch (err) {
     // Migration 0014 pas encore exécutée : la commande est enregistrée quand même, sans les nouvelles colonnes.
-    if (!/slot_at|channel|column/i.test(err.message)) throw err;
+    if (!/slot_at|channel|tax_cad|column/i.test(err.message)) throw err;
     console.error('orders: migration 0014 manquante —', err.message);
-    created = await insert(rows.map(({ slot_at, channel, ...r }) => r));
+    created = await insert(rows.map(({ slot_at, channel, tax_cad, ...r }) => r));
   }
   for (const o of created || []) await email.orderConfirmed(o).catch(e => console.error('email commande:', e.message));
   return supabaseRest('GET', `orders?stripe_session_id=eq.${encodeURIComponent(session.id)}&order=order_number.asc`);

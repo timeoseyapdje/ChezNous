@@ -44,6 +44,7 @@ alter table public.orders add constraint orders_payout_status_check
   -- none : pas encore libéré • pending : en attente du compte bancaire du vendeur • paid : virement Stripe fait
   -- failed : virement refusé (réessayé chaque jour) • platform : vente de la Boutique AkwaOne, l'argent reste à AkwaOne
 alter table public.orders add column if not exists payout_amount_cad numeric(10,2);
+alter table public.orders add column if not exists tax_cad numeric(10,2) not null default 0;  -- TPS/TVQ/TVH (Stripe Tax), incluses dans amount_cad
 alter table public.orders add column if not exists payout_transfer_id text;
 alter table public.orders add column if not exists payout_error text;
 create index if not exists orders_payout_pending_idx on public.orders (payout_status) where payout_status in ('pending', 'failed');
@@ -52,7 +53,7 @@ create index if not exists orders_slot_reminder_idx on public.orders (slot_at) w
 -- Nouvelles colonnes lisibles par l'acheteur et le vendeur (le code de réception reste illisible).
 grant select (id, order_number, buyer_id, seller_id, seller_name, listing_id, items, slot, details, subtotal_cad, fees_cad,
   amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, cancelled_at, created_at,
-  channel, slot_at, payout_status, payout_amount_cad)
+  channel, slot_at, payout_status, payout_amount_cad, tax_cad)
   on public.orders to authenticated;
 
 -- Les commandes déjà passées auprès de la Boutique AkwaOne sont rattachées au canal boutique.
