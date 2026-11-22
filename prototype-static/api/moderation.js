@@ -6,7 +6,7 @@ const email = require('./_email');
 // Modération et espace administrateur (cahier des charges 3.5 et 3.8).
 // POST { action, ... }
 //  Membres connectés : report, open-dispute, seller-evidence, review
-//  Administrateurs   : admin-overview, set-seller-status, resolve-report, resolve-dispute
+//  Administrateurs   : admin-overview, set-seller-status, resolve-report, resolve-dispute, promo-list, promo-create, promo-toggle
 //  Admin ou compte Boutique AkwaOne : boutique-deliver (confirmer la livraison d'une commande de la Boutique)
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
@@ -35,6 +35,9 @@ module.exports = async (req, res) => {
       case 'resolve-report': await requireAdmin(user); return send(res, 200, await resolveReport(user, body));
       case 'resolve-dispute': await requireAdmin(user); return send(res, 200, await resolveDispute(user, body));
       case 'report-thread': await requireAdmin(user); return send(res, 200, await reportThread(body));
+      case 'promo-list': await requireAdmin(user); return send(res, 200, await promoList());
+      case 'promo-create': await requireAdmin(user); return send(res, 200, await promoCreate(user, body));
+      case 'promo-toggle': await requireAdmin(user); return send(res, 200, await promoToggle(user, body));
       default: return send(res, 400, { error: 'Action inconnue' });
     }
   } catch (err) {
@@ -299,6 +302,77 @@ async function resolveReport(admin, body) {
     status: decision, resolved_by: admin.id, resolved_at: new Date().toISOString(),
   }, { Prefer: 'return=minimal' });
   await audit(admin.id, decision === 'removed' ? 'report_removed' : 'report_approved', r.target_type, r.target_id);
+  return { ok: true };
+}
+
+// ===== Codes promo (Stripe : coupon + code promotionnel) =====
+// Saisis par les acheteurs sur la page de paiement Stripe. La réduction est à la charge d'AkwaOne (pas des vendeurs).
+// Compatibilité : les versions récentes de l'API Stripe rangent le coupon sous « promotion.coupon ».
+function promoCoupon(p) {
+  const c = p.coupon || (p.promotion && p.promotion.coupon);
+  return c && typeof c === 'object' ? c : {};
+}
+function promoView(p) {
+  const c = promoCoupon(p);
+  return {
+    id: p.id, code: p.code, active: !!p.active,
+    percent: c.percent_off || null, amount: c.amount_off ? c.amount_off / 100 : null,
+    duration: c.duration, used: p.times_redeemed || 0, max: p.max_redemptions || null,
+    expiresAt: p.expires_at ? new Date(p.expires_at * 1000).toISOString() : null,
+    firstOrder: !!(p.restrictions && p.restrictions.first_time_transaction),
+    minimum: p.restrictions && p.restrictions.minimum_amount ? p.restrictions.minimum_amount / 100 : null,
+    createdAt: p.created ? new Date(p.created * 1000).toISOString() : null,
+  };
+}
+async function promoList() {
+  const list = await stripeRequest('GET', '/promotion_codes', { limit: 100, expand: ['data.coupon'] })
+    .catch(() => stripeRequest('GET', '/promotion_codes', { limit: 100, expand: ['data.promotion.coupon'] }));
+  return { codes: (list.data || []).map(promoView) };
+}
+async function promoCreate(admin, body) {
+  const code = text(body.code, 40).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  const kind = body.kind === 'amount' ? 'amount' : 'percent';
+  const value = Number(body.value);
+  if (code.length < 3) throw fail('Le code doit faire au moins 3 caractères (lettres, chiffres, - ou _).');
+  if (kind === 'percent' && !(value > 0 && value <= 100)) throw fail('Pourcentage entre 1 et 100.');
+  if (kind === 'amount' && !(value > 0 && value <= 1000)) throw fail('Montant entre 0,01 et 1000 $.');
+  const max = Number(body.maxRedemptions) || 0;
+  const minimum = Number(body.minimum) || 0;
+  const expires = body.expiresAt ? Date.parse(body.expiresAt) : 0;
+  if (expires && expires < Date.now()) throw fail('La date de fin doit être dans le futur.');
+  const coupon = await stripeRequest('POST', '/coupons', {
+    duration: 'once', name: code,
+    ...(kind === 'percent' ? { percent_off: value } : { amount_off: Math.round(value * 100), currency: 'cad' }),
+    metadata: { created_by: admin.id, app: 'akwaone' },
+  });
+  let promo;
+  try {
+    const params = (couponField) => ({
+      ...couponField, code,
+      ...(max > 0 ? { max_redemptions: Math.floor(max) } : {}),
+      ...(expires ? { expires_at: Math.floor(expires / 1000) } : {}),
+      restrictions: {
+        ...(body.firstOrder ? { first_time_transaction: true } : {}),
+        ...(minimum > 0 ? { minimum_amount: Math.round(minimum * 100), minimum_amount_currency: 'cad' } : {}),
+      },
+      metadata: { created_by: admin.id },
+    });
+    promo = await stripeRequest('POST', '/promotion_codes', params({ coupon: coupon.id })).catch((e) => {
+      if (!/coupon|promotion/i.test(e.message) || /already exists|existe/i.test(e.message)) throw e;
+      return stripeRequest('POST', '/promotion_codes', params({ promotion: { type: 'coupon', coupon: coupon.id } }));
+    });
+  } catch (e) {
+    await stripeRequest('DELETE', `/coupons/${coupon.id}`).catch(() => {});
+    throw fail(/already exists|existe/i.test(e.message) ? 'Ce code existe déjà.' : `Stripe a refusé le code : ${e.message}`);
+  }
+  await audit(admin.id, 'promo_created', 'promo', code, kind === 'percent' ? `${value} %` : `${value} $`);
+  return { code: promoView({ ...promo, coupon }) };
+}
+async function promoToggle(admin, body) {
+  const id = String(body.id || '');
+  if (!/^promo_[A-Za-z0-9]+$/.test(id)) throw fail('Code invalide');
+  const promo = await stripeRequest('POST', `/promotion_codes/${id}`, { active: !!body.active });
+  await audit(admin.id, body.active ? 'promo_enabled' : 'promo_disabled', 'promo', promo.code);
   return { ok: true };
 }
 

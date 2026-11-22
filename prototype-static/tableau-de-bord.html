@@ -217,6 +217,45 @@ body{background:#FFFFFF;color:#131A17}
       <div id="adminAuditList" class="mt-4 space-y-2"></div>
     </div>
 
+    <div id="adminPromoCard" class="bg-white border border-line rounded-2xl p-5 md:p-6 mt-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="ticket-percent" class="w-5 h-5"></i> Codes promo</h2>
+        <button onclick="togglePromoForm()" class="bg-forest text-white text-xs font-bold px-4 py-2 rounded-full hover:brightness-110 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Créer un code</button>
+      </div>
+      <p class="text-xs opacity-60 mt-1">Les clients saisissent le code sur la page de paiement Stripe. La réduction est à la charge d'AkwaOne : les vendeurs reçoivent leur montant habituel.</p>
+      <form id="promoForm" onsubmit="createPromo(event)" class="hidden mt-4 bg-sand rounded-2xl p-4 grid md:grid-cols-2 gap-3">
+        <div>
+          <label for="promoCode" class="text-[11px] font-bold tracking-widest opacity-60">CODE</label>
+          <input id="promoCode" required maxlength="40" placeholder="BIENVENUE10" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm font-mono uppercase outline-none">
+        </div>
+        <div>
+          <label for="promoValue" class="text-[11px] font-bold tracking-widest opacity-60">RÉDUCTION</label>
+          <div class="flex gap-2 mt-1">
+            <input id="promoValue" required type="number" min="0.01" step="0.01" placeholder="10" class="flex-1 min-w-0 border border-line rounded-xl px-3 py-2 text-sm outline-none">
+            <select id="promoKind" aria-label="Type de réduction" class="border border-line rounded-xl px-3 py-2 text-sm bg-white"><option value="percent">%</option><option value="amount">$ CA</option></select>
+          </div>
+        </div>
+        <div>
+          <label for="promoMax" class="text-[11px] font-bold tracking-widest opacity-60">UTILISATIONS MAXIMUM (OPTIONNEL)</label>
+          <input id="promoMax" type="number" min="1" step="1" placeholder="Illimité" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm outline-none">
+        </div>
+        <div>
+          <label for="promoExpires" class="text-[11px] font-bold tracking-widest opacity-60">DATE DE FIN (OPTIONNEL)</label>
+          <input id="promoExpires" type="date" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm outline-none bg-white">
+        </div>
+        <div>
+          <label for="promoMinimum" class="text-[11px] font-bold tracking-widest opacity-60">MONTANT MINIMUM DE COMMANDE (OPTIONNEL)</label>
+          <input id="promoMinimum" type="number" min="0" step="0.01" placeholder="Aucun" class="w-full mt-1 border border-line rounded-xl px-3 py-2 text-sm outline-none">
+        </div>
+        <label class="flex items-center gap-2 text-sm self-end pb-2"><input id="promoFirst" type="checkbox"> Réservé à la première commande d'un client</label>
+        <div class="flex gap-2" style="grid-column:1/-1">
+          <button type="submit" class="bg-ink text-white text-sm font-bold px-4 py-2 rounded-full">Créer le code</button>
+          <button type="button" onclick="togglePromoForm()" class="text-sm font-semibold px-4 py-2 rounded-full border border-line">Annuler</button>
+        </div>
+      </form>
+      <div id="promoList" class="mt-4 space-y-2"></div>
+    </div>
+
     <div class="bg-ink text-white rounded-2xl p-5 md:p-6 mt-6">
       <div class="flex items-center gap-2">
         <i data-lucide="shield-check" class="w-5 h-5"></i>
@@ -818,6 +857,7 @@ const AUDIT_LABELS = {
   suspend_seller:'Vendeur suspendu', reactivate_seller:'Vendeur réactivé',
   report_approved:'Signalement classé (contenu conservé)', report_removed:'Contenu retiré',
   boutique_delivered:'Commande Boutique livrée',
+  promo_created:'Code promo créé', promo_enabled:'Code promo réactivé', promo_disabled:'Code promo désactivé',
   dispute_buyer:'Litige tranché pour l\'acheteur (remboursé)', dispute_seller:'Litige tranché pour le vendeur (paiement libéré)'
 };
 const REPORT_TYPES = { listing:'ANNONCE', message:'MESSAGE PRIVÉ', review:'AVIS CLIENT', conversation:'DISCUSSION' };
@@ -990,9 +1030,62 @@ async function adminResolveDispute(id, decision, orderNumber, amount){
   }catch(err){ showToast(esc(err.message),'error'); }
 }
 
+// ===== Codes promo (Stripe) =====
+function togglePromoForm(){ document.getElementById('promoForm').classList.toggle('hidden'); }
+async function loadPromos(){
+  const box = document.getElementById('promoList');
+  if(IS_DEMO){ box.innerHTML = emptyBox('Version démo : les codes promo se créent sur le site réel (ils sont enregistrés dans Stripe).'); return; }
+  box.innerHTML = '<div class="text-xs opacity-60">Chargement…</div>';
+  let data;
+  try{ data = await moderationApi('promo-list'); }
+  catch(err){ box.innerHTML = emptyBox(esc(err.message) + ' — vérifiez que les clés Stripe sont configurées.'); return; }
+  box.innerHTML = data.codes.length ? data.codes.map(c=>{
+    const value = c.percent ? `${c.percent} %` : `${fmt(c.amount)}`;
+    const limits = [
+      c.max ? `${c.used}/${c.max} utilisations` : `${c.used} utilisation${c.used>1?'s':''}`,
+      c.expiresAt ? `jusqu'au ${dateFr(c.expiresAt)}` : '',
+      c.minimum ? `dès ${fmt(c.minimum)}` : '',
+      c.firstOrder ? '1re commande' : ''
+    ].filter(Boolean).join(' • ');
+    const expired = c.expiresAt && Date.parse(c.expiresAt) < Date.now();
+    return `
+    <div class="flex flex-wrap items-center gap-3 border border-line rounded-xl p-3 ${c.active && !expired ? '' : 'opacity-60'}">
+      <span class="font-mono font-bold text-sm bg-sand px-2.5 py-1 rounded-lg">${esc(c.code)}</span>
+      <span class="font-bold text-sm text-forest">−${value}</span>
+      <span class="text-xs opacity-60 flex-1 min-w-[160px]">${esc(limits)}</span>
+      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${c.active && !expired ? 'bg-forest text-white' : 'bg-line'}">${expired ? 'expiré' : c.active ? 'actif' : 'désactivé'}</span>
+      ${expired ? '' : `<button onclick="togglePromo('${esc(c.id)}', ${!c.active})" class="text-xs underline opacity-70">${c.active ? 'Désactiver' : 'Réactiver'}</button>`}
+    </div>`;
+  }).join('') : emptyBox('Aucun code promo pour le moment. Créez-en un pour le lancement (ex. BIENVENUE10).');
+  lucide.createIcons();
+}
+async function createPromo(e){
+  e.preventDefault();
+  const payload = {
+    code: document.getElementById('promoCode').value, kind: document.getElementById('promoKind').value,
+    value: document.getElementById('promoValue').value, maxRedemptions: document.getElementById('promoMax').value,
+    expiresAt: document.getElementById('promoExpires').value ? document.getElementById('promoExpires').value + 'T23:59:59' : '',
+    minimum: document.getElementById('promoMinimum').value, firstOrder: document.getElementById('promoFirst').checked
+  };
+  if(IS_DEMO){ showToast('Version démo : les codes promo se créent sur le site réel.','info'); return; }
+  try{
+    const { code } = await moderationApi('promo-create', payload);
+    document.getElementById('promoForm').reset();
+    togglePromoForm();
+    showToast(`Code <b>${esc(code.code)}</b> créé : il est utilisable tout de suite au paiement.`,'success');
+    loadPromos();
+  }catch(err){ showToast(esc(err.message),'error'); }
+}
+async function togglePromo(id, active){
+  if(!active && !await confirmDialog({ title:'Désactiver ce code ?', message:'Les clients ne pourront plus l\'utiliser. Vous pourrez le réactiver plus tard.', confirmLabel:'Désactiver', danger:true, icon:'ticket-x' })) return;
+  try{ await moderationApi('promo-toggle', { id, active }); showToast(active ? 'Code réactivé.' : 'Code désactivé.','info'); loadPromos(); }
+  catch(err){ showToast(esc(err.message),'error'); }
+}
+
 function renderAdminView(){
   document.getElementById('adminView').classList.remove('hidden');
   renderAdminBoutique();
+  loadPromos();
   if(!IS_DEMO){ loadAdminData(); return; }
   const orders = getOrders();
   const gmv = orders.filter(o=>o.status!=='annulée').reduce((s,o)=>s+o.price,0);
