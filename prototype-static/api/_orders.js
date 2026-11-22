@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { stripeRequest, priceOrder } = require('./_stripe');
 const { supabaseRest } = require('./_supabase');
+const email = require('./_email');
 
 const METHOD_LABELS = {
   card: 'Carte bancaire', apple_pay: 'Apple Pay', google_pay: 'Google Pay', link: 'Link',
@@ -59,6 +60,12 @@ async function recordPaidSession(session) {
     bySeller.get(listing.seller).items.push({ id: listing.id, name: listing.name, cat: listing.cat, qty: quantity, unitPrice });
   }
 
+  // Ventes de la Boutique AkwaOne : pas de séquestre ni de code, la livraison est confirmée par l'administration.
+  const sellerIds = [...new Set([...bySeller.values()].map(v => v.sellerId).filter(Boolean))];
+  const officialRows = sellerIds.length ? await supabaseRest('GET', `official_shops?seller_id=in.(${sellerIds.join(',')})&select=seller_id`) : [];
+  const official = new Set((officialRows || []).map(r => r.seller_id));
+  const slotTime = Date.parse(session.metadata.slot_at || '');
+
   const rows = [...bySeller.entries()].map(([seller, { sellerId, items }]) => {
     const subtotal = Math.round(items.reduce((s, i) => s + i.unitPrice * i.qty, 0) * 100) / 100;
     return {
@@ -67,6 +74,8 @@ async function recordPaidSession(session) {
       seller_name: seller,
       items,
       slot: session.metadata.slot || null,
+      slot_at: slotTime ? new Date(slotTime).toISOString() : null,
+      channel: sellerId && official.has(sellerId) ? 'boutique' : 'marketplace',
       details: session.metadata.details || null,
       subtotal_cad: subtotal,
       fees_cad: fees,
@@ -81,9 +90,20 @@ async function recordPaidSession(session) {
     };
   });
 
-  await supabaseRest('POST', 'orders?on_conflict=stripe_session_id,seller_name', rows, {
-    Prefer: 'resolution=ignore-duplicates,return=minimal',
+  // ignore-duplicates : seules les commandes réellement créées maintenant sont renvoyées, et reçoivent le courriel.
+  const insert = (list) => supabaseRest('POST', 'orders?on_conflict=stripe_session_id,seller_name', list, {
+    Prefer: 'resolution=ignore-duplicates,return=representation',
   });
+  let created;
+  try {
+    created = await insert(rows);
+  } catch (err) {
+    // Migration 0014 pas encore exécutée : la commande est enregistrée quand même, sans les nouvelles colonnes.
+    if (!/slot_at|channel|column/i.test(err.message)) throw err;
+    console.error('orders: migration 0014 manquante —', err.message);
+    created = await insert(rows.map(({ slot_at, channel, ...r }) => r));
+  }
+  for (const o of created || []) await email.orderConfirmed(o).catch(e => console.error('email commande:', e.message));
   return supabaseRest('GET', `orders?stripe_session_id=eq.${encodeURIComponent(session.id)}&order=order_number.asc`);
 }
 

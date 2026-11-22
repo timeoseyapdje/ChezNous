@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { readJson, send } = require('./_stripe');
 const { supabaseRest, requireUser } = require('./_supabase');
+const { payoutOrder } = require('./_payouts');
 
 const MAX_ATTEMPTS = 5;
 
@@ -29,7 +30,9 @@ module.exports = async (req, res) => {
       return send(res, 400, { error: 'Code incorrect. Vérifiez avec le client.' });
     }
     await supabaseRest('PATCH', `orders?order_number=eq.${number}&escrow_status=eq.retenu`, { status: 'terminee', escrow_status: 'libéré' }, { Prefer: 'return=minimal' });
-    return send(res, 200, { released: true });
+    // Versement réel sur le compte bancaire du vendeur (Stripe Connect), moins la commission de sa formule.
+    const payout = await payoutOrder(number).catch(e => { console.error('payout:', e.message); return { status: 'failed' }; });
+    return send(res, 200, { released: true, payout: payout.status });
   } catch (err) {
     console.error('release-order error:', err.message);
     return send(res, err.status || 500, { error: err.status === 401 ? err.message : 'Validation impossible pour le moment.' });

@@ -26,13 +26,13 @@
 <meta name="twitter:title" content="Marketplace — AkwaOne">
 <meta name="twitter:description" content="Achetez auprès des vendeurs indépendants de la diaspora africaine au Canada : épicerie, mode et tissus, beauté et cheveux afro, artisanat, traiteurs et services.">
 <meta name="twitter:image" content="https://www.akwaone.ca/assets/logos/akwaone-og.png">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122a">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122a"></script>
-<script src="assets/catalog.js?v=20261122a"></script>
-<script src="assets/shared.js?v=20261122a"></script>
+<script src="assets/i18n-en.js?v=20261122b"></script>
+<script src="assets/catalog.js?v=20261122b"></script>
+<script src="assets/shared.js?v=20261122b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122a"></script>
+<script src="assets/auth.js?v=20261122b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -466,7 +466,7 @@ function openProfile(id){
             <div class="flex items-center gap-2 text-sm"><span class="font-semibold">Jade K.</span> <span class="flex items-center gap-0.5">${starRow(5)}</span> <span class="text-xs opacity-50">• achat vérifié</span></div>
             <p class="text-sm opacity-70 mt-1">Vendeur ponctuel et à l'écoute, je recommande.</p>
           </div>
-        </div>` : `<p class="text-sm opacity-60 mt-3">Aucun avis pour le moment. Les avis sont publiés uniquement après un achat payé.</p>`}
+        </div>` : !IS_DEMO && typeof p.id==='string' && p.reviews ? `<div id="profileReviews" class="space-y-3 mt-3"><p class="text-sm opacity-60">Chargement des avis…</p></div>` : `<p class="text-sm opacity-60 mt-3">Aucun avis pour le moment. Les avis sont publiés uniquement après un achat payé.</p>`}
       </div>
       <div>
         <div class="border border-line rounded-2xl p-5 sticky top-4">
@@ -478,6 +478,22 @@ function openProfile(id){
       </div>
     </div>
   `;
+  lucide.createIcons();
+  if(!IS_DEMO && typeof p.id==='string' && p.reviews) loadListingReviews(p.id);
+}
+// Avis vérifiés réels (acheteurs ayant payé), avec signalement possible.
+async function loadListingReviews(listingId){
+  const box = document.getElementById('profileReviews');
+  if(!box || !sb) return;
+  const { data, error } = await sb.from('reviews').select('id, rating, comment, author_name, created_at').eq('listing_id', listingId).eq('approved', true).order('created_at', { ascending:false }).limit(20);
+  if(!document.getElementById('profileReviews')) return;
+  if(error || !data || !data.length){ box.innerHTML = `<p class="text-sm opacity-60">Aucun avis pour le moment. Les avis sont publiés uniquement après un achat payé.</p>`; return; }
+  box.innerHTML = data.map(r=>`
+    <div class="border border-line rounded-2xl p-4">
+      <div class="flex flex-wrap items-center gap-2 text-sm"><span class="font-semibold">${esc(r.author_name || 'Client vérifié')}</span> <span class="flex items-center gap-0.5">${starRow(r.rating)}</span> <span class="text-xs opacity-50">• achat vérifié • ${esc(new Date(r.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short',year:'numeric'}))}</span>
+        <button onclick="reportContent('review', '${esc(r.id)}')" class="ml-auto text-[11px] opacity-50 hover:opacity-100 underline">Signaler</button></div>
+      ${r.comment ? `<p class="text-sm opacity-70 mt-1" style="white-space:pre-wrap">${esc(r.comment)}</p>` : ''}
+    </div>`).join('');
   lucide.createIcons();
 }
 const SLOT_TIMES = ['09:00','14:00','16:30'];
@@ -504,6 +520,16 @@ function upcomingSlots(){
     SLOT_TIMES.forEach(t=>slots.push(`${day} ${t}`));
   }
   return slots;
+}
+// Date réelle d'un créneau affiché (« 23 nov. 14:00 ») : sert au rappel envoyé 24 h avant.
+function slotToIso(label){
+  for(let d=1; d<=2; d++){
+    const date = new Date(Date.now() + d*86400000);
+    const day = date.toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+    const t = SLOT_TIMES.find(t=>label===`${day} ${t}`);
+    if(t){ const [h,m] = t.split(':').map(Number); date.setHours(h, m, 0, 0); return date.toISOString(); }
+  }
+  return '';
 }
 function openBooking(id){
   if(!isLoggedIn()){ requireLogin(`marketplace.html?produit=${encodeURIComponent(id)}`); return; }
@@ -688,6 +714,7 @@ async function confirmStripe(){
         mode: stripeMode,
         items,
         slot: stripeMode==='booking' ? bookingSlot : '',
+        slotAt: stripeMode==='booking' ? slotToIso(bookingSlot) : '',
         details: stripeMode==='booking' ? bookingDetails : '',
         lang: getLangPersisted()
       })

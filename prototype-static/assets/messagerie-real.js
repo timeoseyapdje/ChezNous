@@ -109,6 +109,8 @@ async function sendMessage(){
   if(error){ input.value = text; showToast("Le message n'a pas pu être envoyé.",'error'); return; }
   thread.push(data);
   renderThread();
+  // Courriel au destinataire (s'il l'a accepté), une seule fois par série de messages non lus.
+  authHeaders().then(h=>fetch('api/notify', { method:'POST', headers:{ 'Content-Type':'application/json', ...h }, body: JSON.stringify({ action:'message', messageId: data.id }) })).catch(()=>{});
   await loadConversations();
 }
 

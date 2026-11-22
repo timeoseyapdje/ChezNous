@@ -10,13 +10,13 @@
 <link rel="apple-touch-icon" href="assets/logos/apple-touch-icon.png">
 <meta name="theme-color" content="#131A17">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="assets/tailwind.css?v=20261122a">
+<link rel="stylesheet" href="assets/tailwind.css?v=20261122b">
 <script src="assets/lucide.min.js"></script>
-<script src="assets/i18n-en.js?v=20261122a"></script>
-<script src="assets/catalog.js?v=20261122a"></script>
-<script src="assets/shared.js?v=20261122a"></script>
+<script src="assets/i18n-en.js?v=20261122b"></script>
+<script src="assets/catalog.js?v=20261122b"></script>
+<script src="assets/shared.js?v=20261122b"></script>
 <script src="assets/vendor/supabase-2.45.4.js"></script>
-<script src="assets/auth.js?v=20261122a"></script>
+<script src="assets/auth.js?v=20261122b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{scroll-behavior:smooth}
@@ -147,7 +147,11 @@ function renderDash(){
           ${o.id&&o.status!=='en attente'?`<button onclick="openReceipt(${o.id})" class="text-xs font-semibold px-3 py-1 rounded-full bg-ink text-white">Reçu</button>`:''}
         </div>
       </div>
-      ${o.escrowStatus==='retenu' && o.status!=='annulée' ? `
+      ${o.channel==='boutique' && o.escrowStatus==='retenu' && o.status!=='annulée' ? `
+      <div class="mt-3 bg-sand rounded-xl p-3 text-xs">
+        <div class="font-semibold flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Préparée et expédiée par l'équipe AkwaOne</div>
+        <div class="opacity-60 mt-0.5">Aucun code à donner : la livraison est confirmée par notre équipe. Un problème ? <a href="contact.html" class="underline">Contactez-nous</a>.</div>
+      </div>` : o.escrowStatus==='retenu' && o.status!=='annulée' ? `
       <div class="mt-3 bg-sand rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
         <div class="text-xs">
           <div class="font-semibold flex items-center gap-1"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Paiement conservé en sécurité</div>
@@ -213,7 +217,7 @@ async function sendTestNotification(){
   btn.disabled = true;
   btn.style.opacity = '0.6';
   try{
-    const res = await fetch('api/notify-test', { method:'POST', headers: await authHeaders() });
+    const res = await fetch('api/notify', { method:'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ action:'test' }) });
     const data = await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.error || "Le courriel n'a pas pu être envoyé.");
     showToast('Courriel de test envoyé à ' + esc(data.sentTo) + '. Pensez à vérifier vos indésirables.','success');
@@ -249,25 +253,29 @@ function mapDbOrder(row, local){
     stripeSessionId: row.stripe_session_id,
     fromServer: true
   };
-  if(local){
-    if(local.review) mapped.review = local.review;
-  }
+  if(row.review) mapped.review = row.review;
+  else if(local && local.review && IS_DEMO) mapped.review = local.review;
+  mapped.channel = row.channel || 'marketplace';
   return mapped;
 }
 const ORDER_COLUMNS = 'order_number, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
+const ORDER_COLUMNS_V14 = ORDER_COLUMNS + ', channel';
 async function loadServerOrders(){
   if(IS_DEMO) return;
   const { profile } = await authReady;
   if(!profile || !sb) return;
   // Le code de réception n'est pas lisible dans la table (un vendeur la lit aussi) : l'acheteur l'obtient par my_release_codes().
-  const [{ data, error }, codes] = await Promise.all([
-    sb.from('orders').select(ORDER_COLUMNS).eq('buyer_id', profile.id).order('created_at', { ascending:false }),
-    sb.rpc('my_release_codes')
-  ]);
+  const byBuyer = (cols)=>sb.from('orders').select(cols).eq('buyer_id', profile.id).order('created_at', { ascending:false });
+  let [{ data, error }, codes] = await Promise.all([ byBuyer(ORDER_COLUMNS_V14), sb.rpc('my_release_codes') ]);
+  if(error) ({ data, error } = await byBuyer(ORDER_COLUMNS)); // migration 0014 pas encore exécutée
   if(error){ console.warn('commandes Supabase :', error.message); return; }
   const codeByOrder = new Map((codes.data || []).map(c=>[c.order_number, c.release_code]));
+  // Avis déjà laissés (un par commande).
+  const numbers = data.map(r=>r.order_number);
+  const reviewRes = numbers.length ? await sb.from('reviews').select('order_number, rating, comment, created_at').in('order_number', numbers) : { data: [] };
+  const reviewByOrder = new Map(((reviewRes && reviewRes.data) || []).map(r=>[r.order_number, { rating:r.rating, comment:r.comment, date:r.created_at }]));
   const localById = new Map(getOrders().map(o=>[o.id, o]));
-  orders = data.map(row=>mapDbOrder({ ...row, release_code: codeByOrder.get(row.order_number) }, localById.get(row.order_number)));
+  orders = data.map(row=>mapDbOrder({ ...row, release_code: codeByOrder.get(row.order_number), review: reviewByOrder.get(row.order_number) }, localById.get(row.order_number)));
   setOrders(orders);
   renderDash();
   refreshNotifBadge();
@@ -315,11 +323,16 @@ function setReviewRating(n){
     svg.classList.toggle('fill-gold', i<n); svg.classList.toggle('text-gold', i<n); svg.classList.toggle('text-line', i>=n);
   });
 }
-function submitReview(id){
+async function submitReview(id){
   const comment = document.getElementById('reviewText').value.trim();
   if(!reviewRating){ showToast('Choisissez une note de 1 à 5 étoiles.','error'); return; }
   if(comment.length < 5){ showToast('Ajoutez un court commentaire.','error'); return; }
   if(containsProhibited(comment)){ showToast('Merci de reformuler sans langage inapproprié.','error'); return; }
+  if(!IS_DEMO){
+    // Site réel : l'avis est enregistré dans Supabase (vérifié par le serveur : commande payée et terminée).
+    try{ await moderationApi('review', { orderNumber:id, rating:reviewRating, comment }); }
+    catch(err){ showToast(esc(err.message),'error'); return; }
+  }
   orders = orders.map(o=> o.id===id ? {...o, review:{rating:reviewRating, comment, date:new Date().toISOString()}} : o);
   setOrders(orders);
   closeOrderModal();
