@@ -244,7 +244,6 @@ function mapDbOrder(row, local){
     status: DB_STATUS[row.status] || row.status,
     price: Number(row.subtotal_cad ?? row.amount_cad),
     fees: Number(row.fees_cad || 0),
-    tax: Number(row.tax_cad || 0),
     total: Number(row.amount_cad),
     paymentMethod: row.payment_method,
     paidAt: row.paid_at,
@@ -260,7 +259,7 @@ function mapDbOrder(row, local){
   return mapped;
 }
 const ORDER_COLUMNS = 'order_number, seller_name, items, slot, details, subtotal_cad, fees_cad, amount_cad, status, escrow_status, payment_method, stripe_session_id, paid_at, created_at';
-const ORDER_COLUMNS_V14 = ORDER_COLUMNS + ', channel, tax_cad';
+const ORDER_COLUMNS_V14 = ORDER_COLUMNS + ', channel';
 async function loadServerOrders(){
   if(IS_DEMO) return;
   const { profile } = await authReady;
@@ -356,7 +355,6 @@ function openReceipt(id){
       <div class="mt-4 space-y-1 text-sm">
         ${lines.map(l=>`<div class="flex justify-between gap-3"><span>${esc(l.name)} x${l.qty}</span><span>${fmt(l.unitPrice*l.qty)}</span></div>`).join('')}
         <div class="flex justify-between opacity-60"><span>Frais de service</span><span>${fmt(fees)}</span></div>
-        ${o.tax ? `<div class="flex justify-between opacity-60"><span>Taxes (TPS/TVQ/TVH)</span><span>${fmt(o.tax)}</span></div>` : ''}
         <div class="flex justify-between font-bold border-t border-line pt-2 mt-2"><span>Total payé</span><span>${fmt(orderTotal(o))}</span></div>
       </div>
       <div class="text-xs opacity-60 mt-3">Moyen de paiement : ${esc(o.paymentMethod || 'Carte bancaire')}</div>

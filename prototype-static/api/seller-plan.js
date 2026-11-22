@@ -1,4 +1,4 @@
-const { IS_DEMO, stripeRequest, siteOrigin, readJson, send, taxSessionParams, taxPriceFields, taxProductFields } = require('./_stripe');
+const { IS_DEMO, stripeRequest, siteOrigin, readJson, send } = require('./_stripe');
 const { requireUser } = require('./_supabase');
 const { SELLER_PLANS, retrievePlanSession, isPlanSession, recordSellerPlan } = require('./_seller-plans');
 
@@ -28,9 +28,8 @@ async function startSubscription(req, res) {
     mode: 'subscription',
     line_items: [{
       quantity: 1,
-      price_data: { currency: 'cad', unit_amount: plan.price * 100, recurring: { interval: 'year' }, ...taxPriceFields(), product_data: { name: plan.label, ...taxProductFields('digital') } },
+      price_data: { currency: 'cad', unit_amount: plan.price * 100, recurring: { interval: 'year' }, product_data: { name: plan.label } },
     }],
-    ...taxSessionParams(),
     payment_method_types: ['card', 'link'],
     // Abonnement facturé en CAD, comme les commandes : pas de conversion de devise par Stripe.
     adaptive_pricing: { enabled: false },

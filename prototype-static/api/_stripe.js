@@ -108,32 +108,4 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-// Taxes de vente canadiennes (TPS, TVQ, TVH) calculées par Stripe Tax selon la province de livraison ou de facturation.
-// Activé seulement avec STRIPE_TAX=on dans Vercel, une fois Stripe Tax configuré (inscriptions TPS/TVQ) dans le dashboard Stripe :
-// sinon Stripe refuserait les paiements. Les prix affichés sur le site sont hors taxes, les taxes s'ajoutent au paiement.
-const TAX_ENABLED = process.env.STRIPE_TAX === 'on';
-const TAX_CODES = {
-  goods: 'txcd_99999999',     // biens matériels (général)
-  service: 'txcd_20030000',   // services (général)
-  digital: 'txcd_10000000',   // services fournis par voie électronique (abonnements vendeurs)
-};
-// Paramètres à ajouter à une session Checkout : collecte de l'adresse (province) et calcul automatique.
-function taxSessionParams({ shipping = false, customer } = {}) {
-  if (!TAX_ENABLED) return {};
-  return {
-    automatic_tax: { enabled: true },
-    ...(shipping
-      ? { shipping_address_collection: { allowed_countries: ['CA', 'US', 'FR'] } }
-      : { billing_address_collection: 'required' }),
-    ...(customer ? { customer_update: { address: 'auto', ...(shipping ? { shipping: 'auto' } : {}), name: 'auto' } } : {}),
-  };
-}
-// Prix hors taxes + code fiscal du produit (ignoré tant que Stripe Tax n'est pas activé).
-function taxPriceFields(kind) {
-  return TAX_ENABLED ? { tax_behavior: 'exclusive' } : {};
-}
-function taxProductFields(kind) {
-  return TAX_ENABLED ? { tax_code: TAX_CODES[kind] || TAX_CODES.goods } : {};
-}
-
-module.exports = { CATALOG, IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send, TAX_ENABLED, taxSessionParams, taxPriceFields, taxProductFields };
+module.exports = { CATALOG, IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send };

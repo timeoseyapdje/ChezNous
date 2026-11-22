@@ -1,4 +1,4 @@
-const { IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send, taxSessionParams, taxPriceFields, taxProductFields } = require('./_stripe');
+const { IS_DEMO, stripeRequest, priceOrder, siteOrigin, readJson, send } = require('./_stripe');
 const { requireUser, supabaseRest } = require('./_supabase');
 
 module.exports = async (req, res) => {
@@ -29,14 +29,13 @@ module.exports = async (req, res) => {
       price_data: {
         currency: 'cad',
         unit_amount: Math.round(unitPrice * 100),
-        ...taxPriceFields(),
-        product_data: { name: listing.name, description: listing.seller, ...taxProductFields(listing.type === 'service' ? 'service' : 'goods') },
+        product_data: { name: listing.name, description: listing.seller },
       },
     }));
     if (fees > 0) {
       lineItems.push({
         quantity: 1,
-        price_data: { currency: 'cad', unit_amount: Math.round(fees * 100), ...taxPriceFields(), product_data: { name: 'Frais de service (10 %)', ...taxProductFields('service') } },
+        price_data: { currency: 'cad', unit_amount: Math.round(fees * 100), product_data: { name: 'Frais de service (10 %)' } },
       });
     }
 
@@ -51,8 +50,6 @@ module.exports = async (req, res) => {
       mode: 'payment',
       customer,
       line_items: lineItems,
-      // Taxes de vente (Stripe Tax) : adresse de livraison pour les produits, adresse de facturation pour une réservation.
-      ...taxSessionParams({ shipping: mode === 'cart', customer }),
       // Moyens choisis dans le dashboard Stripe. Sans conversion de devise, tout reste en CAD et Stripe ne propose
       // que les moyens canadiens (carte, Apple Pay, Google Pay, Link, Klarna, Afterpay, Affirm dès 50 $, prélèvement DPA).
       adaptive_pricing: { enabled: false },
