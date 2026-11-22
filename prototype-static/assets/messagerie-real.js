@@ -148,7 +148,17 @@ function subscribeToIncoming(){
   const requested = new URLSearchParams(location.search).get('avec');
   if(requested && UUID_RE.test(requested)){
     const { data:name } = await sb.rpc('member_name', { member:requested });
-    if(name) await startConversation(requested, name);
+    if(name){
+      await startConversation(requested, name);
+      // Ouvert depuis une commande : message prérempli (non envoyé) pour démarrer la discussion.
+      const order = new URLSearchParams(location.search).get('commande');
+      const input = document.getElementById('msgInput');
+      if(order && /^\d{1,12}$/.test(order) && input && !input.value){
+        input.value = `Bonjour, je vous écris au sujet de la commande #${order}. `;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    }
     else showToast('Ce membre est introuvable.','error');
   } else if(requested){
     showToast(`${esc(requested)} est une boutique de démonstration sans compte : la messagerie avec elle ouvrira quand la boutique sera inscrite.`,'info');
