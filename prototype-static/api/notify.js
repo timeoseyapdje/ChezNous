@@ -42,7 +42,7 @@ async function relayErrors(req, res) {
 module.exports = async (req, res) => {
   try {
     if (req.method === 'POST' && /[?&]relais=1/.test(req.url || '')) return await relayErrors(req, res);
-    if (req.method === 'GET' && /[?&]plan-du-site=1/.test(req.url || '')) return await sitemap(res);
+    if ((req.method === 'GET' || req.method === 'HEAD') && /[?&]plan-du-site=1/.test(req.url || '')) return await sitemap(res, req.method === 'HEAD');
     if (req.method === 'GET') return send(res, 200, await dailyJob(req));
     if (req.method !== 'POST') return send(res, 405, { error: 'Méthode non autorisée' });
     const body = await readJson(req).catch(() => ({}));
@@ -76,7 +76,7 @@ const SITEMAP_PAGES = [
   ["mentions-legales.html", "monthly", "0.5"],
   ["retours-remboursement.html", "monthly", "0.5"]
 ];
-async function sitemap(res) {
+async function sitemap(res, headOnly) {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   let listings = [];
   if (!IS_DEMO) {
@@ -92,6 +92,7 @@ async function sitemap(res) {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  if (headOnly) return res.end();
   res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
 }
 
