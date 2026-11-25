@@ -104,7 +104,6 @@ function listingIdFrom(value){
 const CUR = {
   CAD: { rate: 1, label: 'CAD — Dollar canadien', fmt: v => `${v.toFixed(2)} $` },
   USD: { rate: 0.73, label: 'USD — Dollar américain', fmt: v => `${v.toFixed(2)} $US` },
-  EUR: { rate: 0.68, label: 'EUR — Euro', fmt: v => `${v.toFixed(2)} €` },
   XOF: { rate: 446, label: 'XOF — Franc CFA (Afrique de l\'Ouest)', fmt: v => `${Math.round(v).toLocaleString('fr-FR')} FCFA` },
   XAF: { rate: 446, label: 'XAF — Franc CFA (Afrique centrale)', fmt: v => `${Math.round(v).toLocaleString('fr-FR')} FCFA` },
   NGN: { rate: 1120, label: 'NGN — Naira nigérian', fmt: v => `${Math.round(v).toLocaleString('fr-FR')} ₦` },
@@ -189,8 +188,8 @@ function renderCurrencyOptions(){
   const sel = document.getElementById('currencySelect');
   if(!sel) return;
   const groups = {
-    'Amérique du Nord / Europe': ['CAD','USD','EUR'],
-    'Afrique': Object.keys(CUR).filter(k=>!['CAD','USD','EUR'].includes(k))
+    'Amérique du Nord': ['CAD','USD'],
+    'Afrique': Object.keys(CUR).filter(k=>!['CAD','USD'].includes(k))
   };
   sel.innerHTML = Object.entries(groups).map(([label, codes])=>`
     <optgroup label="${label}">
@@ -1243,7 +1242,7 @@ const BOT_ANSWERS = {
     order:"Parcourez la <a href='boutique.html' class='underline text-forest'>Boutique AkwaOne</a> (nos produits) ou la <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (vendeurs indépendants), ajoutez un produit au panier, puis finalisez votre achat.",
     account:"Cliquez sur « Se connecter » en haut de la page pour gérer votre profil et vos commandes.",
     reviews:"Seuls les acheteurs ayant réellement payé peuvent laisser un avis, pour garantir des avis fiables.",
-    privacy:"Vos données sont protégées conformément à la LPRPDE, au RGPD et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.",
+    privacy:"Vos données sont protégées conformément à la LPRPDE et au CCPA. Détails sur notre page <a href='confidentialite.html' class='underline text-forest'>Confidentialité</a>.",
     contact:"Vous pouvez contacter notre équipe via la page <a href='contact.html' class='underline text-forest'>Contact</a>, ou par courriel à aide@akwaone.ca.",
     thanks:"Avec plaisir ! N'hésitez pas si vous avez d'autres questions.",
     fallback:"Je ne suis pas certain de comprendre. Essayez : commander, devenir vendeur, livraison, retours, paiement ou catégories. Pour une réponse humaine : <a href='contact.html' class='underline text-forest'>contactez notre équipe</a>."
@@ -1259,7 +1258,7 @@ const BOT_ANSWERS = {
     order:"Browse the <a href='boutique.html' class='underline text-forest'>AkwaOne Shop</a> (our products) or the <a href='marketplace.html' class='underline text-forest'>Marketplace</a> (independent sellers), add a product to your cart, then check out.",
     account:"Click « Sign in » at the top of the page to manage your profile and orders.",
     reviews:"Only buyers who actually paid can leave a review, so reviews stay trustworthy.",
-    privacy:"Your data is protected under PIPEDA, GDPR and CCPA. Details on our <a href='confidentialite.html' class='underline text-forest'>Privacy</a> page.",
+    privacy:"Your data is protected under PIPEDA and the CCPA. Details on our <a href='confidentialite.html' class='underline text-forest'>Privacy</a> page.",
     contact:"You can reach our team through the <a href='contact.html' class='underline text-forest'>Contact</a> page, or by email at aide@akwaone.ca.",
     thanks:"You're welcome! Let me know if you have other questions.",
     fallback:"I'm not sure I understand. Try: ordering, becoming a seller, delivery, returns, payment or categories. For a human answer: <a href='contact.html' class='underline text-forest'>contact our team</a>."
