@@ -47,14 +47,14 @@ Paiement :
 - Séquestre : le paiement reste bloqué jusqu'à la réception. L'acheteur reçoit un code de réception et ne le donne au vendeur qu'une fois la commande conforme. Sinon, il peut ouvrir un litige ; l'équipe tranche après examen des preuves des deux parties.
 
 Livraison ([Livraison](livraison.html)) :
-- Vendeurs partout au Canada (Toronto, Montréal, Vancouver, Calgary, Ottawa, Québec, Winnipeg, Edmonton et environs). Certains expédient vers la France et les États-Unis (indiqué sur la fiche produit).
+- Vendeurs partout au Canada (Toronto, Montréal, Vancouver, Calgary, Ottawa, Québec, Winnipeg, Edmonton et environs). Certains expédient vers les États-Unis (indiqué sur la fiche produit).
 - Modes selon le vendeur : livraison à domicile, ramassage en boutique ou point relais.
-- Délais indicatifs : épicerie et cuisine maison 24 à 72 h ; artisanat, mode et beauté 3 à 5 jours ouvrables au Canada ; international 7 à 14 jours ouvrables.
+- Délais indicatifs : épicerie et cuisine maison 24 à 72 h ; artisanat, mode et beauté 3 à 5 jours ouvrables au Canada ; États-Unis 7 à 14 jours ouvrables.
 - Les frais de livraison sont affichés avant la confirmation et inclus dans le total. Chaque vendeur emballe et expédie ses produits.
 
 Retours et remboursements ([Retours & remboursements](retours-remboursement.html)) :
 - Services réservés : annulation gratuite jusqu'à 24 h avant le créneau ; après, le vendeur peut retenir tout ou partie selon sa politique.
-- Produits au Canada et aux États-Unis : conditions de retour du vendeur affichées sur la fiche, jamais moins de 48 h après réception en cas de produit non conforme. Union européenne : rétractation de 14 jours, sauf denrées périssables et articles sur mesure.
+- Produits au Canada et aux États-Unis : conditions de retour du vendeur affichées sur la fiche, jamais moins de 48 h après réception en cas de produit non conforme ; denrées périssables et articles sur mesure repris seulement s'ils ne sont pas conformes.
 - Produit non conforme, endommagé ou non reçu : contacter le vendeur via la [Messagerie](messagerie.html) dans les 48 h suivant la livraison prévue ; sans accord, demander la médiation de l'équipe à aide@akwaone.ca.
 - Remboursements approuvés : traités par Stripe sous 5 jours ouvrables, sur le moyen de paiement d'origine. Les frais de service AkwaOne ne sont remboursés qu'en cas d'annulation avant le début de la prestation ou l'expédition.
 
@@ -74,7 +74,7 @@ Vendeurs ([Devenir vendeur](devenir-vendeur.html)) :
 - Coordonnées bancaires pour recevoir l'argent des ventes : [Paramètres → Paiements](profil.html#paiements), saisies et protégées chez Stripe.
 - Abonnements Pro et Premium annulables à tout moment, effet à la fin de la période annuelle, sans remboursement au prorata sauf erreur de facturation.
 
-Données personnelles : protégées selon la LPRPDE (Canada), le RGPD (Union européenne) et le CCPA (Californie) — voir [Confidentialité](confidentialite.html) et [Cookies](cookies.html).
+Données personnelles : protégées selon la LPRPDE (Canada) et le CCPA (Californie) — voir [Confidentialité](confidentialite.html) et [Cookies](cookies.html).
 
 Contact humain : [Contact](contact.html) ou aide@akwaone.ca. Protection des données : dpo@akwaone.ca. Accessibilité : accessibilite@akwaone.ca.
 
